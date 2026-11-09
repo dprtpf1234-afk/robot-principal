@@ -83,9 +83,17 @@ const World = (() => {
   }
 
   // 교실 꾸미기: 칠판(문 반대쪽 벽) + 책상 두 줄
+  let hrSeq = 0;
   function classroom(m, r, opts = {}) {
     const N = r.side === 'N';
-    if (r.iw >= 3) obj(m, 'board', r.ix + Math.max(0, Math.floor(r.iw / 2) - 1.5), N ? 0.6 : 15.4, { solid: false });
+    const board = r.iw >= 3 ? obj(m, 'board', r.ix + Math.max(0, Math.floor(r.iw / 2) - 1.5), N ? 0.6 : 15.4, { solid: false }) : null;
+    // 반 교실에는 담임 선생님 (칠판 옆)
+    if (/^\d-\d+$/.test(r.name)) {
+      const k = r.name.split('').reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7);
+      m.npcDefs.push({ id: 'hr_' + r.name, role: 'teacher', cls: r.name, name: r.name + ' 담임 선생님', pal: 'hr' + (Math.abs(k) % 8),
+        tx: r.ix + r.iw - 1, ty: N ? 0.9 : 14.9, face: N ? 'down' : 'up' });
+      hrSeq++;
+    }
     const rows = N ? [2, 4] : [12, 14];
     for (const yy of rows) {
       for (let xx = r.ix; xx < r.ix + r.iw; xx += 2) {
@@ -94,6 +102,7 @@ const World = (() => {
         obj(m, opts.desk || 'desk', xx, yy);
       }
     }
+    return { board };
   }
   function office(m, r) {
     const yy = r.side === 'N' ? 2 : 13;
@@ -217,7 +226,10 @@ const World = (() => {
 
     npc(m, { id: 'm7', role: 'mission', order: 7, pal: 'doctor', tx: princ.cx, ty: 8.4, face: 'down', place: '본관 1층 교장실 앞' });
     npc(m, { id: 'sB', role: 'side', side: 'B', pal: 'cook', tx: caf.ix + 6.5, ty: 13, face: 'down', place: '본관 1층 식생활교육관(식당)' });
-    friend(m, 'f7', 'teacher1', staff.ix + 1, 3); friend(m, 'f8', 'staff', adm.ix + 1, 4);
+    friend(m, 'f7', 'affairs', staff.ix + 1, 3); friend(m, 'f8', 'staff', adm.ix + 1, 4);
+    friend(m, 'f21', 'vpM', staff.cx - 0.5, 8.2, 'down'); friend(m, 'f22', 'vpF', meet.ix + 1, 4);
+    friend(m, 'f27', 'life', lx1 - 2, 11.5, 'down');
+    obj(m, 'emblem', lx0 + 1, 13.6, { hitH: 6, hitX: 8, hitW: 16, dy: -8, interact: { type: 'sign', id: 'symbol' } });
     friend(m, 'f10', 'guide', lx0 + 3, 9, 'down'); friend(m, 'f20', 'buddy', caf.ix + 2, 12, 'down');
     roomZone(m, nb4, 2); roomZone(m, nb5, 2); hallZone(m, 2, 30, 3); hallZone(m, 42, 18, 2);
     zone(m, caf.ix, 13, caf.iw, 3, 3, 'cafeteria');
@@ -265,6 +277,7 @@ const World = (() => {
     npc(m, { id: 'm5', role: 'mission', order: 5, pal: 'it', tx: com.cx, ty: 13.4, face: 'up', place: '본관 2층 컴퓨터실1' });
     friend(m, 'f11', 'sciKid', sci.ix + sci.iw - 1, 3); friend(m, 'f12', 'coder', com.ix + com.iw - 1, 13, 'left');
     friend(m, 'f14', 'cleaner', 30, 8, 'left');
+    friend(m, 'f28', 'peHead', hall.ix + hall.iw - 3, 13, 'down');
     c.forEach(r => roomZone(m, r, 2)); roomZone(m, a2, 1); hallZone(m, 2, 30, 3); hallZone(m, 40, 20, 2);
     zone(m, hall.ix, 11, hall.iw, 3, 3, 'hall');
     return m;
@@ -290,6 +303,7 @@ const World = (() => {
 
     c.concat(c2).forEach(r => classroom(m, r));
     office(m, lab5); office(m, t2); office(m, head);
+    friend(m, 'f23', 'research', lab5.ix + 1, 4); friend(m, 'f24', 'chiefT', head.ix + 1, 4);
     for (let i = 0; i < 2; i++) { obj(m, 'lab', sci2.ix + i * 2, 2); obj(m, 'computer', sci2.ix + i * 2, 4); }
     // 도서관 책장 (빨간 책장 3개가 미션 3 단서)
     const L = lib.ix;
@@ -359,23 +373,25 @@ const World = (() => {
       4: ['4-1', '4-2', '4-3', '4학년 연구실', '나눔이쉼터', '4-4', '4-5', '6-9']
     }[f];
     const cols = [[85, 160], [160, 238], [238, 315], [315, 400]];
-    const rooms = cols.map((c, i) => cell(m, 'S', c[0], c[1], names[i]));
+    // 후관은 교실·화장실·계단이 모두 북쪽 줄에 있고, 안뜰 쪽(남쪽)은 현관·연결통로·쉼터뿐이다
+    const rooms = cols.map((c, i) => cell(m, 'N', c[0], c[1], names[i]));
     let mid;
     if (f === 1) mid = cell(m, 'S', ...BACK_M, '현관', { kind: 'exit' });
     else if (f === 2) mid = cell(m, 'S', ...BACK_M, '연결통로 → 본관', { kind: 'bridge' });
     else mid = cell(m, 'S', ...BACK_M, names[4], { floor: TILE.CARPET });
-    cell(m, 'S', 505, 545, '화장실', { kind: 'closed', floor: TILE.HALL });
-    cell(m, 'S', 545, 585, '화장실', { kind: 'closed', floor: TILE.HALL });
-    const rooms2 = [[585, 660], [660, 748], [748, 828]].map((c, i) => cell(m, 'S', c[0], c[1], names[5 + i]));
+    cell(m, 'N', 505, 545, '화장실', { kind: 'closed', floor: TILE.HALL });
+    cell(m, 'N', 545, 585, '화장실', { kind: 'closed', floor: TILE.HALL });
+    const rooms2 = [[585, 660], [660, 748], [748, 828]].map((c, i) => cell(m, 'N', c[0], c[1], names[5 + i]));
     const right = f === 1 ? cell(m, 'S', ...BACK_R, '현관', { kind: 'exit' }) : cell(m, 'S', ...BACK_R, '연결통로 → 본관', { kind: 'bridge' });
     stairs(m, 'N', ...BACK_M, f < 4 ? 'h' + (f + 1) : null, f > 1 ? 'h' + (f - 1) : null);
     stairs(m, 'N', ...BACK_R, f < 4 ? 'h' + (f + 1) : null, f > 1 ? 'h' + (f - 1) : null);
 
     // 교실 꾸미기 (연구실·전담 교사실은 사무실, 쉼터·wee클래스는 탁자)
+    const boards = {};
     rooms.concat(rooms2).forEach(r => {
       if (/연구실|교사실/.test(r.name)) office(m, r);
-      else if (/wee|체험실/.test(r.name)) { obj(m, 'table', r.ix, 12); obj(m, 'plant', r.ix + r.iw - 1, 15); }
-      else classroom(m, r);
+      else if (/wee|체험실/.test(r.name)) { obj(m, 'table', r.ix, 2); obj(m, 'plant', r.ix + r.iw - 1, 1); }
+      else boards[r.name] = classroom(m, r).board;
     });
     if (f >= 3) { obj(m, 'bench', mid.ix, 13); obj(m, 'bench', mid.ix + 3, 15); obj(m, 'plant', mid.ix + mid.iw - 1, 11); }
 
@@ -396,8 +412,16 @@ const World = (() => {
       bridgeTo(m, right, 'f' + f, mainCx([866, 905]), 1.6, 'down');
       if (f === 2) bridgeTo(m, mid, 'f2', mainCx([338, 400]), 1.6, 'down');
     }
-    if (f === 2) friend(m, 'f13', 'artist', rooms2[0].ix + 1, 13);
-    if (f === 3) friend(m, 'f17', 'leader', rooms[0].ix + 1, 13);
+    if (f === 2) friend(m, 'f13', 'artist', rooms2[0].ix + 1, 3);
+    if (f === 3) friend(m, 'f17', 'leader', rooms[0].ix + 1, 3);
+    // 미션 8: 후관 3층 바름이쉼터의 디지털 새싹 선생님. 교실 전자칠판 세 곳에 단서.
+    if (f === 3) {
+      npc(m, { id: 'm8', role: 'mission', order: 8, pal: 'coderT', tx: mid.cx, ty: 12.2, face: 'up', place: '후관 3층 바름이쉼터' });
+      ['4-6', '4-8', '3-6'].forEach((nm, i) => { const b = boards[nm]; b.interact = { type: 'clue', m: 8, i, name: nm + ' 전자칠판' }; b.hit = { x: b.x, y: b.y, w: b.w, h: b.h + 6 }; });
+      sign(m, PX(455), 8, 'network');
+    }
+    if (f === 1) friend(m, 'f25', 'basics', rooms[3].ix + 1, 4);
+    if (f === 2) friend(m, 'f26', 'welfare', rooms[3].ix + 1, 4);
     if (f === 4) npc(m, { id: 'sC', role: 'side', side: 'C', pal: 'transfer', tx: mid.cx, ty: 12.4, face: 'down', place: '후관 4층 나눔이쉼터' });
     rooms.slice(0, 3).forEach(r => roomZone(m, r, 2)); roomZone(m, rooms2[1], 2); hallZone(m, 2, 54, 3);
     return m;
@@ -583,6 +607,15 @@ const World = (() => {
     obj(m, 'podium', 29, 31, { hitH: 10, interact: { type: 'clue', m: 6, i: 2, name: '조례대' } });
     obj(m, 'zelkova', 50, 20, { hitX: 18, hitW: 12, hitH: 6 });
     sign(m, 52, 24, 'symbol'); sign(m, 3, 30, 'gate'); sign(m, 27, 31, 'field');
+    // 교표: 교목·교화 안내판 옆 안내판, 본관 중앙현관 위 벽
+    obj(m, 'emblem', 50, 23.6, { hitH: 6, hitX: 8, hitW: 16, dy: -8, interact: { type: 'sign', id: 'symbol' } });
+    obj(m, 'emblemwall', 30.25, 21.1, { solid: false });
+    // 벽돌 광장 화단의 나무는 잔디 없이 벽돌 바닥 위에 그린다
+    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+      if (get(m, x, y) !== TILE.TREE) continue;
+      const nb = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => get(m, x + dx, y + dy)).filter(v => v !== TILE.TREE && v !== TILE.BTREE);
+      if (nb.length && nb.filter(v => v === TILE.BRICK).length * 2 >= nb.length) set(m, x, y, TILE.BTREE);
+    }
     // 운동장 단서: 축구 골대, 농구 골대
     obj(m, 'goal', 16.4, 40, { hitH: 32, interact: { type: 'clue', m: 6, i: 0, name: '축구 골대' } });
     obj(m, 'goal', 40.6, 40, { hitH: 32 });

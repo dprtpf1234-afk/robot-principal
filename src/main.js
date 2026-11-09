@@ -14,7 +14,7 @@ const App = (() => {
       started: {},               // 미션별로 시작 대사를 들었는지
       asked: {},                 // 문제·미니게임 창을 연 적이 있는지
       parts: [],
-      clues: { 3: [], 6: [] },
+      clues: { 3: [], 6: [], 8: [] },
       clueLog: [],
       notes: [],                 // 창고 쪽지
       bandages: [],
@@ -100,7 +100,7 @@ const App = (() => {
 
   // ---------------- 첫 화면·입장 ----------------
   const MODES = {
-    m30: { label: '30분 미션', limit: 30 * 60 * 1000, desc: '미션 7개를 30분 안에! 순서도를 따라 학교 곳곳을 돌며 부품을 모아요.' },
+    m30: { label: '30분 미션', limit: 30 * 60 * 1000, desc: '미션 8개를 30분 안에! 순서도를 따라 학교 곳곳을 돌며 부품을 모아요.' },
     m10: { label: '10분 미션', limit: 10 * 60 * 1000, desc: '짧은 코스(미션 5개)를 10분 안에! 2층은 가지 않아도 돼요.' },
     free: { label: '탐험', limit: 0, desc: '시간 제한 없이 자유롭게! 잠긴 문도 모두 열려 있어요. 탐험 기록은 랭킹에 오르지 않아요.' }
   };
@@ -198,7 +198,7 @@ const App = (() => {
   }
 
   // ---------------- 이어하기 저장 ----------------
-  function saveKey(p) { return 'rp_save_v3_' + pkey(p) + '|' + p.mode; }
+  function saveKey(p) { return 'rp_save_v4_' + pkey(p) + '|' + p.mode; }
   function save() {
     if (!st || !session || !session.attemptId || st.finished) return;
     const p = Game.player, m = Game.map;
@@ -231,6 +231,7 @@ const App = (() => {
     content = await Store.getContent();
     session = { player, attemptId: resume ? resume.attemptId : null, course: Util.course(player.mode) };
     st = resume ? Object.assign(freshState(), resume.st) : freshState();
+    for (const k of [3, 6, 8]) if (!st.clues[k]) st.clues[k] = [];
     dex = new Set(Util.storage.get(dexKey(player), []));
     badges = Util.storage.get(badgeKey(player), {});
     updateDexButton();
@@ -240,6 +241,7 @@ const App = (() => {
     $('touchUI').classList.toggle('hidden', !Game.isTouch());
     Game.newGame({ player, content });
     applyWorldState();
+    applyStarPerks(false);
     if (resume) {
       Game.restore(resume.map, resume.x, resume.y);
       st.running = true;
@@ -259,7 +261,7 @@ const App = (() => {
         st.running = true;
         save();
         const lim = MODES[player.mode].limit;
-        UI.toast(lim ? `제한 시간 ${lim / 60000}분! 정문의 보안관 아저씨부터 만나 보세요.` : '탐험 시작! 정문의 보안관 아저씨부터 만나 보세요.');
+        UI.toast(lim ? `제한 시간 ${lim / 60000}분! 정문의 지킴이 선생님부터 만나 보세요.` : '탐험 시작! 정문의 지킴이 선생님부터 만나 보세요.');
       });
     }, session.course.list.length);
   }
@@ -347,6 +349,12 @@ const App = (() => {
       return;
     }
     if (n.role === 'robot') return talkRobot();
+    if (n.role === 'teacher') {
+      const pool = content.homeroom || ['안녕! 로봇 교장선생님을 꼭 고쳐 주렴.'];
+      const text = pool[Math.floor(Math.random() * pool.length)].replace(/\{cls\}/g, n.def.cls).replace(/\{name\}/g, session.player.name);
+      UI.dialog([line(n.name, text)]);
+      return;
+    }
     if (n.role === 'ambient') {
       const pool = content.ambient[n.key] || content.ambient.hall;
       const text = pool[Math.floor(Math.random() * pool.length)];
@@ -421,11 +429,30 @@ const App = (() => {
     updateHud();
     const g = G();
     const h = { hint: missionHint(m), onSuccess: () => completeMission(m), onClose: () => { UI.toast('준비되면 다시 말을 걸어 주세요.'); updateHud(); } };
-    if (m.kind === 'label') Mini.label(m.label[g], m.npc, h);
-    else if (m.kind === 'code') Mini.code(m.code[g], m.npc, h);
-    else if (m.kind === 'robot') Mini.robot(m.robot[g], m.npc, h);
-    else if (m.kind === 'sort') Mini.sort(m.sort[g], m.npc, h);
-    else if (m.kind === 'dark') Mini.bulbs(m.bulbs[g], 'AI 스마트존 단말기', Object.assign(h, { onClose: () => {} }));
+    // 미니게임은 여러 문제(배열) 중 하나를 무작위로 낸다. 이름표는 사진 순서와 틀린 이름표를 매번 새로 섞는다.
+    const one = v => (Array.isArray(v) ? v[Math.floor(Math.random() * v.length)] : v);
+    if (m.kind === 'label') Mini.label(miniCfg = shuffleLabel(one(m.label[g])), m.npc, h);
+    else if (m.kind === 'code') Mini.code(miniCfg = one(m.code[g]), m.npc, h);
+    else if (m.kind === 'robot') Mini.robot(miniCfg = one(m.robot[g]), m.npc, h);
+    else if (m.kind === 'sort') Mini.sort(miniCfg = one(m.sort[g]), m.npc, h);
+    else if (m.kind === 'dark') Mini.bulbs(miniCfg = one(m.bulbs[g]), 'AI 스마트존 단말기', Object.assign(h, { onClose: () => {} }));
+  }
+  let miniCfg = null;
+  function shuffleLabel(d) {
+    const n = d.cats.length;
+    const items = Util.shuffle(d.items.map(it => Object.assign({}, it)));
+    for (const it of items) it.s = Math.random() < 0.45 ? it.a : (it.a + 1 + Math.floor(Math.random() * (n - 1))) % n;
+    // 틀린 이름표가 적어도 3장은 있게
+    for (let i = 0; items.filter(x => x.s !== x.a).length < Math.min(3, items.length); i++) { const it = items[i]; if (it.s === it.a) it.s = (it.a + 1) % n; }
+    return Object.assign({}, d, { items });
+  }
+
+  // 개나리를 다 모으면 개나리 운동화: 이동 속도가 빨라진다
+  function applyStarPerks(fx) {
+    const C = content.collect;
+    const on = st.stars.length >= C.total;
+    Game.setSpeed(on ? C.speed || 1.2 : 1);
+    if (on && fx) Game.celebrate(Game.player.x, Game.player.y - 8);
   }
 
   async function completeMission(m) {
@@ -518,14 +545,18 @@ const App = (() => {
       st.stars.push(it.i);
       o.hidden = true;
       Sound.sfx('pick');
-      const C = content.collect;
-      if (st.stars.length >= C.total) {
+      const C = content.collect, n = st.stars.length;
+      if (n >= C.total) {
         st.tokens += 1;
         const firstBadge = !badges.star;
         badges.star = true;
         Util.storage.set(badgeKey(session.player), badges);
-        UI.dialog([line('안내', `${C.name} ${C.total}개를 모두 모았어요! 힌트 토큰 +1` + (firstBadge ? ` · [${C.badge}]와 칭호 [${C.title}]를 얻었어요!` : ''))]);
-      } else UI.toast(`${Util.josa(C.name, '을/를')} 찾았다! (${st.stars.length}/${C.total})`);
+        applyStarPerks(true);
+        UI.dialog([line('안내', `${C.name} ${C.total}송이를 모두 모았어요! 힌트 토큰 +1, 그리고 [${C.shoes}]을 신었어요. 이제 이동 속도가 ${Math.round((C.speed - 1) * 100)}% 빨라져요!` + (firstBadge ? ` · [${C.badge}]와 칭호 [${C.title}]도 얻었어요!` : ''))]);
+      } else if ((C.milestones || []).includes(n)) {
+        st.tokens += 1;
+        UI.dialog([line('안내', `${C.name} ${n}송이 달성! 힌트 토큰 +1 (토큰이 있으면 힌트를 써도 시간이 늘지 않아요). ${C.total}송이를 다 모으면 [${C.shoes}]을 받아 더 빨리 달릴 수 있어요!`)]);
+      } else UI.toast(`${Util.josa(C.name, '을/를')} 찾았다! (${n}/${C.total})`);
       save(); updateHud();
       return;
     }
@@ -642,7 +673,7 @@ const App = (() => {
       case 'sort': {
         if (!started) return { html: `${go} <b>미션을 받아요</b>`, pill };
         const need = m.clues[g].length, got = st.clues[o].length;
-        const where = o === 3 ? '도서관 빨간 책장' : '표지판 네 곳(축구 골대·농구 골대·조례대·국기 게양대)';
+        const where = o === 3 ? '도서관 빨간 책장' : o === 8 ? '후관 3층 교실 전자칠판 세 곳(4-6·4-8·3-6)' : '표지판 네 곳(축구 골대·농구 골대·조례대·국기 게양대)';
         if (got < need) return { html: `<b>${E(where)}</b>에서 단서를 찾아요 <span class="cnt">${got}/${need}</span>`, pill };
         return { html: m.kind === 'explore' ? `단서를 다 찾았어요! ${who}에게 돌아가 <b>문제 3개를 한 번에 맞혀요</b>` : `숫자를 다 찾았어요! ${who}에게 돌아가 <b>자물쇠를 열어요</b>`, pill };
       }
@@ -795,6 +826,8 @@ const App = (() => {
         if (!it) return false;
         if (it.type === 'bandage') return st.side.A === 'started';
         if (it.type === 'star') return true;
+        if (it.type === 'note') return true;   // 어두운 방 쪽지: 불빛이 닿으면 별처럼 반짝인다
+        if (it.type === 'terminal') return st.notes.length === 3;
         if (it.type === 'clue') return available(it.m) && !!st.started[it.m] && !has(st.clues[it.m], it.i);
         if (it.type === 'sign') return false;
         return false;
@@ -889,7 +922,7 @@ const App = (() => {
     $('adminLink').addEventListener('dblclick', () => { location.hash = '#admin'; });
   }
 
-  return { boot, toStart: () => { save(); st = null; Sound.stopMusic(); showStart(); }, get state() { return st; }, get session() { return session; }, get content() { return content; }, _finish: () => finish() };
+  return { boot, toStart: () => { save(); st = null; Sound.stopMusic(); showStart(); }, get state() { return st; }, get session() { return session; }, get content() { return content; }, get miniCfg() { return miniCfg; }, _finish: () => finish() };
 })();
 
 window.addEventListener('DOMContentLoaded', App.boot);

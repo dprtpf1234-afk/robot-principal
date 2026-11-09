@@ -105,7 +105,7 @@ def solve_quiz_set(page, wrong_first=False, use_hint=False, shot_name=None):
 
 
 def solve_label(page):
-    d = page.evaluate("() => App.content.missions[1].label[App.session.player.group]")
+    d = page.evaluate("() => App.miniCfg")
     n = len(d["cats"])
     for i, it in enumerate(d["items"]):
         for _ in range((it["a"] - it["s"]) % n):
@@ -114,7 +114,7 @@ def solve_label(page):
 
 
 def solve_code(page):
-    d = page.evaluate("() => App.content.missions[3].code[App.session.player.group]")
+    d = page.evaluate("() => App.miniCfg")
     page.click(f'.cd-key[data-v="{d["table"][0]["v"]}"]')  # 일부러 틀린 글자 하나 넣고 지우기
     page.click("#cdBack")
     for ch in d["answer"]:
@@ -123,7 +123,7 @@ def solve_code(page):
 
 
 def solve_robot(page):
-    d = page.evaluate("() => App.content.missions[4].robot[App.session.player.group]")
+    d = page.evaluate("() => App.miniCfg")
     walls = {tuple(w) for w in d["walls"]}
     start, goal = tuple(d["start"]), tuple(d["goal"])
     prev = {start: None}
@@ -157,26 +157,28 @@ def solve_robot(page):
 
 
 def solve_sort(page):
-    d = page.evaluate("() => App.content.missions[5].sort[App.session.player.group]")
+    d = page.evaluate("() => App.miniCfg")
     for i in sorted(range(len(d["cards"])), key=lambda i: d["cards"][i]["v"]):
         page.click(f'.st-card[data-i="{i}"]')
     page.wait_for_timeout(1600)
 
 
 def solve_bulbs(page):
-    on = page.evaluate("() => Mini.runBulbs(App.content.missions[6].bulbs[App.session.player.group])")
+    on = page.evaluate("() => Mini.runBulbs(App.miniCfg)")
     for i, v in enumerate(on):
         if v:
             page.click(f'.bulb[data-i="{i}"]')
 
 
 def collect_clues(page, order):
-    mid = "f3" if order == 3 else "outdoor"
+    mid = page.evaluate("(m) => Object.keys(Game.maps).find(id => Game.maps[id].objects.some(o => o.interact && o.interact.type==='clue' && o.interact.m===m))", order)
     n = page.evaluate("([mid, m]) => Game.maps[mid].objects.filter(o => o.interact && o.interact.type==='clue' && o.interact.m===m).length", [mid, order])
     for i in range(n):
         go_obj(page, mid, f"it.type==='clue' && it.m==={order} && it.i==={i}")
         press_e(page)
         advance(page)
+    got = page.evaluate("(m) => App.state.clues[m].length", order)
+    assert got == n, ("clues", order, got, n, mid)
 
 
 def open_flow(page):
@@ -322,7 +324,7 @@ with sync_playwright() as p:
             print("sides done · tokens", page.evaluate("App.state.tokens"))
             # 별 조각 10개
             for mid, i in page.evaluate("() => { const r = []; for (const id in Game.maps) for (const o of Game.maps[id].objects) if (o.interact && o.interact.type==='star') r.push([id, o.interact.i]); return r; }"):
-                go_obj(page, mid, f"it.type==='star' && it.i==={i}"); press_e(page)
+                go_obj(page, mid, f"it.type==='star' && it.i==={i}"); press_e(page); advance(page)
             page.wait_for_timeout(300)
             shot(page, "06_stars")
             advance(page)

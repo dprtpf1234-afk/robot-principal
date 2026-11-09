@@ -81,7 +81,7 @@ const LocalStore = (() => {
     return { durationMs: a.durationMs, penaltyMs: a.penaltyMs || 0, status: a.status, mode: a.mode, bestMs: mine ? mine.bestMs : null, rank: mine ? mine.rank : null, total: board.length, group };
   }
 
-  // 랭킹 만들기: 미션 7개를 모두 깬 기록만, 학생별 최고 기록
+  // 랭킹 만들기: 코스의 미션을 모두 깬 기록만, 학생별 최고 기록
   //  mode: 'all' | 'm30' | 'm10'  (탐험 모드는 랭킹에 넣지 않는다)
   function buildRanking(db, group, limit, opts = {}) {
     const mode = opts.mode || 'all';
@@ -115,7 +115,7 @@ const LocalStore = (() => {
   // 학생 화면용: 이름을 가린 랭킹
   async function getRanking(group, limit = 30, opts = {}) {
     return buildRanking(load(), group, limit, opts).map(r => ({
-      rank: r.rank, label: r.grade + '-' + r.cls + ' ' + Util.maskName(r.name), bestMs: r.bestMs, mode: r.mode
+      rank: r.rank, label: r.grade + '-' + r.cls + ' ' + r.name, bestMs: r.bestMs, mode: r.mode
     }));
   }
 

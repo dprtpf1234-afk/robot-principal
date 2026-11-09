@@ -43,8 +43,8 @@ const Title = (() => {
     // 작은 픽셀 하나가 기기 픽셀 2개 정도가 되도록 내부 해상도를 높인다 (선명하게)
     R = Math.max(1, Math.round(canvas.height / (H * 2)));
     q = 1 / R;
-    // 정수 배율로 확대해 픽셀이 고르게 보이게 한다 (남는 위쪽은 하늘색으로 채움)
-    s = Math.max(1, Math.floor(canvas.height / (H * R)));
+    // 화면 높이에 꼭 맞게 확대한다. (정수 배율로 내리면 창 모드에서 장면이 작아지고 위쪽이 빈 하늘이 된다)
+    s = Math.max(0.5, canvas.height / (H * R));
     W = Math.max(200, Math.ceil(canvas.width / (s * R)));
     buf.width = W * R; buf.height = H * R;
     bg.imageSmoothingEnabled = false;

@@ -49,10 +49,10 @@ revoke all on rp_players, rp_attempts, rp_settings from anon, authenticated;
 -- 단계: 30분·탐험 [1] → [2,3] → [4] → [5,6] → [7]
 --       10분       [1] → [3,4] → [6] → [7]
 create or replace function rp_course(p_mode text) returns int[][] language sql immutable as $$
-  select case when p_mode = 'm10' then array[[1,0],[3,4],[6,0],[7,0]] else array[[1,0],[2,3],[4,0],[5,6],[7,0]] end
+  select case when p_mode = 'm10' then array[[1,0],[3,4],[6,0],[7,0]] else array[[1,0],[2,3],[4,8],[5,6],[7,0]] end
 $$;
 create or replace function rp_course_list(p_mode text) returns int[] language sql immutable as $$
-  select case when p_mode = 'm10' then array[1,3,4,6,7] else array[1,2,3,4,5,6,7] end
+  select case when p_mode = 'm10' then array[1,3,4,6,7] else array[1,2,3,4,8,5,6,7] end
 $$;
 -- 미션 o 의 앞 단계 미션들
 create or replace function rp_prereq(p_mode text, p_order int) returns int[] language plpgsql immutable as $$
@@ -150,10 +150,10 @@ begin
     'bestMs', r.best_ms, 'rank', r.rank, 'total', tot, 'group', grp);
 end $$;
 
--- 학생 화면용 랭킹 (이름 가운데를 가린다)
+-- 학생 화면용 랭킹 (학년-반 이름 전체를 보여 준다)
 create or replace function rp_ranking(p_group text, p_mode text default 'all', p_limit int default 30)
 returns json language sql stable security definer set search_path = public as $$
-  select coalesce(json_agg(json_build_object('rank', rank, 'label', grade || '-' || cls || ' ' || left(name, 1) || repeat('○', greatest(1, char_length(name) - 1)), 'bestMs', best_ms, 'mode', mode) order by rank), '[]'::json)
+  select coalesce(json_agg(json_build_object('rank', rank, 'label', grade || '-' || cls || ' ' || name, 'bestMs', best_ms, 'mode', mode) order by rank), '[]'::json)
   from (select * from rp_ranking_rows(p_group, p_mode) order by rank limit least(greatest(p_limit, 1), 100)) t
 $$;
 

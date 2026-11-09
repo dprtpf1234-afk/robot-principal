@@ -336,7 +336,7 @@ const UI = (() => {
     const f = { g: group || 'low', mode: 'all' };
     const render = async () => {
       const rows = await Store.getRanking(f.g, 30, { mode: f.mode });
-      const what = '미션 7개를 모두 깨는 데 걸린 시간 (학생별 최고 기록)';
+      const what = '모든 미션을 깨는 데 걸린 시간 (학생별 최고 기록)';
       const body = rows.length
         ? '<table class="rank"><thead><tr><th>순위</th><th>이름</th><th>모드</th><th>기록</th></tr></thead><tbody>' +
           rows.map(r => `<tr class="${r.rank <= 3 ? 'top' + r.rank : ''}"><td>${r.rank <= 3 ? ['🥇', '🥈', '🥉'][r.rank - 1] : r.rank}</td><td>${Util.esc(r.label)}</td><td class="mode">${r.mode === 'm10' ? '10분' : '30분'}</td><td>${Util.formatTime(r.bestMs)}</td></tr>`).join('') +

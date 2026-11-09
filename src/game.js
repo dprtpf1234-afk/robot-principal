@@ -3,6 +3,7 @@ const Game = (() => {
   const T = Sprites.T;
   const TILE = Sprites.TILE;
   const SPEED = 74;          // 플레이어 이동 속도 (px/초)
+  let speedK = 1;            // 개나리 운동화 등으로 빨라지는 배율
   const JUMP_V = 120;        // 점프 초기 속도
   const GRAVITY = 430;
   const SPIN_TIME = 0.42;    // 공중 회전 시간 (초)
@@ -171,7 +172,8 @@ const Game = (() => {
     [TILE.PAVE]: '#c3c5ca', [TILE.BRICK]: '#c0684f', [TILE.TRACK]: '#c4463a', [TILE.TURF]: '#46a54d', [TILE.COURT]: '#5fb3a1',
     [TILE.SAND]: '#e6d2a3', [TILE.STEP]: '#b3afa5', [TILE.PILOTI]: '#9a9ba2', [TILE.PARK]: '#9a9ca3', [TILE.BRIDGE]: '#cfd8e0', [TILE.MAT]: '#f2d4c0',
     [TILE.ROAD]: '#5d6168', [TILE.STAND]: '#8fb0f0', [TILE.CANOPY]: '#7fc9bd',
-    [TILE.HEDGE]: '#3f7f3a', [TILE.SIDEWALK]: '#c9c3b6', [TILE.CLIFF]: '#8c887e', [TILE.LOWPAVE]: '#aeb0b6', [TILE.GARDEN]: '#7a5a3a', [TILE.OSTAIR]: '#d4d0c6', [TILE.FOREST]: '#2f6a33'
+    [TILE.HEDGE]: '#3f7f3a', [TILE.SIDEWALK]: '#c9c3b6', [TILE.CLIFF]: '#8c887e', [TILE.LOWPAVE]: '#aeb0b6', [TILE.GARDEN]: '#7a5a3a', [TILE.OSTAIR]: '#d4d0c6', [TILE.FOREST]: '#2f6a33',
+    [TILE.BTREE]: '#2f7d3b', [TILE.PTREE]: '#2f7d3b'
   };
   function minimapImage(m) {
     if (mmCache[m.id]) return mmCache[m.id];
@@ -281,6 +283,7 @@ const Game = (() => {
         if (d.role === 'mission') n.name = content.missions[d.order - 1].npc;
         if (d.role === 'side') n.name = content.sides.find(s => s.id === d.side).npc;
         if (d.role === 'friend') { const f = content.friends.find(x => x.id === d.id); n.name = f ? f.name : d.id; }
+        if (d.role === 'teacher') n.name = d.name;
       }
       list.push(n);
     }
@@ -294,7 +297,7 @@ const Game = (() => {
           tx = z.x + Math.floor(rand() * z.w); ty = z.y + Math.floor(rand() * z.h); tries++;
         } while (tries < 40 && (!walkableTile(m, tx, ty) || objectAt(m, tx * T + 8, ty * T + 12) || nearSpecial(m, list, tx * T + 8, ty * T + 15)));
         if (tries >= 40) continue;
-        const teacher = z.key === 'classroom' && rand() < 0.18;
+        const teacher = false;   // 교실마다 담임 선생님이 따로 있다
         const pal = teacher ? Sprites.NPC_PALETTES[rand() < 0.5 ? 'teacher1' : 'teacher2'] : Sprites.randomStudentPalette(rand);
         const key = m.id + '_amb' + (k++);
         list.push({
@@ -430,7 +433,7 @@ const Game = (() => {
       if (len > 1) { mx /= len; my /= len; }
       if (Math.abs(mx) > Math.abs(my)) player.dir = mx < 0 ? 'left' : 'right';
       else player.dir = my < 0 ? 'up' : 'down';
-      moveEntity(player, mx * SPEED * dt, my * SPEED * dt, 5, 4);
+      moveEntity(player, mx * SPEED * speedK * dt, my * SPEED * speedK * dt, 5, 4);
       player.anim += dt * 8;
     }
 
@@ -621,7 +624,7 @@ const Game = (() => {
     for (const n of npcs) {
       if (n.role === 'ambient') continue;
       if (n.role === 'friend' && !(st.known && st.known(n))) continue;
-      textTag(n.name, (n.x - cam.x) * s, (n.y - 22 - cam.y) * s - Math.max(0, 10 * ui - 4.6 * s) * 0.6, Math.max(4.6 * s, 10 * ui), n.role === 'mission' ? '#fff3c4' : n.role === 'side' ? '#d9f2ff' : n.role === 'friend' ? '#e6ffd9' : '#eee');
+      textTag(n.name, (n.x - cam.x) * s, (n.y - 22 - cam.y) * s - Math.max(0, 10 * ui - 4.6 * s) * 0.6, Math.max(4.6 * s, 10 * ui), n.role === 'mission' ? '#fff3c4' : n.role === 'side' ? '#d9f2ff' : n.role === 'friend' ? '#e6ffd9' : n.role === 'teacher' ? '#f1e2ff' : '#eee');
     }
     const tag = hooks.playerTag ? hooks.playerTag() : null;
     if (tag && !(target && Math.abs(targetPoint(target).x - player.x) < 30)) {
@@ -717,6 +720,32 @@ const Game = (() => {
       } else hole(px, py, 11, 0.8);
     }
     bg.drawImage(darkCanvas, 0, 0);
+    // 불빛이 가까이 가면 찾을 물건 위에 별이 떠오른다 (멀리 있으면 안 보인다)
+    if (inDark(player.x, player.y) && st.flashlight && st.sparkle) {
+      const d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[player.dir];
+      const lx = player.x + d[0] * 20, ly = player.y - 8 + d[1] * 18;
+      for (const o of map.objects) {
+        if (o.hidden || !st.sparkle(o) || !inDark(o.x + o.w / 2, o.y + o.h)) continue;
+        const ox = o.x + o.w / 2, oy = o.y + o.h / 2;
+        const dist = Math.hypot(ox - lx, oy - ly), R = 64;
+        if (dist > R) continue;
+        darkStar(ox - cx, o.y - cy - 2, Math.min(1, (R - dist) / 24));
+      }
+    }
+  }
+  function darkStar(x, y, a) {
+    const k = (Math.sin(time * 5) + 1) / 2, r = 7 + k * 2;
+    const gr = bg.createRadialGradient(x, y, 0, x, y, r * 2.2);
+    gr.addColorStop(0, `rgba(255,236,120,${0.55 * a})`); gr.addColorStop(1, 'rgba(255,236,120,0)');
+    bg.fillStyle = gr; bg.fillRect(x - r * 2.2, y - r * 2.2, r * 4.4, r * 4.4);
+    bg.fillStyle = `rgba(255,224,74,${a})`;
+    bg.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const ang = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r;
+      bg.lineTo(Math.round(x + Math.cos(ang) * rr), Math.round(y + Math.sin(ang) * rr));
+    }
+    bg.closePath(); bg.fill();
+    bg.strokeStyle = `rgba(150,100,0,${a})`; bg.lineWidth = 1; bg.stroke();
   }
 
   // ---------------- 학교 밖 도로의 자동차 ----------------
@@ -926,6 +955,7 @@ const Game = (() => {
 
   return {
     init, newGame, stop, facePlayer, zoom, zoomInfo, celebrate, inDark,
+    setSpeed(k) { speedK = k || 1; },
     setLook(charIdx) { if (player) player.frames = Sprites.makeChar(Sprites.PLAYER_PALETTES[charIdx]); },
     // 이어하기: 저장된 맵·위치로 옮긴다
     restore(mapId, x, y) { if (!maps[mapId]) return; loadMap(mapId); player.x = x; player.y = y; snapCamera(); fade = 1; fadeDir = -1; },
