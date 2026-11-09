@@ -96,10 +96,18 @@ const Title = (() => {
     if (ph === 'night') nightSky();
     for (const c of clouds) cloud(c.x % (W + 100), c.y, c.w, ph);
 
-    hills();
-    ground();
-    building();
-    trees();
+    // 움직이지 않는 풍경(언덕·운동장·학교·나무)은 한 번만 그려 두고 매번 붙인다
+    const key = W + '|' + R;
+    if (frontKey !== key) {
+      frontKey = key;
+      front = document.createElement('canvas'); front.width = buf.width; front.height = buf.height;
+      const keep = bg; bg = front.getContext('2d'); bg.setTransform(R, 0, 0, R, 0, 0);
+      drawHills(); ground(); building(); trees();
+      bg = keep;
+    }
+    bg.save(); bg.setTransform(1, 0, 0, 1, 0, 0); bg.drawImage(front, 0, 0); bg.restore();
+    flags();
+    leaves();
     figures();
     tint(ph);
     for (const p of confetti) {
@@ -193,18 +201,7 @@ const Title = (() => {
   }
 
   // 언덕은 움직이지 않으므로 한 번만 그려 둔다
-  let hillCanvas = null, hillKey = '';
-  function hills() {
-    const key = W + '|' + R;
-    if (hillKey !== key) {
-      hillKey = key;
-      hillCanvas = document.createElement('canvas'); hillCanvas.width = buf.width; hillCanvas.height = buf.height;
-      const keep = bg; bg = hillCanvas.getContext('2d'); bg.setTransform(R, 0, 0, R, 0, 0);
-      drawHills();
-      bg = keep;
-    }
-    bg.save(); bg.setTransform(1, 0, 0, 1, 0, 0); bg.drawImage(hillCanvas, 0, 0); bg.restore();
-  }
+  let front = null, frontKey = '';
   function drawHills() {
     // 멀리 있는 산 (흐릿하게)
     bg.fillStyle = 'rgba(120,160,190,0.35)'; bg.beginPath(); bg.moveTo(0, 140);
@@ -377,6 +374,18 @@ const Title = (() => {
     px(ex0 - 6, cy, ew + 40, 3, '#6b6157'); px(ex0 - 6, cy + 3, ew + 40, 1, '#4f473f');
     px(ex0 - 2, cy - 1.5, ew + 30, 1.5, '#6fd3c7'); for (let x = ex0; x < ex0 + ew + 28; x += 5) px(x, cy - 1.5, 0.5, 1.5, '#4f9a90');
     px(ex0 + ew + 30, cy + 4, 2.5, base - cy - 4, '#7d736a'); px(ex0 + ew + 30, cy + 4, 0.8, base - cy - 4, '#9a9088');
+    L.flagInfo = { ex, top, fh, base, cx1, x1 };
+    // 세로 현수막 (곡선 건물)
+    const bx = cx0 + cw / 2 - 6.5, bt = ctop + 3, bh = (base - ctop) * 0.62;
+    for (let y = 0; y < bh; y += q) px(bx, bt + y, 13, q, mix('#c4203f', '#ff8a2a', y / bh));
+    px(bx - 1, bt - 1, 15, 2, '#7a1028'); px(bx, bt + bh, 13, 2, '#ffd84a');
+    for (let i = 0; i < 9; i++) px(bx + 0.5 + i * 1.5, bt + bh + 2, 0.5, 2.5 + (i % 2) * 0.5, '#ffd84a');
+    L.banner = { x: bx, y: bt, w: 13, h: bh };
+  }
+
+  // 깃발·만국기 (바람에 흔들려서 매번 그린다)
+  function flags() {
+    const { ex, top, fh, base, cx1, x1 } = layout.flagInfo;
     // 국기 게양대 (난간 옆)
     for (let i = 0; i < 3; i++) {
       const fx = Math.round(ex + 34 + i * 7);
@@ -397,12 +406,6 @@ const Title = (() => {
       const c = COLORS[i % 6];
       px(x + 1, y, 4, 1, c); px(x + 1.5, y + 1, 3, 0.5, c); px(x + 2, y + 1.5, 2, 0.5, c); px(x + 2.5, y + 2, 1, 0.5, c);
     }
-    // 세로 현수막 (곡선 건물)
-    const bx = cx0 + cw / 2 - 6.5, bt = ctop + 3, bh = (base - ctop) * 0.62;
-    for (let y = 0; y < bh; y += q) px(bx, bt + y, 13, q, mix('#c4203f', '#ff8a2a', y / bh));
-    px(bx - 1, bt - 1, 15, 2, '#7a1028'); px(bx, bt + bh, 13, 2, '#ffd84a');
-    for (let i = 0; i < 9; i++) px(bx + 0.5 + i * 1.5, bt + bh + 2, 0.5, 2.5 + (i % 2) * 0.5, '#ffd84a');
-    L.banner = { x: bx, y: bt, w: 13, h: bh };
   }
 
   function trees() {
@@ -429,13 +432,20 @@ const Title = (() => {
       blobs.sort((p, q2) => p[1] - q2[1]);
       const cols = ['#e8562f', '#d0442a', '#f2a23a', '#c43f2b', '#e86a30', '#ffd04a'];
       for (const [x, y, rad, i] of blobs) {
-        const col = cols[i % cols.length], sway = Math.sin(t * 1.6 + i) * 0.25;
+        const col = cols[i % cols.length], sway = 0;
         const gr = bg.createRadialGradient(x + sway - rad * 0.35, y - rad * 0.4, 0.2, x + sway, y, rad);
         gr.addColorStop(0, mix(col, '#fff2c0', 0.35)); gr.addColorStop(0.6, col); gr.addColorStop(1, mix(col, '#4a1208', 0.35));
         bg.fillStyle = gr; bg.beginPath(); bg.arc(x + sway, y, rad, 0, Math.PI * 2); bg.fill();
         bg.fillStyle = mix(col, '#fff4c8', 0.45);
         for (let k = 0; k < 5; k++) { const a = i * 2.4 + k * 1.3, d = rad * 0.55; bg.beginPath(); bg.ellipse(x + sway + Math.cos(a) * d - rad * 0.15, y + Math.sin(a) * d - rad * 0.2, 0.55, 0.32, a, 0, Math.PI * 2); bg.fill(); }
       }
+    }
+  }
+
+  // 떨어지는 단풍잎
+  function leaves() {
+    const L = layout, b = L.base, cols = ['#e8562f', '#d0442a', '#f2a23a', '#c43f2b', '#e86a30', '#ffd04a'];
+    for (const tx of [L.x0 - 4, L.x1 + 2]) {
       for (let k = 0; k < 3; k++) {
         const fall = (t * 10 + tx + k * 13) % 40, lx = tx - 6 + k * 6 + Math.sin(t * 3 + tx + k) * 4;
         bg.save(); bg.translate(lx, b - 18 + fall); bg.rotate(t * 4 + k); bg.fillStyle = cols[k + 1];

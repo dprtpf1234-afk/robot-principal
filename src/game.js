@@ -292,7 +292,7 @@ const Game = (() => {
     bg.drawImage(h || img, x, y, img.width, img.height);
   }
   function renderMap(m) {
-    if (mapCache[m.id]) return mapCache[m.id];
+    if (mapCache[m.id]) { m.treeList = mapCache[m.id].treeList; return mapCache[m.id]; }   // 지도 그림은 바뀌지 않으므로 다시 쓴다
     const c = document.createElement('canvas');
     c.width = m.w * T; c.height = m.h * T;
     const g = c.getContext('2d');
@@ -360,6 +360,7 @@ const Game = (() => {
       const t0 = World.get(m, x, y);
       if (t0 === TL.TREE || t0 === TL.BTREE || t0 === TL.PTREE) m.treeList.push({ x: x * T, y: y * T + T - 29, by: y * T + T - 2, img: Sprites.treeFor(x, y, t0 !== TL.TREE) });
     }
+    c.treeList = m.treeList;
     mapCache[m.id] = c;
     roofCache[m.id] = groups.map(gr => {
       const xs = gr.cells.map(r => r[0]), ys = gr.cells.map(r => r[1]);
@@ -481,13 +482,12 @@ const Game = (() => {
 
   function newGame(session) {
     maps = World.build();
-    for (const k in mapCache) delete mapCache[k];
     allNpcs = {};
     for (const id in maps) allNpcs[id] = spawnNpcs(maps[id], session.content);
     const pal = Sprites.PLAYER_PALETTES[session.player.charIdx];
     player = {
       x: (maps.outdoor.start ? maps.outdoor.start[0] : 23) * T + 8, y: (maps.outdoor.start ? maps.outdoor.start[1] : 34) * T + 12, dir: maps.outdoor.startDir || 'up', anim: 0, moving: false, z: 0, vz: 0, spin: 0, spinUsed: false,
-      frames: Sprites.makeChar(pal)
+      frames: charFrames('player' + session.player.charIdx, pal)
     };
     loadMap('outdoor');
     fade = 1; fadeDir = -1;
@@ -817,7 +817,11 @@ const Game = (() => {
     bg.fillStyle = '#2a2533';
     bg.fillRect(0, 0, VW, VH);
     const mc = mapCache[map.id];
-    bg.drawImage(mc.hi || mc, -cx, -cy, mc.width, mc.height);
+    {   // 화면에 보이는 부분만 잘라 그린다 (큰 지도 전체를 매번 넘기지 않게)
+      const k = mc.hi ? 2 : 1, src = mc.hi || mc;
+      const x0 = Math.max(0, cx), y0 = Math.max(0, cy), x1 = Math.min(mc.width, cx + VW), y1 = Math.min(mc.height, cy + VH);
+      if (x1 > x0 && y1 > y0) bg.drawImage(src, x0 * k, y0 * k, (x1 - x0) * k, (y1 - y0) * k, x0 - cx, y0 - cy, x1 - x0, y1 - y0);
+    }
 
     // 바닥에 붙은 사물 먼저
     const flat = [], items = [];
@@ -1257,7 +1261,26 @@ const Game = (() => {
     sg.arcTo(x, y + h, x, y, r); sg.arcTo(x, y, x + w, y, r); sg.closePath(); sg.fill();
   }
 
+  // 첫 화면에 있는 동안 바깥 지도와 캐릭터 그림을 미리 만들어 둔다 (입장할 때 기다리지 않게)
+  let warmed = false;
+  function prewarm(content) {
+    if (warmed) return; warmed = true;
+    let ms;
+    const steps = [
+      () => { ms = World.build(); for (const id in ms) steps.push(() => spawnNpcs(ms[id], content)); },
+      () => renderMap(ms.outdoor),
+      () => { for (const i in Sprites.PLAYER_PALETTES) charFrames('player' + i, Sprites.PLAYER_PALETTES[i]); }
+    ];
+    const run = () => {
+      const f = steps.shift(); if (!f) return;
+      try { f(); } catch (e) { steps.length = 0; return; }
+      setTimeout(run, 30);
+    };
+    setTimeout(run, 50);
+  }
+
   return {
+    prewarm,
     init, newGame, stop, facePlayer, zoom, zoomInfo, celebrate, inDark, smooth2x,
     setSpeed(k) { speedK = k || 1; },
     transformRobot, resetRobot() { morphStart = 0; },

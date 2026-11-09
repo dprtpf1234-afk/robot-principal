@@ -940,6 +940,8 @@ const App = (() => {
     Title.init($('titleCanvas'));
     bindStart();
     showStart();
+    // 첫 화면에 있는 동안 지도·캐릭터 그림을 미리 준비한다
+    if (location.hash !== '#admin') setTimeout(() => Game.prewarm(DEFAULT_CONTENT), 400);
     if (location.hash === '#admin') Admin.open();
     window.addEventListener('hashchange', () => { if (location.hash === '#admin') Admin.open(); });
     $('adminLink').addEventListener('dblclick', () => { location.hash = '#admin'; });

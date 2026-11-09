@@ -707,29 +707,31 @@ const Sprites = (() => {
   }
   // 운동장 인조잔디: 둥근 모서리를 매끄럽게 (2배 해상도). box = [x0, y0, x1, y1] 칸 경계, rc = 모서리 반지름(칸)
   function drawFieldHi(g, box, rc, isField) {
-    const [x0, y0, x1, y1] = box;
-    for (let py = y0 * 32; py < y1 * 32; py++) {
-      for (let pxx = x0 * 32; pxx < x1 * 32; pxx++) {
-        const tx = Math.floor(pxx / 32), ty = Math.floor(py / 32);
-        if (!isField(tx, ty)) continue;
-        const u = (pxx + 0.5) / 32, v = (py + 0.5) / 32;
-        const cx = Math.max(x0 + rc, Math.min(x1 - rc, u)), cy = Math.max(y0 + rc, Math.min(y1 - rc, v));
-        const d = Math.hypot(u - cx, v - cy);
+    // 화소 하나씩 계산해 한 번에 붙인다 (fillRect 수십만 번 대신 ImageData 한 장)
+    const [x0, y0, x1, y1] = box, W = (x1 - x0) * 32, H = (y1 - y0) * 32;
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const cg = c.getContext('2d'), img = cg.createImageData(W, H), d32 = new Uint32Array(img.data.buffer);
+    const rgb = h => { const n = parseInt(h.slice(1), 16); return 0xff000000 | ((n & 255) << 16) | (n & 0xff00) | (n >> 16); };
+    const C = { a: rgb('#3f9b47'), b: rgb('#47a64f'), dk: rgb('#38893f'), lt: rgb('#5bb862'), edge: rgb('#2f7a36'), tr: rgb('#c4463a'), trd: rgb('#b23c31'), trl: rgb('#d0554a') };
+    for (let py = y0 * 32, j = 0; py < y1 * 32; py++, j++) {
+      const ty = Math.floor(py / 32), v = (py + 0.5) / 32, cy = Math.max(y0 + rc, Math.min(y1 - rc, v)), band = Math.floor((v - y0) / 2) % 2;
+      for (let pxx = x0 * 32, i = 0; pxx < x1 * 32; pxx++, i++) {
+        if (!isField(Math.floor(pxx / 32), ty)) continue;
+        const u = (pxx + 0.5) / 32, cx = Math.max(x0 + rc, Math.min(x1 - rc, u));
+        const dd = Math.hypot(u - cx, v - cy);
         let col;
-        if (d <= rc) {
-          const band = Math.floor((v - y0) / 2) % 2;
-          col = band ? '#3f9b47' : '#47a64f';
+        if (dd <= rc) {
           const n = hash(pxx, py, 3);
-          if (n < 0.05) col = '#38893f'; else if (n > 0.97) col = '#5bb862';
-          if (d > rc - 0.04) col = '#2f7a36';
+          col = dd > rc - 0.04 ? C.edge : n < 0.05 ? C.dk : n > 0.97 ? C.lt : band ? C.a : C.b;
         } else {
-          col = '#c4463a';
           const n = hash(pxx, py, 4);
-          if (n < 0.06) col = '#b23c31'; else if (n > 0.95) col = '#d0554a';
+          col = n < 0.06 ? C.trd : n > 0.95 ? C.trl : C.tr;
         }
-        g.fillStyle = col; g.fillRect(pxx, py, 1, 1);
+        d32[j * W + i] = col;
       }
     }
+    cg.putImageData(img, 0, 0);
+    g.drawImage(c, x0 * 32, y0 * 32);
   }
   // 텃밭 (2배 해상도): 세로 이랑 + 새싹
   function drawGardenHi(g, tx, ty) {
