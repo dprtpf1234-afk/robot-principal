@@ -197,8 +197,15 @@ const Game = (() => {
     }
     g.fillStyle = 'rgba(60,50,70,0.55)';
     for (const o of m.objects) if (o.solid) g.fillRect(o.hit.x / T * MM, o.hit.y / T * MM, Math.max(1, o.hit.w / T * MM), Math.max(1, o.hit.h / T * MM));
-    mmCache[m.id] = c;
-    return c;
+    let out = c;
+    if (m.mmBox) {   // 학교 둘레만 잘라 보여 준다
+      const [bx, by, bw, bh] = m.mmBox;
+      out = document.createElement('canvas'); out.width = bw * MM; out.height = bh * MM;
+      out.getContext('2d').drawImage(c, -bx * MM, -by * MM);
+    }
+    out.box = m.mmBox || [0, 0, m.w, m.h];
+    mmCache[m.id] = out;
+    return out;
   }
   let mmKey = '';
   function drawMinimap() {
@@ -220,10 +227,12 @@ const Game = (() => {
     g.imageSmoothingEnabled = false;
     g.fillStyle = '#2a2533'; g.fillRect(0, 0, cv.width, cv.height);
     g.drawImage(img, ox, 0, img.width * z, img.height * z);
-    const W2 = v => ox + v / T * MM * z, H2 = v => v / T * MM * z;
+    const W2 = v => ox + (v / T - img.box[0]) * MM * z, H2 = v => (v / T - img.box[1]) * MM * z;
     // 지금 보이는 화면 범위
     g.strokeStyle = 'rgba(255,255,255,0.85)'; g.lineWidth = Math.max(1, dpr);
+    g.save(); g.beginPath(); g.rect(ox, 0, img.width * z, img.height * z); g.clip();
     g.strokeRect(W2(Math.max(0, cam.x)), H2(Math.max(0, cam.y)), Math.min(VW, map.w * T) / T * MM * z, Math.min(VH, map.h * T) / T * MM * z);
+    g.restore();
     // 목표 표시
     const blink = Math.sin(time * 6) > -0.3;
     const targets = hooks.minimapTargets ? hooks.minimapTargets(map.id) : [];
@@ -254,9 +263,9 @@ const Game = (() => {
   function smooth2x(src) {
     const w = src.width, h = src.height;
     if (!w || !h) return null;
-    const g0 = src.getContext ? src.getContext('2d') : null;
     let data;
-    try { data = (g0 || (() => { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.drawImage(src, 0, 0); return g; })()).getImageData(0, 0, w, h); }
+    // 읽기 전용 복사본에서 화소를 읽는다 (원본 캔버스를 여러 번 읽는 경고를 피한다)
+    try { data = (() => { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(src, 0, 0); return g; })().getImageData(0, 0, w, h); }
     catch (e) { return null; }
     const s = new Uint32Array(data.data.buffer);
     const out = document.createElement('canvas'); out.width = w * 2; out.height = h * 2;
@@ -335,12 +344,15 @@ const Game = (() => {
         if (t0 === TL.TURF) fbox = fbox ? [Math.min(fbox[0], x), Math.min(fbox[1], y), Math.max(fbox[2], x + 1), Math.max(fbox[3], y + 1)] : [x, y, x + 1, y + 1];
       }
       if (fbox) Sprites.drawFieldHi(hg, fbox, 5.5, (x, y) => { const k = World.get(m, x, y); return k === TL.TURF || k === TL.TRACK; });
-      const bc = document.createElement('canvas'); bc.width = c.width; bc.height = c.height;
-      const bg1 = bc.getContext('2d'); bg1.imageSmoothingEnabled = false;
+      // 차선·횡단보도처럼 지도에 바로 그리는 선 (2배 해상도)
+      for (const o of m.objects) if (o.bake) { hg.save(); hg.scale(2, 2); o.bake(hg); hg.restore(); }
+      // 건물은 2배 크기 캔버스에 바로 그리고(g.hi), 가는 줄눈·창틀 같은 반 칸 디테일을 더한다
+      const bc = document.createElement('canvas'); bc.width = c.width * 2; bc.height = c.height * 2;
+      const bg1 = bc.getContext('2d'); bg1.imageSmoothingEnabled = false; bg1.scale(2, 2); bg1.hi = true;
       for (const b of m.buildings) Sprites.drawBuilding(bg1, b);
-      const bhi = smooth2x(bc);
-      if (bhi) hg.drawImage(bhi, 0, 0);
+      hg.drawImage(bc, 0, 0);
     }
+    for (const o of m.objects) if (o.bake) o.bake(g);
     for (const b of m.buildings) Sprites.drawBuilding(g, b);
     // 나무 (앞뒤 순서대로 그리는 키 큰 나무)
     m.treeList = [];
@@ -413,7 +425,7 @@ const Game = (() => {
         list.push({
           id: key, role: 'ambient', key: z.key, teacher, frames: charFrames(key, pal), name: KID_NAMES[Math.floor(rand() * KID_NAMES.length)],
           x: tx * T + T / 2, y: ty * T + T - 1, dir: ['down', 'left', 'right', 'up'][Math.floor(rand() * 4)],
-          anim: rand() * 2, moving: false, wander: rand() < 0.65, zone: z, t: rand() * 3, vx: 0, vy: 0
+          anim: rand() * 2, moving: false, wander: true, zone: z, t: rand() * 3, vx: 0, vy: 0
         });
       }
     }
@@ -610,7 +622,7 @@ const Game = (() => {
   }
 
   function updateNpc(n, dt) {
-    if (n.role !== 'ambient' || !n.wander) return;
+    if (n.role !== 'ambient') return idleNpc(n, dt);
     if (n.talking > 0) { n.talking -= dt; n.moving = false; return; }
     n.t -= dt;
     if (n.t <= 0) {
@@ -633,6 +645,30 @@ const Game = (() => {
     }
   }
 
+  // 미션·서브 미션 사람은 제자리에서 두리번, 친구·담임 선생님은 집 근처(반 칸)를 서성인다
+  function idleNpc(n, dt) {
+    if (n.role === 'robot') return;
+    if (n.talking > 0) { n.talking -= dt; n.moving = false; return; }
+    if (n.home == null) { n.home = [n.x, n.y]; n.t = 1 + Math.random() * 3; }
+    n.t -= dt;
+    const pace = n.role === 'friend' || n.role === 'teacher';
+    if (n.t <= 0) {
+      if (n.moving) { n.moving = false; n.t = 1.5 + Math.random() * 3; }
+      else if (pace && Math.random() < 0.55) {
+        const d = ['left', 'right', 'up', 'down'][Math.floor(Math.random() * 4)];
+        n.dir = d; n.moving = true; n.t = 0.35 + Math.random() * 0.5;
+        n.vx = d === 'left' ? -1 : d === 'right' ? 1 : 0; n.vy = d === 'up' ? -1 : d === 'down' ? 1 : 0;
+      } else { n.dir = ['down', 'left', 'right', 'down', 'up'][Math.floor(Math.random() * 5)]; n.t = 1.5 + Math.random() * 3; }
+    }
+    if (n.moving) {
+      const sp = 20 * dt, nx = n.x + n.vx * sp, ny = n.y + n.vy * sp;
+      if (Math.abs(nx - n.home[0]) > 10 || Math.abs(ny - n.home[1]) > 8) { n.moving = false; n.t = 0.6; return; }
+      const ox = n.x, oy = n.y;
+      moveEntity(n, n.vx * sp, n.vy * sp, 4, 3);
+      if (n.x === ox && n.y === oy) { n.moving = false; n.t = 0.5; }
+      n.anim += dt * 6;
+    }
+  }
   function findTarget() {
     let best = null, bd = Infinity;
     for (const n of npcs) {
@@ -787,6 +823,7 @@ const Game = (() => {
     const flat = [], items = [];
     for (const o of map.objects) {
       if (o.hidden) continue;
+      if (o.w < 4000 && (o.x - cx > VW + 8 || o.x + o.w - cx < -8 || o.y - cy > VH + 8 || o.y + o.h - cy < -8)) continue;   // 화면 밖
       if (!o.solid) flat.push(o); else items.push({ y: o.y + o.h, o });
     }
     for (const o of flat) drawHi(o.img, Math.round(o.x) - cx, Math.round(o.y) - cy);
@@ -1221,7 +1258,7 @@ const Game = (() => {
   }
 
   return {
-    init, newGame, stop, facePlayer, zoom, zoomInfo, celebrate, inDark,
+    init, newGame, stop, facePlayer, zoom, zoomInfo, celebrate, inDark, smooth2x,
     setSpeed(k) { speedK = k || 1; },
     transformRobot, resetRobot() { morphStart = 0; },
     setLook(charIdx) { if (player) player.frames = Sprites.makeChar(Sprites.PLAYER_PALETTES[charIdx]); },

@@ -143,7 +143,7 @@ const App = (() => {
     $('gradeSeg').innerHTML = [1, 2, 3, 4, 5, 6].map(i => `<button type="button" data-g="${i}">${i}<span class="gr">학년</span></button>`).join('');
     const clsSel = $('inClass');
     for (let i = 1; i <= 10; i++) clsSel.insertAdjacentHTML('beforeend', `<option value="${i}">${i}반</option>`);
-    $('avatarGrid').innerHTML = AVATAR_NAMES.map((n, i) => `<button type="button" data-c="${i}"><canvas width="16" height="16"></canvas><span>${n}</span></button>`).join('');
+    $('avatarGrid').innerHTML = AVATAR_NAMES.map((n, i) => `<button type="button" data-c="${i}"><canvas width="32" height="32"></canvas><span>${n}</span></button>`).join('');
     $('avatarGrid').querySelectorAll('button').forEach((b, i) => {
       const c = b.querySelector('canvas').getContext('2d');
       c.drawImage(Sprites.makeChar(Sprites.PLAYER_PALETTES[i]).down[0], 0, 0);
@@ -202,7 +202,7 @@ const App = (() => {
   function save() {
     if (!st || !session || !session.attemptId || st.finished) return;
     const p = Game.player, m = Game.map;
-    Util.storage.set(saveKey(session.player), { attemptId: session.attemptId, charIdx: session.player.charIdx, st, map: m ? m.id : 'outdoor', x: p ? p.x : 0, y: p ? p.y : 0, savedAt: Date.now() });
+    Util.storage.set(saveKey(session.player), { attemptId: session.attemptId, charIdx: session.player.charIdx, st, map: m ? m.id : 'outdoor', x: p ? p.x : 0, y: p ? p.y : 0, lay: World.LAYOUT, savedAt: Date.now() });
   }
   function clearSave(p) { Util.storage.remove(saveKey(p)); }
   function elapsed() { return st.startedAt ? Date.now() - st.startedAt + st.penaltyMs : 0; }
@@ -243,7 +243,9 @@ const App = (() => {
     applyWorldState();
     applyStarPerks(false);
     if (resume) {
-      Game.restore(resume.map, resume.x, resume.y);
+      // 예전 지도(동네를 붙이기 전)에서 저장한 바깥 자리는 늘어난 만큼 옮긴다
+      const shift = resume.map === 'outdoor' && resume.lay !== World.LAYOUT;
+      Game.restore(resume.map, resume.x + (shift ? World.EXT.l * World.T : 0), resume.y + (shift ? World.EXT.t * World.T : 0));
       st.running = true;
       updateHud();
       UI.toast('이어서 시작! 지난번 자리에서 계속해요.');

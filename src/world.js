@@ -34,6 +34,29 @@ const World = (() => {
     obj(m, 'stall' + sp, tx, ty, { solid: false, dx: -2, dy: 8 - sp * T / 2 });
     if (parkSeq++ % 5 !== 3) obj(m, 'car', tx, ty);
   }
+  // 고해상도 그림을 (cx, cy) 칸 중심에 놓는다. hit: [x0, y0, x1, y1] 칸 (없으면 밟고 지나가는 바닥 그림)
+  function placeHi(m, kind, img, cx, cy, hit) {
+    const w = img.width / 2, h = img.height / 2;
+    const o = { id: 'o' + (objSeq++), kind, img, x: cx * T - w / 2, y: cy * T - h / 2, w, h, solid: !!hit, interact: null, hidden: false };
+    o.hit = hit ? { x: hit[0] * T, y: hit[1] * T, w: (hit[2] - hit[0]) * T, h: (hit[3] - hit[1]) * T } : { x: o.x, y: o.y, w: 1, h: 1 };
+    m.objects.push(o);
+    return o;
+  }
+  // 주차칸 하나. dir: 'L'|'R' (가로 칸, 뒤쪽 선이 왼/오른쪽) · 'T'|'B' (세로 칸) · 숫자(회전 각, 사선 칸)
+  let parkN = 0;
+  function stall(m, x, y, dir, dis) {
+    const n = parkN++, empty = dis ? n % 2 === 1 : (n * 7919 % 100) < 16, ci = (n * 2654435761 >>> 7) % 97;
+    if (typeof dir === 'number') {   // (x, y) = 칸 한가운데, 길이 2 · 폭 1, 긴 쪽이 dir 각도
+      placeHi(m, 'stall', Sprites.makeStall(2, 1, 'tb', dis, dir), x, y);
+      if (!empty) placeHi(m, 'car', Sprites.makeParkCar(dir + Math.PI / 2, ci), x, y, [x - 0.8, y - 0.5, x + 0.8, y + 0.35]);
+      return;
+    }
+    const hz = dir === 'L' || dir === 'R', w = hz ? 2 : 1, h = hz ? 1 : 2, cx = x + w / 2, cy = y + h / 2;
+    placeHi(m, 'stall', Sprites.makeStall(w, h, (hz ? 'tb' : 'lr') + dir.toLowerCase(), dis), cx, cy);
+    if (empty) return;
+    const ang = { L: -Math.PI / 2, R: Math.PI / 2, T: 0, B: Math.PI }[dir];
+    placeHi(m, 'car', Sprites.makeParkCar(ang, ci), cx, cy, hz ? [x + 0.25, y + 0.1, x + 1.75, y + 0.95] : [x + 0.08, y + 0.3, x + 0.92, y + 1.85]);
+  }
   function label(m, tx, ty, text) { m.labels.push({ x: tx * T, y: ty * T, text }); }
   function warp(m, tx, ty, to, ax, ay, dir, lock) { m.warps.push({ x: tx, y: ty, to, ax, ay, dir, lock: lock || null }); }
   function sign(m, tx, ty, id) { obj(m, 'sign', tx, ty, { hitH: 5, hitX: 5, hitW: 6, interact: { type: 'sign', id } }); }
@@ -491,8 +514,9 @@ const World = (() => {
     for (let x = 2; x < inRow(52)[1] - 1; x++) if (x % 3 === 0) obj(m, 'pine', x - 0.5, 50.6, { hitH: 4, hitX: 12, hitW: 8, solid: false });
     // 북서 주차장, 후관 북쪽 주차장
     rect(m, 3, 4, 9, 13, TILE.PARK);
-    for (let y = 5; y <= 15; y += 2) park(m, 3, y, 2);
-    for (let y = 8; y <= 14; y += 2) park(m, 9, y, 2);
+    for (let x = 6; x <= 8; x++) stall(m, x, 4, 'T');
+    for (let y = 6; y <= 15; y++) stall(m, 3, y, 'L');
+    for (let y = 8; y <= 15; y++) stall(m, 9, y, 'R');
     // 후관 뒤편: 텃밭과 바닥 놀이 (주차하지 않는 곳)
     rect(m, 25, 2, 10, 2, TILE.GARDEN); rect(m, 13, 4, 3, 1, TILE.GARDEN); rect(m, 34, 4, 3, 1, TILE.GARDEN);
     label(m, 30, 1.7, '텃밭');
@@ -536,8 +560,10 @@ const World = (() => {
     // 정문 길 · 강당 앞
     rect(m, 2, 31, 9, 2, TILE.PAVE);
     // 운동장 쪽: 서쪽 주차장, 나무, 다목적구장, 수돗가
+    // 서쪽 주차장: 나무 줄 옆 한 줄 주차 (맨 위 두 칸은 장애인 주차)
     rect(m, 2, 33, 6, 18, TILE.PARK);
-    for (let y = 34; y <= 48; y += 3) { park(m, 2.2, y, 3); park(m, 5, y + 1, 3); }
+    for (let y = 34; y <= 50; y++) set(m, 2, y, y % 2 ? TILE.GRASS : TILE.TREE);
+    for (let y = 34; y <= 49; y++) stall(m, 3, y, 'L', y < 36);
     for (let y = 37; y <= 49; y += 2) set(m, 8, y, TILE.TREE);
     rect(m, 9, 33, 2, 18, TILE.GRASS); rect(m, 9, 39, 2, 12, TILE.COURT);
     label(m, 10, 38.6, '다목적구장');
@@ -571,7 +597,16 @@ const World = (() => {
     label(m, 48, 32.6, '체육시설');
     // 동쪽 주차장 (사선 울타리까지)
     for (let y = 24; y <= 50; y++) { const [, b] = inRow(y); for (let x = 53; x < b; x++) set(m, x, y, TILE.PARK); }
-    for (let y = 26; y <= 50; y += 2) { park(m, 54, y, 2); if (y > 30) park(m, 58, y, 2); if (y > 36) park(m, 63, y, 2); }
+    // 왼쪽 줄(체육시설 스탠드 옆) · 가운데 두 줄 · 오른쪽 사선 줄(울타리와 직각) · 아래 끝 세로 칸
+    for (const y of [25, 26, 27]) stall(m, 53, y, 'L');
+    for (let y = 31; y <= 49; y++) stall(m, 53, y, 'L');
+    for (let y = 38; y <= 49; y++) { stall(m, 57.5, y, 'R'); stall(m, 59.5, y, 'L'); }
+    const fenceX = y => 53.58 + 0.327 * y, aAng = -Math.atan(0.327);
+    for (let i = 0; i < 15; i++) {
+      const y = 31.2 + i * 1.055 * Math.cos(aAng), ex = fenceX(y) - 0.8;
+      stall(m, ex - 1.1 * Math.cos(aAng), y - 1.1 * Math.sin(aAng), aAng, i === 0);
+    }
+    { const ex = Math.floor(fenceX(50) - 0.5); for (let x = ex - 4; x < ex; x++) stall(m, x, 48.9, 'B'); }
     label(m, 57, 25.6, '주차장'); label(m, 5, 33.6, '주차장'); label(m, 7, 3.6, '주차장');
 
     // 건물
@@ -646,9 +681,11 @@ const World = (() => {
     return m;
   }
 
-  // 바깥 지도 둘레에 차도·인도·숲을 붙이고, 차가 다닐 길(차선)을 만든다
-  function padOutdoor(maps, L, TP, R, BT) {
-    const o = maps.outdoor, W = o.w + L + R, H = o.h + TP + BT;
+  // 바깥 지도 둘레에 차도·인도를 붙이고, 그 너머에 동네(아파트·상가·공장·숲)를 그린다 (항공사진 기준)
+  const EXT = { l: 16, t: 8, r: 16, b: 12 };
+  function padOutdoor(maps) {
+    const o = maps.outdoor, L = 3 + EXT.l, TP = 2 + EXT.t, R = 6 + EXT.r, BT = 4 + EXT.b;
+    const W = o.w + L + R, H = o.h + TP + BT;
     const tiles = new Uint8Array(W * H).fill(TILE.FOREST);
     const outside = new Set();
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -656,20 +693,26 @@ const World = (() => {
       const t = ox >= 0 && oy >= 0 && ox < o.w && oy < o.h ? o.tiles[oy * o.w + ox] : TILE.ROAD;
       if (t === TILE.ROAD) outside.add(x + ',' + y); else tiles[y * W + x] = t === TILE.FENCE ? TILE.HEDGE : t;
     }
-    // 동쪽 사선 울타리 위치 (칸, 소수): 항공사진 x = 1135 + 0.335 * y
+    // 동쪽 사선 길 위치 (칸, 소수): 항공사진 x = 1135 + 0.335 * y
     const fx = y => (1135 + 0.335 * (40 + 20 * (y - TP)) - 80) / 20 + L;
-    const westRoad = [1, 2], northRoad = [0, 1], southRoad = [o.h + TP + 1, o.h + TP + 2];
-    for (const k of outside) {
-      const [x, y] = k.split(',').map(Number);
-      const e = Math.round(fx(y)), eastSide = x > e - 1 && y > 1 && y < southRoad[0];
-      let t = TILE.FOREST;
-      if (northRoad.includes(y) && x <= fx(0) + 4) t = TILE.ROAD;
-      else if (southRoad.includes(y)) t = TILE.ROAD;
-      else if (westRoad.includes(x) && y < southRoad[0]) t = TILE.ROAD;
-      else if (eastSide && (x === e + 2 || x === e + 3)) t = TILE.ROAD;
-      else if (eastSide && (x === e + 1 || x === e + 4)) t = TILE.SIDEWALK;
-      else if (eastSide && x > e + 4) t = TILE.FOREST;
-      else if (y === 2 || x === 3 || x === 0 || y === southRoad[0] - 1 || y === southRoad[1] + 1) t = TILE.SIDEWALK;
+    const wr = L - 2, nr = TP - 2, sr = o.h + TP + 1, st = TP + 44;   // 서쪽 길 x, 북쪽 길 y, 남쪽 길 y, 서쪽 골목 y (각 2칸)
+    const isRoad = (x, y) => {
+      const e = Math.round(fx(y));
+      if (x === e + 2 || x === e + 3) return true;
+      if ((y === nr || y === nr + 1) && x <= e + 3) return true;
+      if (y === sr || y === sr + 1) return true;
+      if (x === wr || x === wr + 1) return true;
+      return (y === st || y === st + 1) && x < wr;
+    };
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (!outside.has(x + ',' + y) && (x >= L && y >= TP && x < L + o.w && y < TP + o.h)) continue;
+      let t;
+      if (isRoad(x, y)) t = TILE.ROAD;
+      else if ([[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]].some(([dx, dy]) => isRoad(x + dx, y + dy))) t = TILE.SIDEWALK;
+      else if (x > fx(y) + 4) t = TILE.FOREST;                                   // 동쪽: 숲
+      else if (y < nr) t = TILE.FOREST;                                          // 북쪽: 숲
+      else if (x < wr || y > sr + 1) t = TILE.LOWPAVE;                            // 서쪽·남쪽: 동네 바닥
+      else t = TILE.FOREST;                                                      // 울타리와 길 사이 풀숲
       tiles[y * W + x] = t;
     }
     o.tiles = tiles; o.w = W; o.h = H;
@@ -686,54 +729,124 @@ const World = (() => {
     }
     if (o.start) o.start = [o.start[0] + L, o.start[1] + TP];
     for (const id in maps) for (const w of maps[id].warps) if (w.to === 'outdoor') { w.ax += L; w.ay += TP; }
-    // 차선 표시·울타리 난간 그림
-    const c = document.createElement('canvas'); c.width = W * T; c.height = H * T;
-    const g = c.getContext('2d');
-    const dash = (x1, y1, x2, y2, col, d) => { g.strokeStyle = col; g.lineWidth = 1; g.setLineDash(d || [6, 6]); g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); g.setLineDash([]); };
-    // 사선 도로는 칸 대신 매끈한 띠로 덧그린다 (인도 · 차도 · 인도 · 숲)
-    const band = (a1, a2, col) => {
-      g.fillStyle = col; g.beginPath();
-      g.moveTo((fx(0) + a1) * T, 2 * T); g.lineTo((fx(0) + a2) * T, 2 * T);
-      g.lineTo((fx(southRoad[0]) + a2) * T, southRoad[0] * T); g.lineTo((fx(southRoad[0]) + a1) * T, southRoad[0] * T);
-      g.closePath(); g.fill();
+    // 미니맵은 학교와 둘레 길까지만
+    o.mmBox = [wr - 2, nr - 1, (Math.ceil(fx(sr)) + 6) - (wr - 2), sr + 4 - (nr - 1)];
+
+    // ---------- 동네 ----------
+    const can = (x0, y0, w, h) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) { const t = get(o, x, y); if (t !== TILE.LOWPAVE && t !== TILE.FOREST && t !== TILE.GRASS && t !== TILE.PARK) return false; } return true; };
+    const fill = (x0, y0, w, h, t) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) if (can(x, y, 1, 1)) set(o, x, y, t); };
+    // 건물: face(정면 높이 칸), floors(층), 지붕·벽 색
+    const bld = (x0, y0, w, h, opt) => {
+      const cells = new Set();
+      for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) { if (!can(x, y, 1, 1)) continue; set(o, x, y, TILE.BUILDING); cells.add(x + ',' + y); }
+      if (cells.size) o.buildings.push(Object.assign({ cells, doors: new Set(), face: 2, floors: 3, roof: '#c9cdd2', wall: '#e6e1d6' }, opt));
     };
-    band(5, 8, '#2f6a33'); band(0.9, 2, '#c9c3b6'); band(4, 5, '#c9c3b6'); band(2, 4, '#5d6168');
-    g.fillStyle = '#5d6168'; g.fillRect((fx(2) + 2) * T, 0, 2 * T, 2 * T);
-    const northEnd = (fx(0) + 4) * T, sy = southRoad[1] * T;
-    dash(0, T, northEnd, T, '#ffd23a', [8, 6]);
-    dash(2 * T, 2 * T, 2 * T, southRoad[0] * T, '#ffd23a', [8, 6]);
-    dash(0, sy, W * T, sy, '#ffd23a', []); dash(0, sy + 1, W * T, sy + 1, '#ffd23a', []);
-    dash((fx(0) + 3) * T, 0, (fx(H) + 3) * T, H * T, '#ffd23a', [8, 6]);
-    // 정문·후문 앞 횡단보도
-    g.fillStyle = 'rgba(255,255,255,0.85)';
-    for (let i = 0; i < 4; i++) g.fillRect(1 * T + 2, (33 + TP - 2 + i * 0.5) * T + 2, 2 * T - 4, 4);
-    const hy = 18 + TP, hx = fx(hy) + 2;
-    for (let i = 0; i < 4; i++) g.fillRect(hx * T + 2, (hy - 1 + i * 0.5) * T + 2, 2 * T - 4, 4);
-    // 울타리 난간 (정문·후문은 비운다)
-    const P = (ax, ay) => [((ax - 80) / 20 + L) * T, ((ay - 30) / 20 + TP) * T];
-    const rail = (a, b, skip) => {
-      const [x1, y1] = P(...a), [x2, y2] = P(...b), n = Math.ceil(Math.hypot(x2 - x1, y2 - y1) / 2);
-      for (let i = 0; i <= n; i++) {
-        const x = x1 + (x2 - x1) * i / n, y = y1 + (y2 - y1) * i / n;
-        if (skip && skip(x / T, y / T)) continue;
-        g.fillStyle = '#9aa0a8'; g.fillRect(Math.round(x) - 1, Math.round(y) - 1, 2, 2);
-        if (i % 4 === 0) { g.fillStyle = '#6f757d'; g.fillRect(Math.round(x) - 1, Math.round(y) - 3, 2, 4); }
+    const trees = (x0, y0, w, h, every) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) if ((x * 7 + y * 13) % (every || 2) === 0 && can(x, y, 1, 1)) set(o, x, y, TILE.TREE); };
+    const APT = { roof: '#d7d9dc', wall: '#eeebe4', face: 5, floors: 10 };
+    // 서쪽: 아파트 단지 (높은 동 · 긴 동 · 놀이터 · 주차장)
+    fill(0, 0, wr - 1, nr - 1, TILE.LOWPAVE);
+    bld(2, 0, 11, 5, APT);
+    trees(0, 5, wr - 1, 1, 2);
+    bld(1, nr + 3, 13, 9, Object.assign({}, APT, { roof: '#cfd3d8' }));
+    fill(1, nr + 13, 14, 7, TILE.GRASS); fill(4, nr + 14, 7, 4, TILE.SAND);
+    obj(o, 'swing', 4.6, nr + 14.2, { hitH: 4 }); obj(o, 'seesaw', 8, nr + 15.5, { hitH: 6 });
+    trees(1, nr + 13, 14, 7, 5);
+    fill(1, nr + 21, 14, 21, TILE.PARK);
+    for (let x = 1; x < 15; x++) { stall(o, x, nr + 21, 'T'); stall(o, x, nr + 26, 'B'); stall(o, x, nr + 28, 'T'); stall(o, x, nr + 33, 'B'); }
+    trees(0, nr + 42, wr - 1, 3, 3);
+    bld(1, st + 3, 6, 7, { roof: '#b9bec4', wall: '#d8d2c4', face: 3, floors: 5 });
+    bld(8, st + 3, 7, 7, { roof: '#c6c0b3', wall: '#e4ddcf', face: 3, floors: 5 });
+    // 남쪽: 낮은 건물들 · 큰 창고 · 고물상
+    const S = sr + 3;
+    bld(2, S + 1, 7, 6, { roof: '#cfcac0', wall: '#e2dccf', face: 2, floors: 3 });
+    bld(10, S, 5, 7, { roof: '#b7bcc2', wall: '#d9d4c8', face: 2, floors: 3 });
+    bld(wr + 6, S + 1, 8, 6, { roof: '#d6d9dd', wall: '#e8e2d6', face: 2, floors: 3 });
+    bld(wr + 16, S + 1, 7, 6, { roof: '#5f9a7a', wall: '#dcd6c9', face: 2, floors: 3 });
+    bld(wr + 24, S, 6, 6, { roof: '#9aa0a8', wall: '#d2ccbf', face: 2, floors: 3 });
+    bld(wr + 33, S + 3, 22, H - S - 3, { roof: '#c9ced4', wall: '#9cc3dc', face: 2, floors: 1, ribs: true });
+    bld(wr + 61, S + 1, 6, 6, { roof: '#3f7fc4', wall: '#d8d4ca', face: 2, floors: 2 });
+    // 남쪽 길가 가로수 · 건물 사이 작은 주차장
+    for (let x = 1; x < W - 1; x += 3) if (can(x, S, 1, 1) && x > wr + 2 && x < fx(S) - 1) set(o, x, S, TILE.TREE);
+    fill(wr + 2, S + 8, 30, H - S - 8, TILE.PARK);
+    for (let x = wr + 3; x < wr + 31; x++) if (x % 9 !== 0) stall(o, x, S + 8, 'T');
+    trees(0, H - 2, W, 2, 3);
+    // 동쪽: 숲 사이 아파트 두 동 · 주택과 텃밭 · 밭
+    const ex = y => Math.ceil(fx(y)) + 6;
+    bld(ex(2) + 4, 1, W - ex(2) - 5, 7, Object.assign({}, APT, { face: 4, floors: 8 }));
+    fill(ex(9) + 2, 9, W - ex(9) - 3, 5, TILE.PARK);
+    for (let x = ex(9) + 3; x < W - 2; x++) stall(o, x, 10, 'T');
+    fill(ex(32), 30, 8, 7, TILE.GARDEN);
+    bld(ex(32) + 9, 31, 9, 6, { roof: '#8a4f38', wall: '#e8dcc6', face: 2, floors: 2 });
+    fill(ex(32) + 8, 37, 11, 3, TILE.LOWPAVE);
+    bld(ex(46) + 6, 45, W - ex(46) - 7, 8, Object.assign({}, APT, { face: 5, floors: 10, roof: '#cdd1d6' }));
+    fill(ex(58) + 4, 58, W - ex(58) - 5, 6, TILE.GARDEN);
+    bld(ex(S) + 2, S + 1, 8, 6, { roof: '#d0d4d9', wall: '#e9e4d8', face: 2, floors: 3 });
+    // 숲 가장자리 나무 (길 쪽으로 키 큰 나무가 늘어선다)
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (get(o, x, y) !== TILE.FOREST) continue;
+      const nearRoad = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => { const t = get(o, x + a, y + b); return t === TILE.SIDEWALK || t === TILE.LOWPAVE || t === TILE.PARK || t === TILE.GARDEN; });
+      if (nearRoad && (x + y) % 2 === 0) set(o, x, y, TILE.TREE);
+    }
+    label(o, 7.5, 0.6, '아파트'); label(o, ex(46) + 14, 44.4, '아파트'); label(o, ex(32) + 4, 29.4, '텃밭');
+
+    // ---------- 차선 표시 · 횡단보도 · 울타리 난간 (2배 해상도로 지도에 바로 그린다) ----------
+    const drawMarks = g => {
+      const dash = (x1, y1, x2, y2, col, d) => { g.strokeStyle = col; g.lineWidth = 0.75; g.setLineDash(d || [6, 6]); g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); g.setLineDash([]); };
+      // 사선 도로는 칸 대신 매끈한 띠로 덧그린다 (풀숲 · 인도 · 차도 · 인도 · 숲). 가로 길과 만나는 곳은 차도만.
+      const band = (a1, a2, col, y1, y2) => {
+        g.fillStyle = col; g.beginPath();
+        g.moveTo((fx(y1) + a1) * T, y1 * T); g.lineTo((fx(y1) + a2) * T, y1 * T);
+        g.lineTo((fx(y2) + a2) * T, y2 * T); g.lineTo((fx(y2) + a1) * T, y2 * T);
+        g.closePath(); g.fill();
+      };
+      const segs = [[0, nr], [nr + 2, sr], [sr + 2, H]];
+      for (const [y1, y2] of segs) {
+        band(4, 5, '#c9c3b6', y1 === nr + 2 ? nr : y1, y2);
+        if (y1 !== 0) band(0.9, 2, '#c9c3b6', y1, y2); else band(0.9, 2, '#2f6a33', y1, y2);
       }
+      band(2, 4, '#5d6168', 0, H);
+      const sy = (sr + 1) * T;
+      dash(0, (nr + 1) * T, (fx(nr + 1) + 2) * T, (nr + 1) * T, '#ffd23a', [8, 6]);
+      for (const [y1, y2] of segs) dash((wr + 1) * T, y1 * T, (wr + 1) * T, y2 * T, '#ffd23a', [8, 6]);
+      dash(0, (st + 1) * T, wr * T, (st + 1) * T, '#ffd23a', [8, 6]);
+      for (const [x1, x2] of [[0, wr], [wr + 2, fx(sr) + 2], [fx(sr + 2) + 4, W]]) { dash(x1 * T, sy - 0.6, x2 * T, sy - 0.6, '#ffd23a', []); dash(x1 * T, sy + 0.6, x2 * T, sy + 0.6, '#ffd23a', []); }
+      for (const [y1, y2] of [[0, sr], [sr + 2, H]]) dash((fx(y1) + 3) * T, y1 * T, (fx(y2) + 3) * T, y2 * T, '#ffd23a', [8, 6]);
+      // 횡단보도: 줄무늬는 차가 다니는 방향과 나란하게, 길을 가로질러 늘어선다
+      g.fillStyle = 'rgba(255,255,255,0.92)';
+      const gy = 33 + TP - 1.5;
+      for (let i = 0; i < 6; i++) g.fillRect(wr * T + 2 + i * 5, gy * T, 3, 1.4 * T);
+      for (const yy of [nr - 1.6, sr + 2.2]) for (let i = 0; i < 6; i++) g.fillRect(wr * T + 2 + i * 5, yy * T, 3, 1.4 * T);
+      for (let i = 0; i < 6; i++) g.fillRect((wr + 2.4) * T, sr * T + 2 + i * 5, 1.4 * T, 3);
+      const hy = 18 + TP, ang = Math.atan(0.335);
+      g.save(); g.translate((fx(hy) + 3) * T, hy * T); g.rotate(-ang);
+      for (let i = 0; i < 6; i++) g.fillRect(-T + 2 + i * 5.3, -0.7 * T, 3, 1.4 * T);
+      g.restore();
+      // 울타리 난간 (정문·후문은 비운다)
+      const P = (ax, ay) => [((ax - 80) / 20 + L) * T, ((ay - 30) / 20 + TP) * T];
+      const rail = (a, b, skip) => {
+        const [x1, y1] = P(...a), [x2, y2] = P(...b), n = Math.ceil(Math.hypot(x2 - x1, y2 - y1) / 2);
+        for (let i = 0; i <= n; i++) {
+          const x = x1 + (x2 - x1) * i / n, y = y1 + (y2 - y1) * i / n;
+          if (skip && skip(x / T, y / T)) continue;
+          g.fillStyle = '#9aa0a8'; g.fillRect(x - 0.75, y - 0.75, 1.5, 1.5);
+          if (i % 4 === 0) { g.fillStyle = '#6f757d'; g.fillRect(x - 0.75, y - 3, 1.5, 3.5); }
+        }
+      };
+      rail([100, 25], [1150, 25]);
+      rail([1150, 25], [1505, 1110], (x, y) => y > hy - 1.5 && y < hy + 2.5);
+      rail([1505, 1110], [100, 1110]);
+      rail([100, 1110], [100, 25], (x, y) => y > 31 + TP - 0.2 && y < 33 + TP + 0.2);
     };
-    rail([100, 25], [1150, 25]);
-    rail([1150, 25], [1505, 1110], (x, y) => y > hy - 1.5 && y < hy + 2.5);
-    rail([1505, 1110], [100, 1110]);
-    rail([100, 1110], [100, 25], (x, y) => y > 31 + TP - 0.2 && y < 33 + TP + 0.2);
-    const marks = { id: 'o' + (objSeq++), kind: 'roadmarks', img: c, x: 0, y: 0, w: c.width, h: c.height, solid: false, interact: null, hidden: false, hit: { x: 0, y: 0, w: 1, h: 1 } };
-    o.objects.unshift(marks);
+    o.objects.unshift({ id: 'o' + (objSeq++), kind: 'roadmarks', img: Object.assign(document.createElement('canvas'), { width: 1, height: 1 }), bake: drawMarks, x: 0, y: 0, w: 1, h: 1, solid: false, interact: null, hidden: true, hit: { x: 0, y: 0, w: 1, h: 1 } });
     // 차선 (한국은 오른쪽 통행)
     const lane = (pts, gap) => ({ pts: pts.map(([x, y]) => [x * T, y * T]), gap: gap || [3, 8] });
     o.traffic = [
-      lane([[-1, 1.5], [fx(0) + 4, 1.5]]), lane([[fx(0) + 4, 0.5], [-1, 0.5]]),
-      lane([[1.5, -1], [1.5, southRoad[0]]]), lane([[2.5, southRoad[0]], [2.5, -1]]),
-      lane([[-1, southRoad[1] + 0.5], [W + 1, southRoad[1] + 0.5]], [2.5, 6]), lane([[W + 1, southRoad[0] + 0.5], [-1, southRoad[0] + 0.5]], [2.5, 6]),
+      lane([[-1, nr + 1.5], [fx(nr) + 4, nr + 1.5]]), lane([[fx(nr) + 4, nr + 0.5], [-1, nr + 0.5]]),
+      lane([[wr + 0.5, -1], [wr + 0.5, H + 1]], [3, 9]), lane([[wr + 1.5, H + 1], [wr + 1.5, -1]], [3, 9]),
+      lane([[-1, sr + 1.5], [W + 1, sr + 1.5]], [2.5, 6]), lane([[W + 1, sr + 0.5], [-1, sr + 0.5]], [2.5, 6]),
       lane([[fx(-1) + 2.5, -1], [fx(H + 1) + 2.5, H + 1]]), lane([[fx(H + 1) + 3.5, H + 1], [fx(-1) + 3.5, -1]])
     ];
+    return [L, TP];
   }
 
   // 실내 지도 좌우 뒤집기 (바깥 항공사진 방향에 맞춘다)
@@ -752,14 +865,14 @@ const World = (() => {
   }
 
   function build() {
-    objSeq = 1; OUT = outdoorDoors(); IN = {};
+    objSeq = 1; parkN = 0; OUT = outdoorDoors(); IN = {};
     const inner = [buildB(), buildF1(), buildF2(), buildF3(), buildF4(), buildBack(1), buildBack(2), buildBack(3), buildBack(4)];
     const maps = {};
     for (const m of inner) maps[m.id] = m;
     maps.outdoor = buildOutdoor();
-    padOutdoor(maps, 3, 2, 6, 4);
+    const [PL, PT] = padOutdoor(maps);
     // 강당과 연결동 사이 좁은 골목은 출입 금지: 입구를 철문으로 막는다 (패딩 뒤라 울타리→생울타리 변환을 피한다)
-    for (const x of [16, 17]) set(maps.outdoor, x + 3, 28 + 2, TILE.FENCE);
+    for (const x of [16, 17]) set(maps.outdoor, x + PL, 28 + PT, TILE.FENCE);
     for (const m of inner) mirror(m);
     // 뒤집힌 지도로 들어가는 문은 도착 지점도 뒤집는다
     for (const id in maps) for (const w of maps[id].warps) {
@@ -769,5 +882,5 @@ const World = (() => {
     return maps;
   }
 
-  return { build, get, T, PX };
+  return { build, get, T, PX, EXT, LAYOUT: 2 };
 })();

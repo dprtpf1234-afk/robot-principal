@@ -278,7 +278,7 @@ with sync_playwright() as p:
     shot(page, "01_start")
 
     # 잠긴 현관: 출입 카드 없이 들어가려 하면 막힌다
-    page.evaluate("() => Game._teleport('outdoor', 33, 26)")
+    page.evaluate("() => Game._teleport('outdoor', 49, 34)")
     page.keyboard.down("ArrowUp"); page.wait_for_timeout(500); page.keyboard.up("ArrowUp")
     page.wait_for_timeout(300)
     assert page.evaluate("Game.map.id") == "outdoor", "잠긴 문으로 들어가 버림"
@@ -298,7 +298,7 @@ with sync_playwright() as p:
             if first:
                 first = False
                 # 현관이 열렸는지
-                page.evaluate("() => Game._teleport('outdoor', 33, 26)")
+                page.evaluate("() => Game._teleport('outdoor', 49, 34)")
                 page.keyboard.down("ArrowUp"); page.wait_for_timeout(500); page.keyboard.up("ArrowUp")
                 page.wait_for_timeout(700)
                 assert page.evaluate("Game.map.id") == "f1", "출입 카드가 있는데 못 들어감"

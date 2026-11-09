@@ -25,8 +25,12 @@ const Title = (() => {
     clouds = Array.from({ length: 6 }, (_, i) => ({ x: r() * 400, y: 8 + r() * 46, w: 26 + r() * 30, sp: 2 + r() * 3 }));
     confetti = Array.from({ length: 70 }, () => newConfetti(r, true));
     const pals = Sprites.PLAYER_PALETTES;
-    chars = [Sprites.makeChar(pals[5]), Sprites.makeChar(pals[0]), Sprites.makeChar(pals[2])];
-    robot = Sprites.makeRobot(false);
+    // 캐릭터·로봇은 한 번 더 다듬어(Scale2x) 크게 그려도 계단이 보이지 않게 한다
+    const seen = new Map();
+    const up = c => { if (!seen.has(c)) seen.set(c, (typeof Game !== 'undefined' && Game.smooth2x && Game.smooth2x(c)) || c); return seen.get(c); };
+    const upChar = f => { const o = {}; for (const k in f) o[k] = Array.isArray(f[k]) ? f[k].map(up) : f[k]; return o; };
+    chars = [upChar(Sprites.makeChar(pals[5])), upChar(Sprites.makeChar(pals[0])), upChar(Sprites.makeChar(pals[2]))];
+    robot = up(up(Sprites.makeRobot(false)));
     resize();
     window.addEventListener('resize', resize);
   }
@@ -40,14 +44,12 @@ const Title = (() => {
     dpr = Math.min(window.devicePixelRatio || 1, 3);
     canvas.width = Math.round(vw * dpr); canvas.height = Math.round(vh * dpr);
     canvas.style.width = vw + 'px'; canvas.style.height = vh + 'px';
-    // 작은 픽셀 하나가 기기 픽셀 2개 정도가 되도록 내부 해상도를 높인다 (선명하게)
-    R = Math.max(1, Math.round(canvas.height / (H * 2)));
+    // 기기 화소 그대로 그린다 (인게임처럼 매끈하게): 장면 1칸 = 기기 픽셀 R개, 확대 없음
+    R = Math.max(1, canvas.height / H);
     q = 1 / R;
-    // 화면 높이에 꼭 맞게 확대한다. (정수 배율로 내리면 창 모드에서 장면이 작아지고 위쪽이 빈 하늘이 된다)
-    s = Math.max(0.5, canvas.height / (H * R));
-    W = Math.max(200, Math.ceil(canvas.width / (s * R)));
-    buf.width = W * R; buf.height = H * R;
-    bg.imageSmoothingEnabled = false;
+    s = 1;
+    W = Math.max(200, Math.ceil(canvas.width / R));
+    buf.width = Math.ceil(W * R); buf.height = Math.ceil(H * R);
     const BW = Math.min(W - 24, 330);
     const x0 = Math.round(W / 2 - BW / 2);
     layout = { BW, x0, x1: x0 + BW, top: 76, base: 138, ex: Math.round(x0 + BW * 0.55) };
@@ -78,7 +80,7 @@ const Title = (() => {
   function draw() {
     const L = layout;
     bg.setTransform(R, 0, 0, R, 0, 0);
-    bg.imageSmoothingEnabled = false;
+    bg.imageSmoothingEnabled = true; bg.imageSmoothingQuality = 'high';
     // 하늘 (시간대에 따라 색이 바뀐다)
     const ph = DayNight.phase();
     const SKY = {
@@ -87,11 +89,10 @@ const Title = (() => {
       sunset: ['#34478f', '#5d55a2', '#9a5b98', '#d86c78', '#f2925a', '#ffb457', '#ffcd75'],
       night: ['#0a1133', '#0e1840', '#13204d', '#18295a', '#1f3368', '#273e75', '#30497f']
     }[ph];
-    // 띠를 잘게 나눠 부드럽게 이어지는 하늘
-    for (let y = 0; y < 150; y += 3) {
-      const k = Math.min(6, y / 20), i = Math.floor(k);
-      px(0, y, W, 3, mix(SKY[i], SKY[Math.min(6, i + 1)], k - i));
-    }
+    // 매끈하게 이어지는 하늘
+    const sg = bg.createLinearGradient(0, 0, 0, 150);
+    SKY.forEach((c, i) => sg.addColorStop(Math.min(1, i * 20 / 150), c));
+    bg.fillStyle = sg; bg.fillRect(0, 0, W, 150);
     if (ph === 'night') nightSky();
     for (const c of clouds) cloud(c.x % (W + 100), c.y, c.w, ph);
 
@@ -102,30 +103,35 @@ const Title = (() => {
     figures();
     tint(ph);
     for (const p of confetti) {
-      const wob = Math.sin(t * 6 + p.ph) > 0;
-      px(p.x % W, p.y, wob ? 1.5 : 0.5, wob ? 0.5 : 1.5, p.c);
+      bg.save(); bg.translate(p.x % W, p.y); bg.rotate(t * 3 + p.ph); bg.scale(1, Math.cos(t * 5 + p.ph));
+      bg.fillStyle = p.c; bg.fillRect(-0.8, -0.45, 1.6, 0.9); bg.restore();
     }
 
     // 화면에 확대
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.imageSmoothingEnabled = false;
-    const S = s * R;   // 장면 좌표 1칸 = 기기 픽셀 S개
+    const S = R;   // 장면 좌표 1칸 = 기기 픽셀 S개
     const offX = Math.floor((canvas.width - W * S) / 2);
     offY = canvas.height - H * S;
     g.fillStyle = SKY[0]; g.fillRect(0, 0, canvas.width, canvas.height);
-    g.drawImage(buf, 0, 0, W * R, H * R, offX, offY, W * S, H * S);
+    g.drawImage(buf, offX, offY);
     labels(offX, S);
   }
 
   function cloud(x, y, w, ph) {
     const c = { day: '#ffffff', dawn: '#ffe6e0', sunset: '#ffd2b8', night: '#34416e' }[ph || 'day'];
-    const sh = { day: '#e3f1fc', dawn: '#f2c9cf', sunset: '#e9a991', night: '#283563' }[ph || 'day'];
-    const hi = { day: '#ffffff', dawn: '#fff4f0', sunset: '#ffe6d4', night: '#44517e' }[ph || 'day'];
-    px(x + 1, y + 6, w - 2, 7, c); px(x, y + 7, w, 5, c);
-    px(x + w * 0.15 + 0.5, y + 2, w * 0.4 - 1, 6, c); px(x + w * 0.15, y + 2.5, w * 0.4, 5, c);
-    px(x + w * 0.45 + 0.5, y, w * 0.35 - 1, 8, c); px(x + w * 0.45, y + 0.5, w * 0.35, 7, c);
-    px(x + w * 0.5, y + 1, w * 0.2, 1, hi);
-    px(x + 2, y + 12, w - 4, 1.5, sh); px(x + 4, y + 13.5, w - 8, 0.5, sh);
+    const sh = { day: '#d6e8f8', dawn: '#f2c9cf', sunset: '#e9a991', night: '#283563' }[ph || 'day'];
+    const puffs = [[0.16, 9, 0.16], [0.36, 6, 0.24], [0.6, 5, 0.21], [0.8, 8.5, 0.15], [0.5, 10, 0.2]];
+    const blob = (dy, col) => {
+      bg.fillStyle = col; bg.beginPath();
+      for (const [kx, ky, kr] of puffs) { bg.moveTo(x + kx * w + kr * w, y + ky + dy); bg.arc(x + kx * w, y + ky + dy, kr * w, 0, Math.PI * 2); }
+      bg.moveTo(x + 4, y + 13 + dy); bg.ellipse(x + w / 2, y + 11 + dy, w / 2 - 1, 3, 0, 0, Math.PI * 2);
+      bg.fill();
+    };
+    blob(1.6, sh); blob(0, c);
+    const hl = bg.createRadialGradient(x + w * 0.4, y + 3, 0, x + w * 0.4, y + 3, w * 0.35);
+    hl.addColorStop(0, 'rgba(255,255,255,0.7)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
+    bg.fillStyle = hl; bg.fillRect(x, y - 4, w, 14);
   }
 
   // 밤하늘: 별과 달
@@ -186,22 +192,45 @@ const Title = (() => {
     }
   }
 
+  // 언덕은 움직이지 않으므로 한 번만 그려 둔다
+  let hillCanvas = null, hillKey = '';
   function hills() {
+    const key = W + '|' + R;
+    if (hillKey !== key) {
+      hillKey = key;
+      hillCanvas = document.createElement('canvas'); hillCanvas.width = buf.width; hillCanvas.height = buf.height;
+      const keep = bg; bg = hillCanvas.getContext('2d'); bg.setTransform(R, 0, 0, R, 0, 0);
+      drawHills();
+      bg = keep;
+    }
+    bg.save(); bg.setTransform(1, 0, 0, 1, 0, 0); bg.drawImage(hillCanvas, 0, 0); bg.restore();
+  }
+  function drawHills() {
+    // 멀리 있는 산 (흐릿하게)
+    bg.fillStyle = 'rgba(120,160,190,0.35)'; bg.beginPath(); bg.moveTo(0, 140);
+    for (let x = 0; x <= W; x += 2) bg.lineTo(x, 132 - 30 - (18 + Math.sin(x / 23) * 5 + Math.sin(x / 7) * 1.5) + 4);
+    bg.lineTo(W, 140); bg.closePath(); bg.fill();
     const r = Util.rng(7);
     for (const side of [0, 1]) {
-      for (let x = 0; x < W / 2; x += q) {
-        const xx = side ? W - x : x;
-        const h = 34 + Math.sin(x / 16) * 6 + Math.max(0, 40 - x / 3);
-        const top = 140 - h;
-        px(xx, top, q, h, '#4f8f45');
-        px(xx, top, q, 1, '#5fa152');
-        if (r() < 0.45) px(xx, top + 2 + r() * (h - 4), 1, 1, ['#d9542f', '#e8a23a', '#c43f2b', '#6aa84f', '#3f7a38'][Math.floor(r() * 5)]);
+      const X = x => side ? W - x : x, top = x => 140 - (34 + Math.sin(x / 16) * 6 + Math.max(0, 40 - x / 3));
+      const gr = bg.createLinearGradient(0, 70, 0, 140); gr.addColorStop(0, '#62a655'); gr.addColorStop(1, '#3c7535');
+      bg.fillStyle = gr; bg.beginPath(); bg.moveTo(X(0), 140);
+      for (let x = 0; x <= W / 2 + 2; x += 1) bg.lineTo(X(x), top(x));
+      bg.lineTo(X(W / 2 + 2), 140); bg.closePath(); bg.fill();
+      // 언덕을 덮은 가을 숲 (둥근 나무 머리)
+      const pts = [];
+      for (let i = 0; i < W * 5; i++) { const x = r() * W / 2; pts.push([x, top(x) + 1.4 + Math.pow(r(), 0.8) * (140 - top(x) - 2), 1.3 + r() * 1.3]); }
+      pts.sort((a, c) => a[1] - c[1]);
+      for (const [x, y, rad] of pts) {
+        const col = ['#c9552f', '#d99a3a', '#b5432b', '#5f9a4a', '#3f7a38', '#4f8f45', '#3a6e34', '#d8b440'][Math.floor(r() * 8)];
+        const tg = bg.createRadialGradient(X(x) - rad * 0.4, y - rad * 0.4, 0, X(x), y, rad);
+        tg.addColorStop(0, mix(col, '#ffffff', 0.2)); tg.addColorStop(1, mix(col, '#1a2a14', 0.3));
+        bg.fillStyle = tg; bg.beginPath(); bg.arc(X(x), y, rad, 0, Math.PI * 2); bg.fill();
       }
-    }
-    // 멀리 있는 산
-    for (let x = 0; x < W; x += q) {
-      const h = 18 + Math.sin(x / 23) * 5 + Math.sin(x / 7) * 1.5;
-      px(x, 132 - h - 30, q, 4, 'rgba(120,160,190,0.25)');
+      bg.fillStyle = 'rgba(255,255,255,0.18)'; bg.beginPath(); bg.moveTo(X(0), top(0));
+      for (let x = 0; x <= W / 2; x += 1) bg.lineTo(X(x), top(x));
+      for (let x = W / 2; x >= 0; x -= 1) bg.lineTo(X(x), top(x) + 0.8);
+      bg.closePath(); bg.fill();
     }
   }
 
@@ -378,31 +407,40 @@ const Title = (() => {
 
   function trees() {
     const L = layout, b = L.base;
-    // 중앙현관 옆 소나무
+    // 중앙현관 옆 소나무: 겹친 삼각 잎 덩어리
     const pine = (x, hgt) => {
-      px(x - 0.75, b - 8, 1.5, 8, '#6b4428');
-      for (let i = 0; i < 4; i++) {
-        const w2 = 6 + i * 3.5, y = b - hgt + i * (hgt - 8) / 4;
-        px(x - w2 / 2, y, w2, (hgt - 8) / 4 + 1, i % 2 ? '#2d6b37' : '#357a40');
-        px(x - w2 / 2 + 1, y, w2 / 3, 0.8, '#4f9a5a');
+      bg.fillStyle = '#6b4428'; bg.fillRect(x - 0.9, b - 8, 1.8, 8);
+      for (let i = 0; i < 5; i++) {
+        const w2 = 6 + i * 3.2, y = b - hgt + i * (hgt - 7) / 5, hh = (hgt - 7) / 5 + 3;
+        const gr = bg.createLinearGradient(x - w2 / 2, 0, x + w2 / 2, 0);
+        gr.addColorStop(0, '#4f9a5a'); gr.addColorStop(0.45, '#357a40'); gr.addColorStop(1, '#1f5228');
+        bg.fillStyle = gr; bg.beginPath(); bg.moveTo(x, y); bg.lineTo(x + w2 / 2, y + hh); bg.lineTo(x - w2 / 2, y + hh); bg.closePath(); bg.fill();
       }
     };
     pine(L.ex - 28, 26);
-    // 단풍나무 (가을) – 양쪽 끝
+    // 단풍나무 (가을) – 양쪽 끝: 둥근 잎 덩어리를 겹쳐 입체감
     for (const tx of [L.x0 - 4, L.x1 + 2]) {
-      px(tx, b - 24, 2, 26, '#7a4a28');
-      const r = Util.rng(Math.round(tx * 10));
-      for (let dy = -10; dy <= 10; dy += q) {
-        const half = Math.sqrt(Math.max(0, 100 - dy * dy)) * 1.15;
-        px(tx + 1 - half, b - 28 + dy, half * 2, q, dy > 4 ? '#b0401f' : '#d0532a');
+      const r = Util.rng(Math.round(tx * 10)), cx = tx + 1, cy = b - 28;
+      const tr = bg.createLinearGradient(tx, 0, tx + 2.4, 0); tr.addColorStop(0, '#8a5530'); tr.addColorStop(1, '#5a3418');
+      bg.fillStyle = tr; bg.fillRect(tx - 0.2, b - 24, 2.4, 26);
+      bg.strokeStyle = '#6b3f20'; bg.lineWidth = 0.8; bg.beginPath(); bg.moveTo(cx, b - 16); bg.lineTo(cx - 5, b - 24); bg.moveTo(cx, b - 18); bg.lineTo(cx + 5, b - 26); bg.stroke();
+      const blobs = [];
+      for (let i = 0; i < 26; i++) { const a = r() * Math.PI * 2, d = Math.sqrt(r()) * 9; blobs.push([cx + Math.cos(a) * d * 1.2, cy + Math.sin(a) * d * 0.95, 3 + r() * 2.6, i]); }
+      blobs.sort((p, q2) => p[1] - q2[1]);
+      const cols = ['#e8562f', '#d0442a', '#f2a23a', '#c43f2b', '#e86a30', '#ffd04a'];
+      for (const [x, y, rad, i] of blobs) {
+        const col = cols[i % cols.length], sway = Math.sin(t * 1.6 + i) * 0.25;
+        const gr = bg.createRadialGradient(x + sway - rad * 0.35, y - rad * 0.4, 0.2, x + sway, y, rad);
+        gr.addColorStop(0, mix(col, '#fff2c0', 0.35)); gr.addColorStop(0.6, col); gr.addColorStop(1, mix(col, '#4a1208', 0.35));
+        bg.fillStyle = gr; bg.beginPath(); bg.arc(x + sway, y, rad, 0, Math.PI * 2); bg.fill();
+        bg.fillStyle = mix(col, '#fff4c8', 0.45);
+        for (let k = 0; k < 5; k++) { const a = i * 2.4 + k * 1.3, d = rad * 0.55; bg.beginPath(); bg.ellipse(x + sway + Math.cos(a) * d - rad * 0.15, y + Math.sin(a) * d - rad * 0.2, 0.55, 0.32, a, 0, Math.PI * 2); bg.fill(); }
       }
-      for (let i = 0; i < 220; i++) {
-        const a = r() * Math.PI * 2, d = Math.sqrt(r()) * 11;
-        const lx = tx + Math.cos(a) * d * 1.15, ly = b - 28 + Math.sin(a) * d, sway = Math.sin(t * 2 + i) * 0.4;
-        px(lx + sway, ly, 1, 1, ['#e8562f', '#f2a23a', '#ffd04a', '#c43f2b', '#b8361f'][i % 5]);
+      for (let k = 0; k < 3; k++) {
+        const fall = (t * 10 + tx + k * 13) % 40, lx = tx - 6 + k * 6 + Math.sin(t * 3 + tx + k) * 4;
+        bg.save(); bg.translate(lx, b - 18 + fall); bg.rotate(t * 4 + k); bg.fillStyle = cols[k + 1];
+        bg.beginPath(); bg.ellipse(0, 0, 1, 0.5, 0, 0, Math.PI * 2); bg.fill(); bg.restore();
       }
-      const fall = (t * 12 + tx) % 40;
-      px(tx - 6 + Math.sin(t * 3 + tx) * 4, b - 18 + fall, 1.5, 1, '#f2a23a');
     }
   }
 
@@ -412,10 +450,10 @@ const Title = (() => {
     const half = btn && btn.offsetWidth ? btn.offsetWidth / 2 * dpr / (s * R) : 50;
     const lx = Math.max(24, W / 2 - half - 22), by = layout.base + 20;
     const bob = k => snap(Math.sin(t * 4 + k) * 1);
-    shadow(lx - 10, by); bg.drawImage(chars[0].right[0], lx - 18, by - 16 + bob(0));
-    shadow(lx + 8, by); bg.drawImage(robot, lx, by - 16 + bob(1.5));
-    shadow(layout.ex + 2, layout.base + 4); bg.drawImage(chars[1].down[0], layout.ex - 6, layout.base - 12 + bob(3));
-    shadow(layout.ex + 52, layout.base + 20); bg.drawImage(chars[2].left[Math.floor(t * 3) % 2], layout.ex + 44, layout.base + 4 + bob(2));
+    shadow(lx - 10, by); bg.drawImage(chars[0].right[0], lx - 18, by - 16 + bob(0), 16, 16);
+    shadow(lx + 8, by); bg.drawImage(robot, lx, by - 16 + bob(1.5), 16, 16);
+    shadow(layout.ex + 2, layout.base + 4); bg.drawImage(chars[1].down[0], layout.ex - 6, layout.base - 12 + bob(3), 16, 16);
+    shadow(layout.ex + 52, layout.base + 20); bg.drawImage(chars[2].left[Math.floor(t * 3) % 2], layout.ex + 44, layout.base + 4 + bob(2), 16, 16);
   }
   function shadow(x, y) {
     bg.fillStyle = 'rgba(0,0,0,0.2)';

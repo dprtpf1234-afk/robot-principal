@@ -387,7 +387,7 @@ const UI = (() => {
   // ---------- 캐릭터 소개 ----------
   function character(img, name, modeLabel, onOk, total) {
     const html = `<h2>${Util.esc(name)} 탐험가, 준비됐나요?</h2>
-      <div class="char-box"><canvas id="charPreview" width="16" height="16"></canvas></div>
+      <div class="char-box"><canvas id="charPreview" width="32" height="32"></canvas></div>
       <p class="center">${Util.esc(modeLabel)} · 로봇 교장선생님의 부품 ${total || 7}개를 모아 재부팅해 주세요!</p>
       <div class="howto">
         <div><b>이동</b> ${Game.isTouch() ? '왼쪽 아래 조이스틱' : '방향키'}</div>

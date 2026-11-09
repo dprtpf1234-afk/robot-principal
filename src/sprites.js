@@ -347,8 +347,9 @@ const Sprites = (() => {
       if (isFace(tx, ty)) continue;
       const x = tx * T, y = ty * T;
       px(g, x, y, T, T, b.roof);
-      if (b.ribs) for (let i = 1; i < T; i += 4) px(g, x + i, y, 1, T, shade(b.roof, -14));
+      if (b.ribs) for (let i = 1; i < T; i += 4) { px(g, x + i, y, 1, T, shade(b.roof, -14)); if (g.hi) px(g, x + i + 1, y, 0.5, T, shade(b.roof, 10)); }
       else { if ((tx + ty) % 2 === 0) px(g, x + 2, y + 2, T - 4, T - 4, shade(b.roof, 5)); px(g, x, y + T - 1, T, 1, shade(b.roof, -8)); }
+      if (g.hi) for (let i = 0; i < 10; i++) px(g, x + hash(tx, ty, 90 + i) * 15.5, y + hash(tx, ty, 110 + i) * 15.5, 0.5, 0.5, i % 2 ? shade(b.roof, 12) : shade(b.roof, -12));
       if (!has(tx, ty - 1)) { px(g, x, y, T, 3, shade(b.roof, 30)); px(g, x, y + 3, T, 1, shade(b.roof, -25)); }
       if (!has(tx - 1, ty) || (isFace(tx - 1, ty) && !isFace(tx, ty))) px(g, x, y, 2, T, shade(b.roof, 22));
       if (!has(tx + 1, ty) || (isFace(tx + 1, ty) && !isFace(tx, ty))) px(g, x + T - 2, y, 2, T, shade(b.roof, -28));
@@ -366,10 +367,18 @@ const Sprites = (() => {
         let j = i; while (j + 1 < rows.length && rows[j + 1] === rows[j] + 1) j++;
         const ya = rows[i] * T, yb = (rows[j] + 1) * T, h = yb - ya, x = tx * T;
         px(g, x, ya, T, h, b.wall);
-        if (brick) for (let yy = 0; yy < h; yy += 3) {
+        if (brick && g.hi) for (let yy = 0; yy < h; yy += 2) {
+          // 벽돌 한 장씩 (가는 줄눈, 벽돌마다 색이 조금 다르다)
+          const row = yy / 2;
+          for (let xx = row % 2 ? -2 : 0; xx < T; xx += 4) {
+            const hv = hash(tx * 5 + Math.floor((xx + 4) / 4), rows[i] * 9 + row, 21);
+            px(g, x + Math.max(0, xx), ya + yy, Math.min(4, T - Math.max(0, xx), xx + 4) - 0.5, 1.5, hv < 0.3 ? shade(b.wall, -8) : hv > 0.8 ? shade(b.wall, 9) : b.wall);
+          }
+          px(g, x, ya + yy + 1.5, T, 0.5, shade(b.wall, -30));
+        } else if (brick) for (let yy = 0; yy < h; yy += 3) {
           px(g, x, ya + yy + 2, T, 1, shade(b.wall, -22));
           for (let xx = (yy / 3) % 2 ? 0 : 3; xx < T; xx += 6) px(g, x + xx, ya + yy, 1, 2, shade(b.wall, -16));
-        } else for (let yy = 0; yy < h; yy += 8) px(g, x, ya + yy + 7, T, 1, shade(b.wall, -14));
+        } else for (let yy = 0; yy < h; yy += 8) { px(g, x, ya + yy + 7, T, g.hi ? 0.5 : 1, shade(b.wall, -14)); if (g.hi) px(g, x, ya + yy + 7.5, T, 0.5, shade(b.wall, 10)); }
         px(g, x, ya, T, 2, shade(b.wall, -35));
         const fl = b.floors || 1, fh = h / fl;
         const door = b.doors && b.doors.has(tx + ',' + rows[j]);
@@ -378,11 +387,23 @@ const Sprites = (() => {
           if (brick) { px(g, x, fy, T, 2, '#ecd59a'); px(g, x, fy + 2, T, 1, '#c9ae6e'); }
           if (door && f === fl - 1) continue;
           const wh = Math.max(4, Math.round(fh) - 6);
-          px(g, x + 2, fy + 3, 12, wh, brick ? '#f4f1e8' : '#3d4654');
-          px(g, x + 3, fy + 4, 10, wh - 2, '#8fc3e6');
+          const frame = brick ? '#f4f1e8' : '#3d4654';
+          if (g.hi) {
+            // 창틀(가늘게) + 유리(위가 밝은 하늘빛) + 대각선 빛 + 창턱
+            px(g, x + 2, fy + 3, 12, wh, frame);
+            px(g, x + 2.5, fy + 3.5, 11, wh - 1, '#7fb6dc');
+            px(g, x + 2.5, fy + 3.5, 11, (wh - 1) * 0.45, '#a9d3ef');
+            g.fillStyle = 'rgba(255,255,255,0.55)'; g.beginPath(); g.moveTo(x + 3, fy + 3.5 + wh * 0.7); g.lineTo(x + 6.5, fy + 3.5); g.lineTo(x + 8, fy + 3.5); g.lineTo(x + 4.5, fy + 3.5 + wh * 0.7); g.closePath(); g.fill();
+            px(g, x + 7.75, fy + 3, 0.5, wh, frame);
+            px(g, x + 2.5, fy + 3.5 + (wh - 1) * 0.5, 11, 0.5, frame);
+            px(g, x + 1.5, fy + 3 + wh, 13, 1, brick ? '#d9d2bf' : '#2c333e'); px(g, x + 1.5, fy + 3 + wh, 13, 0.5, brick ? '#fffaf0' : '#55606f');
+          } else {
+            px(g, x + 2, fy + 3, 12, wh, frame);
+            px(g, x + 3, fy + 4, 10, wh - 2, '#8fc3e6');
+            px(g, x + 3, fy + 4, 3, 2, '#d4ecfa');
+            px(g, x + 8, fy + 3, 1, wh, frame);
+          }
           b.windows.push({ x: x + 3, y: fy + 4, w: 10, h: wh - 2 });
-          px(g, x + 3, fy + 4, 3, 2, '#d4ecfa');
-          px(g, x + 8, fy + 3, 1, wh, brick ? '#f4f1e8' : '#3d4654');
         }
         if (b.stripes && b.stripes.includes(tx)) {
           const cols4 = ['#e23b3b', '#ff8a2a', '#ffd23a', '#46b866'];
@@ -432,6 +453,72 @@ const Sprites = (() => {
     px(g, ox, oy + 7, 1, 2, dk); px(g, ox + 13, oy + 7, 1, 2, dk);           // 사이드미러
     px(g, ox + 2, oy, 3, 1, '#fff6c4'); px(g, ox + 9, oy, 3, 1, '#fff6c4');  // 전조등
     px(g, ox + 2, oy + 23, 3, 1, '#e23b3b'); px(g, ox + 9, oy + 23, 3, 1, '#e23b3b');   // 후미등
+  }
+  // ---------- 고해상도(2배) 주차장: 차와 주차칸 ----------
+  // 차 색은 실제 주차장처럼 흰색·검정·회색이 많다
+  const CAR_COLS = ['#f4f5f7', '#f4f5f7', '#e9eaec', '#26292f', '#2f3239', '#9aa1aa', '#b9bec5', '#6c737d', '#3d5f9e', '#f4f5f7', '#a8392f', '#1f2a3a', '#d8d9dc', '#26292f'];
+  function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+  // 원점이 차 한가운데, 앞이 위. 14×24 (게임 픽셀)
+  function drawCarHi(g, col) {
+    const dk = shade(col, -45), lt = shade(col, 40);
+    g.fillStyle = 'rgba(0,0,0,0.30)'; rr(g, -6.5, -11, 15, 24.5, 3.5); g.fill();
+    const gr = g.createLinearGradient(-7, 0, 7, 0);
+    gr.addColorStop(0, dk); gr.addColorStop(0.18, col); gr.addColorStop(0.5, lt); gr.addColorStop(0.82, col); gr.addColorStop(1, dk);
+    g.fillStyle = gr; rr(g, -7, -12, 14, 24, 3.5); g.fill();
+    g.strokeStyle = shade(col, -60); g.lineWidth = 0.5; g.stroke();
+    // 앞유리 · 지붕 · 뒷유리
+    g.fillStyle = '#1e2733'; g.beginPath(); g.moveTo(-5.6, -5.5); g.lineTo(5.6, -5.5); g.lineTo(4.6, -1.8); g.lineTo(-4.6, -1.8); g.closePath(); g.fill();
+    g.fillStyle = 'rgba(150,190,230,0.45)'; g.beginPath(); g.moveTo(-4.6, -5.2); g.lineTo(-1.5, -5.2); g.lineTo(-3.2, -2.2); g.lineTo(-4.2, -2.2); g.closePath(); g.fill();
+    const rg = g.createLinearGradient(-4.5, 0, 4.5, 0); rg.addColorStop(0, shade(col, -8)); rg.addColorStop(0.5, shade(col, 22)); rg.addColorStop(1, shade(col, -8));
+    g.fillStyle = rg; rr(g, -4.6, -1.8, 9.2, 7.6, 1.2); g.fill();
+    g.fillStyle = '#1e2733'; g.beginPath(); g.moveTo(-4.6, 5.8); g.lineTo(4.6, 5.8); g.lineTo(5.3, 8.6); g.lineTo(-5.3, 8.6); g.closePath(); g.fill();
+    // 보닛 선 · 사이드미러 · 전조등 · 후미등
+    g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 0.5; g.beginPath(); g.moveTo(-3, -11); g.lineTo(-3.6, -6.5); g.moveTo(3, -11); g.lineTo(3.6, -6.5); g.stroke();
+    g.fillStyle = dk; g.beginPath(); g.ellipse(-7.6, -4.6, 1, 0.7, 0, 0, 7); g.ellipse(7.6, -4.6, 1, 0.7, 0, 0, 7); g.fill();
+    g.fillStyle = '#fff8cf'; rr(g, -6, -12, 3, 1.2, 0.5); g.fill(); rr(g, 3, -12, 3, 1.2, 0.5); g.fill();
+    g.fillStyle = '#e0332f'; rr(g, -6.2, 10.8, 3.2, 1.2, 0.5); g.fill(); rr(g, 3, 10.8, 3.2, 1.2, 0.5); g.fill();
+  }
+  // 회전한 차 그림 (2배 해상도). ang: 0 = 앞이 위
+  const parkCache = {};
+  function makeParkCar(ang, ci) {
+    const key = ang.toFixed(3) + ':' + ci;
+    if (parkCache[key]) return parkCache[key];
+    const ca = Math.abs(Math.cos(ang)), sa = Math.abs(Math.sin(ang));
+    const w = Math.ceil(16 * ca + 26 * sa) + 2, h = Math.ceil(16 * sa + 26 * ca) + 2;
+    const c = document.createElement('canvas'); c.width = w * 2; c.height = h * 2;
+    const g = c.getContext('2d'); g.scale(2, 2); g.translate(w / 2, h / 2); g.rotate(ang);
+    drawCarHi(g, CAR_COLS[ci % CAR_COLS.length]);
+    c.hiRes = true;
+    return (parkCache[key] = c);
+  }
+  // 주차칸 흰 선 (2배 해상도). w×h 칸, sides: 't','b','l','r' 중 그을 선, dis: 장애인 주차칸, ang: 회전
+  function drawWheelchair(g, cx, cy, s) {
+    g.strokeStyle = '#fff'; g.fillStyle = '#fff'; g.lineWidth = 0.9 * s; g.lineCap = 'round';
+    g.beginPath(); g.arc(cx - 0.6 * s, cy - 3.6 * s, 0.9 * s, 0, 7); g.fill();
+    g.beginPath(); g.moveTo(cx - 0.9 * s, cy - 2.2 * s); g.lineTo(cx - 0.6 * s, cy + 0.6 * s); g.lineTo(cx + 2 * s, cy + 0.6 * s); g.lineTo(cx + 2.9 * s, cy + 3 * s); g.stroke();
+    g.beginPath(); g.moveTo(cx - 0.8 * s, cy - 1 * s); g.lineTo(cx + 1.4 * s, cy - 1 * s); g.stroke();
+    g.beginPath(); g.arc(cx - 0.6 * s, cy + 1.4 * s, 2.3 * s, Math.PI * 0.15, Math.PI * 1.45); g.stroke();
+  }
+  function makeStall(w, h, sides, dis, ang) {
+    ang = ang || 0;
+    const key = [w, h, sides, dis ? 1 : 0, ang.toFixed(3)].join(':');
+    if (parkCache[key]) return parkCache[key];
+    const W = w * T, H = h * T, ca = Math.abs(Math.cos(ang)), sa = Math.abs(Math.sin(ang));
+    const bw = Math.ceil(W * ca + H * sa) + 2, bh = Math.ceil(W * sa + H * ca) + 2;
+    const c = document.createElement('canvas'); c.width = bw * 2; c.height = bh * 2;
+    const g = c.getContext('2d'); g.scale(2, 2); g.translate(bw / 2, bh / 2); g.rotate(ang);
+    if (dis) {
+      g.fillStyle = 'rgba(47,111,214,0.88)'; g.fillRect(-W / 2 + 0.5, -H / 2 + 0.5, W - 1, H - 1);
+      g.save(); if (W > H) g.rotate(Math.PI / 2); drawWheelchair(g, 0, 0, Math.min(W, H) / 16 * 1.05); g.restore();
+    }
+    g.fillStyle = dis ? 'rgba(255,255,255,0.95)' : 'rgba(240,242,245,0.9)';
+    const L = 0.75;
+    if (sides.includes('t')) g.fillRect(-W / 2, -H / 2, W, L);
+    if (sides.includes('b')) g.fillRect(-W / 2, H / 2 - L, W, L);
+    if (sides.includes('l')) g.fillRect(-W / 2, -H / 2, L, H);
+    if (sides.includes('r')) g.fillRect(W / 2 - L, -H / 2, L, H);
+    c.hiRes = true;
+    return (parkCache[key] = c);
   }
   // ---------- 고해상도(2배) 나무: 가을 학교 (초록·빨강 단풍·주황·노랑 은행·감나무·소나무) ----------
   // 그림 크기 32×58 = 게임 화면 16×29. c.hiRes = true 이면 게임이 그대로(반으로 줄여) 그린다.
@@ -555,12 +642,21 @@ const Sprites = (() => {
         hp(g, X, Y, 32, 32, '#a9abb1');
         for (let r = 0; r < 4; r++) for (let c = -1; c < 4; c++) {
           const bx = X + c * 8 + (r % 2) * 4, by = Y + r * 8, h0 = hash(tx * 4 + c, ty * 4 + r, 11);
-          const col = h0 < 0.06 ? '#55565d' : h0 < 0.12 ? '#eceef2' : h0 < 0.5 ? '#bcbec3' : '#b5b7bc';
+          const col = h0 < 0.035 ? '#55565d' : h0 < 0.07 ? '#eceef2' : h0 < 0.5 ? '#bcbec3' : '#b5b7bc';
           const x0 = Math.max(X, bx + 1), x1 = Math.min(X + 32, bx + 8);
           if (x1 <= x0) continue;
           hp(g, x0, by + 1, x1 - x0, 7, col); hp(g, x0, by + 1, x1 - x0, 1, 'rgba(255,255,255,0.18)');
         }
         if (t === TILE.PTREE) { g.fillStyle = 'rgba(30,30,30,0.28)'; g.beginPath(); g.ellipse(X + 16, Y + 27, 15, 5, 0, 0, Math.PI * 2); g.fill(); }
+        return true;
+      }
+      case TILE.LOWPAVE: {    // 낮은 마당 · 동네 바닥: 큰 보도판 (점박이 없이 은은하게)
+        hp(g, X, Y, 32, 32, '#9ea1a7');
+        for (let r = 0; r < 2; r++) for (let c = 0; c < 2; c++) {
+          const h0 = hash(tx * 2 + c, ty * 2 + r, 17);
+          hp(g, X + c * 16 + 1, Y + r * 16 + 1, 15, 15, h0 < 0.3 ? '#aeb1b6' : h0 < 0.7 ? '#b3b6bb' : '#a9acb2');
+          hp(g, X + c * 16 + 1, Y + r * 16 + 1, 15, 1, 'rgba(255,255,255,0.22)');
+        }
         return true;
       }
       case TILE.PARK:
@@ -775,17 +871,112 @@ const Sprites = (() => {
 
   // ---------- 캐릭터 ----------
   // pal: { skin, hair, shirt, pants, shoes, hat?, glasses?, coat?, long? }
+  // 캐릭터: 2배 해상도(32×32) 그림. 게임에서는 16×16 자리에 선명하게 그린다 (c.hiRes)
   function makeChar(pal) {
     const dirs = ['down', 'up', 'left', 'right'];
     const frames = {};
     for (const d of dirs) {
       frames[d] = [0, 1].map(f => {
-        const [c, g] = canvas(16, 16);
-        paintChar(g, pal, d, f);
+        const [c, g] = canvas(32, 32);
+        paintChar2(g, pal, d, f);
+        outline(g, 32, 32, 'rgba(34,26,44,0.92)');
+        c.hiRes = true;
         return c;
       });
     }
     return frames;
+  }
+  // 타원 채우기 (픽셀 단위로 또렷하게)
+  function blob(g, cx, cy, rx, ry, col, clip) {
+    g.fillStyle = col;
+    for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
+      const u = (x + 0.5 - cx) / rx, v = (y + 0.5 - cy) / ry;
+      if (u * u + v * v <= 1 && (!clip || clip(x, y))) g.fillRect(x, y, 1, 1);
+    }
+  }
+  // 그림 둘레에 1픽셀 테두리
+  function outline(g, w, h, col) {
+    const d = g.getImageData(0, 0, w, h), a = d.data, out = [];
+    const op = (x, y) => x >= 0 && y >= 0 && x < w && y < h && a[(y * w + x) * 4 + 3] > 40;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (!op(x, y) && (op(x - 1, y) || op(x + 1, y) || op(x, y - 1) || op(x, y + 1))) out.push([x, y]);
+    g.fillStyle = col;
+    for (const [x, y] of out) g.fillRect(x, y, 1, 1);
+  }
+  function paintChar2(g, p, dir, f) {
+    const skin = p.skin, hair = p.hair, body = p.coat || p.shirt, bodyDk = shade(body, -28), bodyLt = shade(body, 22);
+    const side = dir === 'left' || dir === 'right', flip = dir === 'right';
+    const X = x => (flip ? 31 - x : x);   // 오른쪽은 왼쪽 그림을 뒤집는다
+    const R = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(flip ? 32 - x - w : x, y, w, h); };
+    // 다리·신발
+    if (side) {
+      const a = f ? 2 : 0;
+      R(13 - a, 24, 3, 4, p.pants); R(16 + a, 24, 3, 4, shade(p.pants, -18));
+      R(12 - a, 28, 4, 2, p.shoes); R(16 + a, 28, 4, 2, p.shoes);
+    } else {
+      const l1 = f ? 1 : 0, l2 = f ? 0 : 1;
+      R(11, 24, 10, 1, p.pants);
+      R(11, 25, 4, 3 - l1, p.pants); R(17, 25, 4, 3 - l2, shade(p.pants, -15));
+      R(11, 28 - l1, 4, 2, p.shoes); R(17, 28 - l2, 4, 2, p.shoes);
+      R(11, 28 - l1, 4, 1, shade(p.shoes, 40)); R(17, 28 - l2, 4, 1, shade(p.shoes, 40));
+    }
+    // 몸통
+    if (side) {
+      R(11, 16, 10, 8, body); R(11, 16, 10, 1, bodyLt); R(18, 17, 3, 7, bodyDk);
+      if (p.coat) R(10, 17, 2, 6, p.shirt);
+      // 앞으로 흔드는 팔
+      const sw = f ? 2 : 0;
+      R(14 - sw, 17, 4, 5, shade(body, -12)); R(14 - sw, 22, 4, 2, skin);
+    } else {
+      R(10, 16, 12, 8, body); R(10, 16, 12, 1, bodyLt); R(19, 17, 3, 7, bodyDk); R(10, 23, 12, 1, bodyDk);
+      if (p.coat && dir === 'down') { R(14, 16, 4, 6, p.shirt); R(15, 16, 2, 2, shade(p.shirt, -15)); }
+      else if (dir === 'down') { R(14, 16, 4, 1, shade(body, -40)); }
+      if (dir === 'down' && p.badge) R(18, 18, 2, 2, p.badge);
+      const sw = f ? 1 : 0;
+      R(7, 17 + sw, 3, 5, shade(body, -12)); R(22, 17 + (1 - sw), 3, 5, shade(body, -12));
+      R(7, 22 + sw, 3, 2, skin); R(22, 22 + (1 - sw), 3, 2, skin);
+    }
+    // 머리 (크고 둥글게)
+    const hx = 16, hy = 9;
+    blob(g, hx, hy, 8.6, 7.8, hair);
+    if (p.long && dir !== 'up') { R(7, 9, 3, 10, hair); R(22, 9, 3, 10, hair); }
+    if (p.long && dir === 'up') { R(8, 12, 16, 7, hair); }
+    if (dir === 'down') {
+      // 얼굴: 앞머리 아래
+      blob(g, hx, hy + 2.2, 7.2, 6, skin, (x, y) => y >= 7 + ((x % 4) === 0 ? 1 : 0));
+      R(10, 11, 2, 1, shade(skin, -10)); R(20, 11, 2, 1, shade(skin, -10));
+      // 눈: 반짝이
+      R(11, 10, 3, 4, '#2b2233'); R(18, 10, 3, 4, '#2b2233');
+      R(11, 10, 1, 1, '#ffffff'); R(18, 10, 1, 1, '#ffffff');
+      R(9, 14, 3, 1, 'rgba(255,120,130,0.45)'); R(20, 14, 3, 1, 'rgba(255,120,130,0.45)');
+      R(15, 15, 2, 1, shade(skin, -60));
+      if (p.glasses) { g.strokeStyle = p.glasses; g.lineWidth = 1; g.strokeRect(9.5, 9.5, 6, 5); g.strokeRect(16.5, 9.5, 6, 5); R(15, 11, 2, 1, p.glasses); }
+      // 머리 빛
+      R(11, 3, 5, 1, shade(hair, 35)); R(10, 4, 2, 1, shade(hair, 25));
+    } else if (dir === 'up') {
+      R(11, 3, 5, 1, shade(hair, 35));
+      R(7, 9, 1, 3, skin); R(24, 9, 1, 3, skin);
+    } else {
+      // 옆얼굴 (왼쪽을 본다; 오른쪽은 뒤집기)
+      blob(g, 0, 0, 0, 0, skin);
+      for (let y = 7; y <= 15; y++) for (let x = 8; x <= 17; x++) {
+        const u = (x + 0.5 - 13) / 6, v = (y + 0.5 - 11) / 5.2;
+        if (u * u + v * v <= 1) R(x, y, 1, 1, skin);
+      }
+      R(7, 11, 1, 2, skin);
+      R(10, 10, 2, 4, '#2b2233'); R(10, 10, 1, 1, '#ffffff');
+      R(9, 14, 2, 1, 'rgba(255,120,130,0.45)');
+      R(16, 9, 2, 3, shade(skin, -12));   // 귀
+      R(13, 3, 5, 1, shade(hair, 35));
+      if (p.glasses) { R(8, 10, 5, 1, p.glasses); R(8, 13, 5, 1, p.glasses); R(12, 10, 1, 4, p.glasses); }
+    }
+    // 모자
+    if (p.hat) {
+      blob(g, hx, hy - 2.5, 9, 5.3, p.hat, (x, y) => y <= 6);
+      R(7, 6, 18, 2, shade(p.hat, -25));
+      if (dir === 'down') R(9, 7, 14, 1, shade(p.hat, -45));
+      if (side) R(4, 6, 6, 2, shade(p.hat, -25));
+      R(12, 2, 4, 1, shade(p.hat, 40));
+    }
   }
 
   function paintChar(g, p, dir, f) {
@@ -1227,5 +1418,5 @@ const Sprites = (() => {
     return c;
   }
 
-  return { T, TILE, SOLID, drawTile, drawBuilding, makeFieldMarks, makeCourtMarks, makeTireBorder, makeCarTop, drawCanopyRoof, drawStandRoof, treeFor, drawGardenHi, drawTileHi, drawFieldHi, makeChar, makeRobot, makeObj, PLAYER_PALETTES, NPC_PALETTES, randomStudentPalette, shade, EMBLEM, EMBLEM_SVG, onEmblem };
+  return { T, TILE, SOLID, drawTile, drawBuilding, makeFieldMarks, makeCourtMarks, makeTireBorder, makeCarTop, makeParkCar, makeStall, drawCanopyRoof, drawStandRoof, treeFor, drawGardenHi, drawTileHi, drawFieldHi, makeChar, makeRobot, makeObj, PLAYER_PALETTES, NPC_PALETTES, randomStudentPalette, shade, EMBLEM, EMBLEM_SVG, onEmblem };
 })();

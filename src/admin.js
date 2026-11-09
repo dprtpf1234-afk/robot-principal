@@ -353,8 +353,10 @@ const Admin = (() => {
           if (m.clues[g].length !== need) return `${L} 단서는 ${need}개여야 해요. (맵에 단서 위치가 ${need}곳 있어요)`;
         }
         if (m.notes && m.notes[g].length !== 3) return `${L} 창고 쪽지는 3개여야 해요.`;
-        const gk = GAME_KEY[m.kind], d = gk && m[gk][g];
-        if (gk) {
+        const gk = GAME_KEY[m.kind], d0 = gk && m[gk][g];
+        // 미니게임은 문제 하나 또는 여러 개(무작위로 하나가 나온다)
+        if (gk && Array.isArray(d0) && !d0.length) return `${L} 미니게임 설정이 올바르지 않아요.`;
+        for (const d of gk ? (Array.isArray(d0) ? d0 : [d0]) : []) {
           const bad = `${L} 미니게임 설정이 올바르지 않아요.`;
           if (!d || typeof d !== 'object') return bad;
           if (m.kind === 'label' && !(Array.isArray(d.cats) && Array.isArray(d.items) && d.items.every(it => it.a < d.cats.length && it.s < d.cats.length))) return bad;
