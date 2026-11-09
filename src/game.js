@@ -553,18 +553,20 @@ const Game = (() => {
 
   function snapCamera() {
     if (!map || !player) return;
-    cam.x = clampCam(player.x - VW / 2, map.w * T, VW);
-    cam.y = clampCam(player.y - 8 - VH / 2, map.h * T, VH);
+    cam.x = clampCam(player.x - VW / 2, map.w * T, VW, camPad().x);
+    cam.y = clampCam(player.y - 8 - VH / 2, map.h * T, VH, camPad().y);
   }
+  // 실내에서는 지도 끝(왼쪽·위)까지 조금 더 비춰서 왼쪽 위 순서도 창에 사람이 가려지지 않게 한다
+  function camPad() { return map && map.id !== 'outdoor' ? { x: 4 * T, y: 3 * T } : { x: 0, y: 0 }; }
   function updateCamera(dt) {
-    const tx = clampCam(player.x - VW / 2, map.w * T, VW);
-    const ty = clampCam(player.y - 8 - VH / 2, map.h * T, VH);
+    const tx = clampCam(player.x - VW / 2, map.w * T, VW, camPad().x);
+    const ty = clampCam(player.y - 8 - VH / 2, map.h * T, VH, camPad().y);
     const k = Math.min(1, dt * 8);
     cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k;
   }
-  function clampCam(v, world, view) {
-    if (world <= view) return (world - view) / 2;
-    return Math.max(0, Math.min(world - view, v));
+  function clampCam(v, world, view, pad = 0) {
+    if (world + pad <= view) return (world - view - pad) / 2;
+    return Math.max(-pad, Math.min(world - view, v));
   }
 
   // ---------------- 그리기 ----------------
@@ -610,6 +612,16 @@ const Game = (() => {
     const ui = dpr;   // 글자 최소 크기용 (CSS 픽셀 → 기기 픽셀)
     sg.imageSmoothingEnabled = false;
     sg.drawImage(buffer, 0, 0, VW, VH, 0, 0, VW * s, VH * s);
+    // 교표는 화면 해상도로 선명하게 덧그린다
+    if (Sprites.EMBLEM.complete && Sprites.EMBLEM.naturalWidth) {
+      sg.imageSmoothingEnabled = true;
+      for (const o of map.objects) {
+        if (o.hidden || (o.kind !== 'emblem' && o.kind !== 'emblemwall')) continue;
+        const r = o.kind === 'emblem' ? [4, 3, 24, 26] : [0, 0, 24, 26];
+        sg.drawImage(Sprites.EMBLEM, Math.round((o.x + r[0] - cx) * s), Math.round((o.y + r[1] - cy) * s), Math.round(r[2] * s), Math.round(r[3] * s));
+      }
+      sg.imageSmoothingEnabled = false;
+    }
 
     // 글자 (화면 해상도로 선명하게)
     sg.textAlign = 'center';
@@ -656,6 +668,7 @@ const Game = (() => {
     const bob = Math.sin(time * 5) * 4 * ui;
     if (inside) {
       if (gt.kind === 'npc') return;          // NPC 머리 위에는 이미 ! 표시가 있다
+      if (inDark(gt.x, gt.y)) return;        // 깜깜한 방 안의 목표는 손전등을 비춰야 별이 보인다
       star(x, y - 16 * ui + bob, 11 * ui);
       return;
     }
@@ -805,6 +818,13 @@ const Game = (() => {
   }
 
   // ---------------- 축하 꽃가루 ----------------
+  let morphStart = 0;
+  function principalFrames() { return charFrames('principalF', Sprites.NPC_PALETTES.principalF); }
+  function transformRobot() {
+    const r = (allNpcs.outdoor || []).find(n => n.role === "robot");
+    morphStart = time;
+    if (r) { celebrate(r.x, r.y - 8); setTimeout(() => celebrate(r.x, r.y - 8), 800); }
+  }
   function celebrate(x, y) {
     const cols = ['#ffd84a', '#ff6b8b', '#5ad6ff', '#7be07b', '#ffffff', '#b98cff'];
     for (let i = 0; i < 90; i++) {
@@ -885,7 +905,21 @@ const Game = (() => {
     const x = Math.round(n.x - cx), y = Math.round(n.y - cy);
     drawShadow(x, y - 1, 5);
     if (n.role === 'robot') {
-      bg.drawImage(st.robotFixed ? robotImgs.fixed : robotImgs.broken, x - 8, y - 16);
+      // 클리어하면 로봇 교장선생님이 사람 교장선생님(여)으로 변신한다
+      const mt = morphStart ? time - morphStart : (st.robotHuman ? 9 : -1);
+      if (mt >= 0 && mt < 1.6) {
+        const k = Math.sin(Math.min(1, mt / 1.6) * Math.PI);
+        bg.fillStyle = `rgba(255,250,220,${0.35 + 0.5 * k})`;
+        bg.beginPath(); bg.ellipse(x, y - 8, 10 + 14 * k, 14 + 18 * k, 0, 0, Math.PI * 2); bg.fill();
+        for (let i = 0; i < 6; i++) {
+          const a = time * 4 + i * Math.PI / 3, rr = 12 + 10 * k;
+          bg.fillStyle = '#ffd84a'; bg.fillRect(Math.round(x + Math.cos(a) * rr), Math.round(y - 8 + Math.sin(a) * rr), 2, 2);
+        }
+      }
+      if (mt >= 0.8) bg.drawImage(principalFrames().down[0], x - 8, y - 16);
+      else bg.drawImage(st.robotFixed ? robotImgs.fixed : robotImgs.broken, x - 8, y - 16);
+      if (mt >= 0 && mt < 0.8 && Math.floor(mt * 12) % 2) { bg.globalAlpha = 0.6; bg.drawImage(principalFrames().down[0], x - 8, y - 16); bg.globalAlpha = 1; }
+      n.name = mt >= 0.8 ? '교장선생님' : '로봇 교장선생님';
     } else {
       const f = n.moving ? Math.floor(n.anim) % 2 : 0;
       bg.drawImage(n.frames[n.dir][f], x - 8, y - 16);
@@ -956,6 +990,7 @@ const Game = (() => {
   return {
     init, newGame, stop, facePlayer, zoom, zoomInfo, celebrate, inDark,
     setSpeed(k) { speedK = k || 1; },
+    transformRobot, resetRobot() { morphStart = 0; },
     setLook(charIdx) { if (player) player.frames = Sprites.makeChar(Sprites.PLAYER_PALETTES[charIdx]); },
     // 이어하기: 저장된 맵·위치로 옮긴다
     restore(mapId, x, y) { if (!maps[mapId]) return; loadMap(mapId); player.x = x; player.y = y; snapCamera(); fade = 1; fadeDir = -1; },

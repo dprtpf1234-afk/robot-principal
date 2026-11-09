@@ -24,6 +24,7 @@ const UI = (() => {
   function showLine() {
     const st = dialogState;
     const line = st.lines[st.i];
+    if (line.onShow) line.onShow();
     $('dlgWho').textContent = line.who || '';
     $('dlgWho').style.display = line.who ? '' : 'none';
     st.full = line.text;
@@ -307,8 +308,8 @@ const UI = (() => {
   }
 
   // ---------- i 팻말 ----------
-  function sign(title, text) {
-    openPanel(`<div class="sign-head"><span class="sign-i">i</span><h2>${Util.esc(title)}</h2></div><div class="sign-text">${Util.esc(text)}</div><div class="row end"><button class="primary" id="sgClose">닫기</button></div>`, 'signp');
+  function sign(title, text, img) {
+    openPanel(`<div class="sign-head"><span class="sign-i">i</span><h2>${Util.esc(title)}</h2></div>${img ? `<img class="sign-img" src="${img}" alt="">` : ''}<div class="sign-text">${Util.esc(text)}</div><div class="row end"><button class="primary" id="sgClose">닫기</button></div>`, 'signp');
     $('sgClose').addEventListener('click', closePanel);
   }
 

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220" width="400" height="440">
+  <!-- 대교초 교표 (홈페이지 그림을 보고 벡터로 다시 그림) -->
+  <defs>
+    <clipPath id="g"><circle cx="100" cy="95" r="70"/></clipPath>
+    <g id="leaf"><ellipse cx="0" cy="0" rx="4.2" ry="9" fill="#5cc23a"/><path d="M0 -8 L0 8" stroke="#3f9a24" stroke-width="1"/></g>
+  </defs>
+  <!-- 월계수 잎 (양쪽) -->
+  <g>
+    <use href="#leaf" transform="translate(21.2 81.1) rotate(10) rotate(-25)"/>
+    <use href="#leaf" transform="translate(20.0 96.4) rotate(-1) rotate(-25)"/>
+    <use href="#leaf" transform="translate(21.7 111.6) rotate(-12) rotate(-25)"/>
+    <use href="#leaf" transform="translate(26.4 126.3) rotate(-23) rotate(-25)"/>
+    <use href="#leaf" transform="translate(33.7 139.7) rotate(-34) rotate(-25)"/>
+    <use href="#leaf" transform="translate(43.4 151.6) rotate(-45) rotate(-25)"/>
+    <use href="#leaf" transform="translate(55.3 161.3) rotate(-56) rotate(-25)"/>
+    <use href="#leaf" transform="translate(68.7 168.6) rotate(-67) rotate(-25)"/>
+    <use href="#leaf" transform="translate(83.4 173.3) rotate(-78) rotate(-25)"/>
+    <use href="#leaf" transform="translate(178.8 81.1) rotate(170) rotate(25)"/>
+    <use href="#leaf" transform="translate(180.0 96.4) rotate(181) rotate(25)"/>
+    <use href="#leaf" transform="translate(178.3 111.6) rotate(192) rotate(25)"/>
+    <use href="#leaf" transform="translate(173.6 126.3) rotate(203) rotate(25)"/>
+    <use href="#leaf" transform="translate(166.3 139.7) rotate(214) rotate(25)"/>
+    <use href="#leaf" transform="translate(156.6 151.6) rotate(225) rotate(25)"/>
+    <use href="#leaf" transform="translate(144.7 161.3) rotate(236) rotate(25)"/>
+    <use href="#leaf" transform="translate(131.3 168.6) rotate(247) rotate(25)"/>
+    <use href="#leaf" transform="translate(116.6 173.3) rotate(258) rotate(25)"/>
+  </g>
+  <!-- 아래 엇갈린 줄기 -->
+  <path d="M78 178 Q100 186 122 204 M122 178 Q100 186 78 204" fill="none" stroke="#2f5d2a" stroke-width="5" stroke-linecap="round"/>
+  <!-- 지구 -->
+  <circle cx="100" cy="95" r="72" fill="#ffffff"/>
+  <circle cx="100" cy="95" r="70" fill="#1a1fa3"/>
+  <g clip-path="url(#g)" fill="#35c79c">
+    <path d="M30 40 Q60 22 92 30 Q86 52 70 60 Q58 74 40 72 Q34 92 24 98 Z"/>
+    <path d="M118 28 Q150 30 172 52 Q176 70 168 84 Q150 74 144 64 Q128 60 122 46 Z"/>
+    <path d="M26 112 Q44 104 58 116 Q60 134 48 150 Q34 140 26 126 Z"/>
+    <path d="M140 92 Q156 90 170 100 Q166 118 152 126 Q146 110 138 104 Z"/>
+    <path d="M86 70 Q98 66 104 78 Q98 92 88 90 Z"/>
+  </g>
+  <!-- 흰 획 (大) -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" clip-path="url(#g)">
+    <path d="M28 82 Q100 58 174 78" stroke="#1a1fa3" stroke-width="17"/>
+    <path d="M28 82 Q100 58 174 78" stroke="#ffffff" stroke-width="11"/>
+    <path d="M52 160 Q84 110 100 32 Q118 110 152 156" stroke="#1a1fa3" stroke-width="17"/>
+    <path d="M52 160 Q84 110 100 32 Q118 110 152 156" stroke="#ffffff" stroke-width="11"/>
+  </g>
+  <circle cx="100" cy="95" r="70" fill="none" stroke="#ffffff" stroke-width="3"/>
+  <!-- 대교 글자 -->
+  <text x="100" y="146" text-anchor="middle" font-family="'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif" font-weight="900" font-size="34" fill="#ffd21a" stroke="#1a1fa3" stroke-width="2.5" paint-order="stroke">대교</text>
+</svg>

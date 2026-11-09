@@ -239,7 +239,7 @@ const App = (() => {
     $('title').classList.add('hidden');
     $('hud').classList.remove('hidden');
     $('touchUI').classList.toggle('hidden', !Game.isTouch());
-    Game.newGame({ player, content });
+    Game.newGame({ player, content }); Game.resetRobot();
     applyWorldState();
     applyStarPerks(false);
     if (resume) {
@@ -556,13 +556,13 @@ const App = (() => {
       } else if ((C.milestones || []).includes(n)) {
         st.tokens += 1;
         UI.dialog([line('안내', `${C.name} ${n}송이 달성! 힌트 토큰 +1 (토큰이 있으면 힌트를 써도 시간이 늘지 않아요). ${C.total}송이를 다 모으면 [${C.shoes}]을 받아 더 빨리 달릴 수 있어요!`)]);
-      } else UI.toast(`${Util.josa(C.name, '을/를')} 찾았다! (${n}/${C.total})`);
+      } else UI.toast(`우리 학교 교화인 ${Util.josa(C.name, '을/를')} 찾았다! (${n}/${C.total})`);
       save(); updateHud();
       return;
     }
     if (it.type === 'sign') {
       const sg = content.signs[it.id];
-      if (sg) UI.sign(sg.title, sg.text);
+      if (sg) UI.sign(sg.title, sg.text, it.id === 'symbol' ? Sprites.EMBLEM.src : null);
       return;
     }
     if (it.type === 'mirror') {
@@ -619,7 +619,8 @@ const App = (() => {
     if (badges.star) res.rewards.push(`🌼 ${content.collect.badge}`);
     res.rewards.push(`도감 ${dex.size}/${dexTotal()}`);
     res.rewards.push(`${content.collect.name} ${st.stars.length}/${content.collect.total}`);
-    const endLines = content.ending.map(l => ({ who: l.who, text: fill(l.text) }));
+    const endLines = content.ending.map(l => ({ who: l.who, text: fill(l.text),
+      onShow: l.transform ? () => { st.transformed = true; Sound.sfx('clear'); Game.transformRobot(); } : null }));
     updateHud();
     UI.dialog(endLines, () => {
       Game.celebrate(Game.player.x, Game.player.y - 8);
@@ -812,6 +813,7 @@ const App = (() => {
     if (!st) return {};
     return {
       robotFixed: st.rebooted,
+      robotHuman: !!st.transformed,
       flashlight: has(st.items, 'flashlight'),
       markFor: n => {
         if (n.role === 'mission' && available(n.def.order) && !(content.missions[n.def.order - 1].kind === 'dark' && st.started[n.def.order])) return '!';

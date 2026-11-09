@@ -209,9 +209,7 @@ const World = (() => {
     stairs(m, 'S', ...MAIN_R, 'f2', null);
     // 식생활교육관 (식당): 복도 동쪽 끝 남쪽
     const caf = cell(m, 'S', 905, 1030, '식생활교육관 (식당)', { floor: TILE.CAFE });
-    const ca = Math.floor(caf.cx) - 1;
-    set(m, ca, 16, TILE.EXIT); set(m, ca + 1, 16, TILE.EXIT);
-    exitTo(m, { wa: ca, wb: ca + 1, edge: 16 }, OUT.cafe); IN.cafe = { map: 'f1', ax: caf.cx, ay: 15.2, dir: 'up' };
+    // 식당 쪽 바깥 현관은 쓰지 않는다 (복도로만 드나든다)
     exitTo(m, pass, OUT.pass1N); IN.pass1N = arrive(m, pass);
     exitTo(m, pass2, OUT.pass2N); IN.pass2N = arrive(m, pass2);
     exitTo(m, front, OUT.front); IN.front = arrive(m, front);
@@ -226,9 +224,8 @@ const World = (() => {
 
     npc(m, { id: 'm7', role: 'mission', order: 7, pal: 'doctor', tx: princ.cx, ty: 8.4, face: 'down', place: '본관 1층 교장실 앞' });
     npc(m, { id: 'sB', role: 'side', side: 'B', pal: 'cook', tx: caf.ix + 6.5, ty: 13, face: 'down', place: '본관 1층 식생활교육관(식당)' });
-    friend(m, 'f7', 'affairs', staff.ix + 1, 3); friend(m, 'f8', 'staff', adm.ix + 1, 4);
+    friend(m, 'f7', 'affairs', staff.ix + 1, 3); friend(m, 'f8', 'staff', adm.ix + 1, 4); friend(m, 'f29', 'adminHead', adm.ix + adm.iw - 1, 4.5);
     friend(m, 'f21', 'vpM', staff.cx - 0.5, 8.2, 'down'); friend(m, 'f22', 'vpF', meet.ix + 1, 4);
-    friend(m, 'f27', 'life', lx1 - 2, 11.5, 'down');
     obj(m, 'emblem', lx0 + 1, 13.6, { hitH: 6, hitX: 8, hitW: 16, dy: -8, interact: { type: 'sign', id: 'symbol' } });
     friend(m, 'f10', 'guide', lx0 + 3, 9, 'down'); friend(m, 'f20', 'buddy', caf.ix + 2, 12, 'down');
     roomZone(m, nb4, 2); roomZone(m, nb5, 2); hallZone(m, 2, 30, 3); hallZone(m, 42, 18, 2);
@@ -303,7 +300,7 @@ const World = (() => {
 
     c.concat(c2).forEach(r => classroom(m, r));
     office(m, lab5); office(m, t2); office(m, head);
-    friend(m, 'f23', 'research', lab5.ix + 1, 4); friend(m, 'f24', 'chiefT', head.ix + 1, 4);
+    friend(m, 'f23', 'research', lab5.ix + 1, 4); friend(m, 'f24', 'chiefT', head.ix + 1, 4); friend(m, 'f26', 'welfare', t2.ix + 1, 4);
     for (let i = 0; i < 2; i++) { obj(m, 'lab', sci2.ix + i * 2, 2); obj(m, 'computer', sci2.ix + i * 2, 4); }
     // 도서관 책장 (빨간 책장 3개가 미션 3 단서)
     const L = lib.ix;
@@ -343,6 +340,7 @@ const World = (() => {
 
     c.concat(c2, [c68]).forEach(r => classroom(m, r));
     office(m, lab6); office(m, t3);
+    friend(m, 'f32', 'sciHead', t3.ix + 1, 4); friend(m, 'f25', 'basics', t3.ix + t3.iw - 1, 4.5);
     obj(m, 'piano', music.ix, 2);
     obj(m, 'table', gap.ix, 12);
     lockDoor(m, ai.door, 10, 'storeKey');
@@ -369,8 +367,8 @@ const World = (() => {
     const names = {
       1: ['1-1', '1-2', '1-3', '1학년 연구실', null, '1-4', '전담 교사실1', '영어 체험실'],
       2: ['2-4', '2-5', '3-1', 'wee클래스', null, '3-2', '3-3', '3-4'],
-      3: ['4-6', '4-7', '4-8', '3학년 연구실', '바름이쉼터', '3-5', '3-6', '5-8'],
-      4: ['4-1', '4-2', '4-3', '4학년 연구실', '나눔이쉼터', '4-4', '4-5', '6-9']
+      3: ['4-6', '4-7', '4-8', '3학년 연구실', null, '3-5', '3-6', '5-8'],
+      4: ['4-1', '4-2', '4-3', '4학년 연구실', null, '4-4', '4-5', '6-9']
     }[f];
     const cols = [[85, 160], [160, 238], [238, 315], [315, 400]];
     // 후관은 교실·화장실·계단이 모두 북쪽 줄에 있고, 안뜰 쪽(남쪽)은 현관·연결통로·쉼터뿐이다
@@ -378,7 +376,6 @@ const World = (() => {
     let mid;
     if (f === 1) mid = cell(m, 'S', ...BACK_M, '현관', { kind: 'exit' });
     else if (f === 2) mid = cell(m, 'S', ...BACK_M, '연결통로 → 본관', { kind: 'bridge' });
-    else mid = cell(m, 'S', ...BACK_M, names[4], { floor: TILE.CARPET });
     cell(m, 'N', 505, 545, '화장실', { kind: 'closed', floor: TILE.HALL });
     cell(m, 'N', 545, 585, '화장실', { kind: 'closed', floor: TILE.HALL });
     const rooms2 = [[585, 660], [660, 748], [748, 828]].map((c, i) => cell(m, 'N', c[0], c[1], names[5 + i]));
@@ -393,7 +390,6 @@ const World = (() => {
       else if (/wee|체험실/.test(r.name)) { obj(m, 'table', r.ix, 2); obj(m, 'plant', r.ix + r.iw - 1, 1); }
       else boards[r.name] = classroom(m, r).board;
     });
-    if (f >= 3) { obj(m, 'bench', mid.ix, 13); obj(m, 'bench', mid.ix + 3, 15); obj(m, 'plant', mid.ix + mid.iw - 1, 11); }
 
     if (f === 1) {
       exitTo(m, mid, OUT.huMid); IN.huMid = arrive(m, mid);
@@ -406,7 +402,8 @@ const World = (() => {
       obj(m, 'bandage', nurse.ix + 4, 1, { solid: false, interact: { type: 'bandage', i: 0 } });
       obj(m, 'bandage', nurse.ix, 4, { solid: false, interact: { type: 'bandage', i: 1 } });
       obj(m, 'bandage', nurse.ix + nurse.iw - 1, 5, { solid: false, interact: { type: 'bandage', i: 2 } });
-      npc(m, { id: 'sA', role: 'side', side: 'A', pal: 'nurse', tx: nurse.cx, ty: 3, face: 'down', place: '후관 1층 보건실' });
+      // 보건 선생님은 방 안쪽(화면 왼쪽 위 순서도 창에 가리지 않는 쪽)에
+      npc(m, { id: 'sA', role: 'side', side: 'A', pal: 'nurse', tx: nurse.ix + 1, ty: 4.6, face: 'down', place: '후관 1층 보건실' });
     } else {
       // 연결통로 → 본관 같은 층
       bridgeTo(m, right, 'f' + f, mainCx([866, 905]), 1.6, 'down');
@@ -414,15 +411,16 @@ const World = (() => {
     }
     if (f === 2) friend(m, 'f13', 'artist', rooms2[0].ix + 1, 3);
     if (f === 3) friend(m, 'f17', 'leader', rooms[0].ix + 1, 3);
-    // 미션 8: 후관 3층 바름이쉼터의 디지털 새싹 선생님. 교실 전자칠판 세 곳에 단서.
+    // 미션 8: 후관 3층 3학년 연구실의 디지털 새싹 선생님. 교실 전자칠판 세 곳에 단서.
     if (f === 3) {
-      npc(m, { id: 'm8', role: 'mission', order: 8, pal: 'coderT', tx: mid.cx, ty: 12.2, face: 'up', place: '후관 3층 바름이쉼터' });
+      npc(m, { id: 'm8', role: 'mission', order: 8, pal: 'coderT', tx: rooms[3].cx, ty: 4.4, face: 'down', place: '후관 3층 3학년 연구실' });
       ['4-6', '4-8', '3-6'].forEach((nm, i) => { const b = boards[nm]; b.interact = { type: 'clue', m: 8, i, name: nm + ' 전자칠판' }; b.hit = { x: b.x, y: b.y, w: b.w, h: b.h + 6 }; });
       sign(m, PX(455), 8, 'network');
     }
-    if (f === 1) friend(m, 'f25', 'basics', rooms[3].ix + 1, 4);
-    if (f === 2) friend(m, 'f26', 'welfare', rooms[3].ix + 1, 4);
-    if (f === 4) npc(m, { id: 'sC', role: 'side', side: 'C', pal: 'transfer', tx: mid.cx, ty: 12.4, face: 'down', place: '후관 4층 나눔이쉼터' });
+    // 전담 교사실1: 생활부장 선생님·원어민 선생님 / wee클래스: 상담 선생님
+    if (f === 1) { friend(m, 'f27', 'life', rooms2[1].ix + 1, 4); friend(m, 'f31', 'native', rooms2[1].ix + rooms2[1].iw - 1, 4.5); }
+    if (f === 2) friend(m, 'f30', 'counsel', rooms[3].ix + 1, 4);
+    if (f === 4) npc(m, { id: 'sC', role: 'side', side: 'C', pal: 'transfer', tx: PX(452), ty: 8.4, face: 'down', place: '후관 4층 복도' });
     rooms.slice(0, 3).forEach(r => roomZone(m, r, 2)); roomZone(m, rooms2[1], 2); hallZone(m, 2, 54, 3);
     return m;
   }
@@ -598,8 +596,8 @@ const World = (() => {
     });
     door('bon', OUT.lobbyS, IN.lobbyS); door('bon', OUT.front, IN.front); door('bon', OUT.B, IN.B);
     door(null, OUT.lobbyN, IN.lobbyN); door(null, OUT.pass1N, IN.pass1N); door(null, OUT.pass2N, IN.pass2N);
-    door('gym', OUT.cafe, IN.cafe); door('hu', OUT.huMid, IN.huMid); door('hu', OUT.huEnd, IN.huEnd);
-    label(m, 24, OUT.front[1].y + 1.3, '현관'); label(m, 12.5, 31.25, '식당'); label(m, 48.5, OUT.B[0].y + 1.25, '늘봄교실');
+    door('hu', OUT.huMid, IN.huMid); door('hu', OUT.huEnd, IN.huEnd);
+    label(m, 24, OUT.front[1].y + 1.3, '현관'); label(m, 48.5, OUT.B[0].y + 1.25, '늘봄교실');
 
     // 현관 앞 마당: 국기 게양대, 교훈석, 조례대, 느티나무
     obj(m, 'flag', 27, 27, { hitH: 6, hitX: 4, hitW: 8, dy: -16, interact: { type: 'clue', m: 6, i: 3, name: '국기 게양대' } });
