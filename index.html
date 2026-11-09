@@ -559,7 +559,7 @@ table.rec th { background: #f3ead6; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (저학년 · 고학년)</button>
       </div></div>
-      <div id="adminLink">v2.8</div>
+      <div id="adminLink">v2.9</div>
     </form>
   </div>
 </div>
@@ -8267,6 +8267,65 @@ const Game = (() => {
     setTimeout(() => idle(work), 600);
   }
 
+  // 개나리 꽃 10송이를 판마다 무작위 자리에 둔다 (같은 seed면 같은 자리: 이어하기용)
+  // 바깥 3송이 + 건물 안 7송이(서로 다른 층), 갈 수 있는 바닥 중에서 단서·미션 NPC·문 근처와 어두운 방은 피한다
+  function scatterStars(seed) {
+    const rand = Util.rng(seed >>> 0 || 1);
+    const stars = [];
+    for (const id in maps) {
+      const keep = [];
+      for (const o of maps[id].objects) (o.interact && o.interact.type === 'star' ? stars : keep).push(o);
+      maps[id].objects = keep;
+    }
+    stars.sort((a, b) => a.interact.i - b.interact.i);
+    const spots = {};
+    const candidates = id => {
+      if (spots[id]) return spots[id];
+      const m = maps[id], W = m.w, seen = new Uint8Array(W * m.h), q = [];
+      const starts = [];
+      if (id === 'outdoor' && m.start) starts.push(m.start);
+      for (const k in maps) for (const w of maps[k].warps) if (w.to === id) starts.push([Math.floor(w.ax), Math.floor(w.ay)]);
+      const free = (x, y) => x >= 0 && y >= 0 && x < W && y < m.h && walkableTile(m, x, y) && !objectAt(m, x * T + 8, y * T + 12);
+      for (const [x, y] of starts) if (free(x, y) && !seen[y * W + x]) { seen[y * W + x] = 1; q.push(x, y); }
+      for (let h = 0; h < q.length; h += 2) {
+        const x = q[h], y = q[h + 1];
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nx = x + dx, ny = y + dy;
+          if (free(nx, ny) && !seen[ny * W + nx]) { seen[ny * W + nx] = 1; q.push(nx, ny); }
+        }
+      }
+      const npcsHere = (allNpcs[id] || []).filter(n => n.role !== 'ambient');
+      const out = [];
+      for (let h = 0; h < q.length; h += 2) {
+        const x = q[h], y = q[h + 1], px = x * T + 8, py = y * T + 14;
+        if (m.objects.some(o => o.interact && Math.hypot(o.hit.x + o.hit.w / 2 - px, o.hit.y + o.hit.h - py) < 40)) continue;
+        if (npcsHere.some(n => Math.hypot(n.x - px, n.y - py) < 36)) continue;
+        if (m.warps.some(w => Math.abs(w.x - x) <= 1 && Math.abs(w.y - y) <= 1)) continue;
+        if ((m.darkZones || []).some(z => x >= z.x - 1 && x <= z.x + z.w && y >= z.y - 1 && y <= z.y + z.h)) continue;
+        if (!free(x, y - 1) && !free(x, y + 1)) continue;   // 아주 좁은 틈은 피한다
+        out.push([x, y]);
+      }
+      return (spots[id] = out);
+    };
+    const indoor = Util.shuffle(Object.keys(maps).filter(id => id !== 'outdoor'), rand);
+    const targets = ['outdoor', 'outdoor', 'outdoor'];
+    for (let i = 0; targets.length < stars.length; i++) targets.push(indoor[i % indoor.length]);
+    const placed = {};
+    stars.forEach((o, k) => {
+      const id = targets[k], list = candidates(id), mine = placed[id] || (placed[id] = []);
+      if (!list.length) { maps[id].objects.push(o); return; }
+      let best = null;
+      for (let t = 0; t < 30; t++) {
+        const c = list[Math.floor(rand() * list.length)];
+        if (mine.every(p => Math.hypot(p[0] - c[0], p[1] - c[1]) > 10)) { best = c; break; }
+        best = best || c;
+      }
+      mine.push(best);
+      o.x = best[0] * T; o.y = best[1] * T; o.hit = { x: o.x, y: o.y, w: o.w, h: Math.min(o.h, T) }; o.hidden = false;
+      maps[id].objects.push(o);
+    });
+  }
+
   // 플레이어가 화면(CSS 픽셀) 어디쯤 있는지: 패널 자동 숨김용
   function playerRect() {
     if (!player || !map || !running) return null;
@@ -8275,7 +8334,7 @@ const Game = (() => {
   }
 
   return {
-    prewarm, playerRect,
+    prewarm, playerRect, scatterStars,
     init, newGame, stop, facePlayer, zoom, zoomInfo, celebrate, inDark, smooth2x,
     setSpeed(k) { speedK = k || 1; },
     transformRobot, resetRobot() { morphStart = 0; },
@@ -10170,6 +10229,9 @@ const App = (() => {
     $('hud').classList.remove('hidden');
     $('touchUI').classList.toggle('hidden', !Game.isTouch());
     Game.newGame({ player, content }); Game.resetRobot();
+    // 개나리 꽃 자리는 판마다 새로 정한다 (이어하기는 같은 자리)
+    if (!st.starSeed) st.starSeed = 1 + Math.floor(Math.random() * 2147483646);
+    Game.scatterStars(st.starSeed);
     applyWorldState();
     applyStarPerks(false);
     if (resume) {

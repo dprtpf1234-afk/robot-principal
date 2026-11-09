@@ -241,6 +241,9 @@ const App = (() => {
     $('hud').classList.remove('hidden');
     $('touchUI').classList.toggle('hidden', !Game.isTouch());
     Game.newGame({ player, content }); Game.resetRobot();
+    // 개나리 꽃 자리는 판마다 새로 정한다 (이어하기는 같은 자리)
+    if (!st.starSeed) st.starSeed = 1 + Math.floor(Math.random() * 2147483646);
+    Game.scatterStars(st.starSeed);
     applyWorldState();
     applyStarPerks(false);
     if (resume) {
