@@ -842,7 +842,21 @@ const App = (() => {
     };
   }
 
+  // 새 버전이 배포됐는데 브라우저가 옛 파일을 보여 주면 새 버전으로 다시 연다
+  async function checkNewVersion() {
+    if (!/^https?:/.test(location.protocol)) return;
+    try {
+      const mine = ($('adminLink') && $('adminLink').textContent.trim()) || '';
+      const html = await fetch(location.pathname + '?nc=' + Date.now(), { cache: 'no-store' }).then(r => r.text());
+      const m = html.match(/id="adminLink">([^<]+)</);
+      if (m && m[1].trim() !== mine && !sessionStorage.getItem('rp_reloaded_' + m[1])) {
+        sessionStorage.setItem('rp_reloaded_' + m[1], '1');
+        location.replace(location.pathname + '?v=' + encodeURIComponent(m[1].trim()) + location.hash);
+      }
+    } catch (e) { /* 오프라인이면 그대로 */ }
+  }
   function boot() {
+    checkNewVersion();
     UI.bind();
     Game.init($('game'), {
       modalOpen: () => UI.modalOpen() || !$('title').classList.contains('hidden'),

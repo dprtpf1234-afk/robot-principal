@@ -323,13 +323,25 @@ const Game = (() => {
         Sprites.drawTile(g, f != null ? f : World.get(m, x, y), x, y, World.get(m, x, y + 1));
       }
     }
-    for (const b of m.buildings) Sprites.drawBuilding(g, b);
+    // 고해상도: 바닥을 다듬어 2배로 → 자주 보이는 바닥은 2배 그림으로 다시 → 건물은 따로 다듬어 위에 얹는다
     c.hi = smooth2x(c);
-    // 2배 해상도로 덧그리는 바닥 (텃밭)
     if (c.hi) {
       const hg = c.hi.getContext('2d');
-      for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (World.get(m, x, y) === TL.GARDEN) Sprites.drawGardenHi(hg, x, y);
+      let fbox = null;
+      for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+        const t0 = floorAt[x + ',' + y] != null ? floorAt[x + ',' + y] : World.get(m, x, y);
+        if (t0 === TL.GARDEN) Sprites.drawGardenHi(hg, x, y);
+        else Sprites.drawTileHi(hg, t0, x, y);
+        if (t0 === TL.TURF) fbox = fbox ? [Math.min(fbox[0], x), Math.min(fbox[1], y), Math.max(fbox[2], x + 1), Math.max(fbox[3], y + 1)] : [x, y, x + 1, y + 1];
+      }
+      if (fbox) Sprites.drawFieldHi(hg, fbox, 5.5, (x, y) => { const k = World.get(m, x, y); return k === TL.TURF || k === TL.TRACK; });
+      const bc = document.createElement('canvas'); bc.width = c.width; bc.height = c.height;
+      const bg1 = bc.getContext('2d'); bg1.imageSmoothingEnabled = false;
+      for (const b of m.buildings) Sprites.drawBuilding(bg1, b);
+      const bhi = smooth2x(bc);
+      if (bhi) hg.drawImage(bhi, 0, 0);
     }
+    for (const b of m.buildings) Sprites.drawBuilding(g, b);
     // 나무 (앞뒤 순서대로 그리는 키 큰 나무)
     m.treeList = [];
     for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
@@ -813,7 +825,9 @@ const Game = (() => {
     const s = scale;
     const ui = dpr;   // 글자 최소 크기용 (CSS 픽셀 → 기기 픽셀)
     sg.imageSmoothingEnabled = false;
+    sg.imageSmoothingEnabled = s / Q > 1.01; sg.imageSmoothingQuality = 'high';
     sg.drawImage(buffer, 0, 0, VW * Q, VH * Q, 0, 0, VW * s, VH * s);
+    sg.imageSmoothingEnabled = false;
     // 교훈석 글씨
     for (const o of map.objects) {
       if (o.kind !== 'mottorock' || o.hidden) continue;

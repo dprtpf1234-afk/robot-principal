@@ -551,7 +551,7 @@ table.rec th { background: #f3ead6; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (저학년 · 고학년)</button>
       </div></div>
-      <div id="adminLink">v1.9</div>
+      <div id="adminLink">v2.0</div>
     </form>
   </div>
 </div>
@@ -5103,6 +5103,135 @@ const Sprites = (() => {
     else kind = r < 0.28 ? 'green' : r < 0.44 ? 'red' : r < 0.58 ? 'orange' : r < 0.72 ? 'yellow' : r < 0.84 ? 'persimmon' : 'pine';
     return makeTree(kind, v);
   }
+  // ---------- 2배 해상도 바닥 (한 칸 = 32×32) ----------
+  // 1배 그림을 다듬은 뒤, 자주 보이는 바닥은 이 함수로 더 촘촘하게 다시 그린다. 그린 칸이면 true.
+  function hp(g, x, y, w, h, c) { g.fillStyle = c; g.fillRect(x, y, w, h); }
+  function speck(g, X, Y, tx, ty, n, cols, seed, w = 1, h = 1) {
+    for (let i = 0; i < n; i++) hp(g, X + Math.floor(hash(tx, ty, seed + i) * (32 - w)), Y + Math.floor(hash(tx, ty, seed + 50 + i) * (32 - h)), w, h, cols[i % cols.length]);
+  }
+  function drawTileHi(g, t, tx, ty) {
+    const X = tx * 32, Y = ty * 32;
+    switch (t) {
+      case TILE.GRASS:
+      case TILE.FLOWER:
+      case TILE.TREE: {
+        hp(g, X, Y, 32, 32, '#5cab48');
+        speck(g, X, Y, tx, ty, 10, ['#64b44f', '#56a343'], 100, 5, 4);
+        speck(g, X, Y, tx, ty, 18, ['#4a963a', '#4e9c3d', '#3f8a33'], 200, 1, 3);
+        speck(g, X, Y, tx, ty, 8, ['#7cc663', '#86cf6a'], 300, 1, 2);
+        if (t === TILE.FLOWER) {
+          const cols = ['#ffd84a', '#ff7aa8', '#ffffff', '#b98cff'];
+          for (let i = 0; i < 4; i++) {
+            const fx = X + 4 + Math.floor(hash(tx, ty, i + 20) * 22), fy = Y + 4 + Math.floor(hash(tx, ty, i + 30) * 22), c = cols[i];
+            hp(g, fx + 1, fy + 3, 1, 3, '#3d8a30');
+            hp(g, fx, fy + 1, 3, 1, c); hp(g, fx + 1, fy, 1, 3, c); hp(g, fx + 1, fy + 1, 1, 1, '#f2b234');
+          }
+        }
+        if (t === TILE.TREE) { g.fillStyle = 'rgba(20,45,20,0.32)'; g.beginPath(); g.ellipse(X + 16, Y + 27, 15, 5, 0, 0, Math.PI * 2); g.fill(); }
+        return true;
+      }
+      case TILE.TRACK:
+        hp(g, X, Y, 32, 32, '#c4463a');
+        speck(g, X, Y, tx, ty, 26, ['#b23c31', '#d0554a', '#ad392f'], 400);
+        return true;
+      case TILE.BRICK:
+      case TILE.BTREE: {
+        hp(g, X, Y, 32, 32, '#9c4733');
+        for (let r = 0; r < 4; r++) for (let c = -1; c < 3; c++) {
+          const bx = X + c * 16 + (r % 2) * 8, by = Y + r * 8, h0 = hash(tx * 4 + c, ty * 4 + r, 7);
+          const col = h0 < 0.25 ? '#a94f39' : h0 < 0.5 ? '#c46249' : h0 < 0.8 ? '#ba5841' : '#b24f3a';
+          const x0 = Math.max(X, bx + 1), x1 = Math.min(X + 32, bx + 16);
+          if (x1 <= x0) continue;
+          hp(g, x0, by + 1, x1 - x0, 7, col); hp(g, x0, by + 1, x1 - x0, 1, 'rgba(255,255,255,0.10)');
+        }
+        if (t === TILE.BTREE) { g.fillStyle = 'rgba(40,20,10,0.32)'; g.beginPath(); g.ellipse(X + 16, Y + 27, 15, 5, 0, 0, Math.PI * 2); g.fill(); }
+        return true;
+      }
+      case TILE.PAVE:
+      case TILE.PTREE: {
+        hp(g, X, Y, 32, 32, '#a9abb1');
+        for (let r = 0; r < 4; r++) for (let c = -1; c < 4; c++) {
+          const bx = X + c * 8 + (r % 2) * 4, by = Y + r * 8, h0 = hash(tx * 4 + c, ty * 4 + r, 11);
+          const col = h0 < 0.06 ? '#55565d' : h0 < 0.12 ? '#eceef2' : h0 < 0.5 ? '#bcbec3' : '#b5b7bc';
+          const x0 = Math.max(X, bx + 1), x1 = Math.min(X + 32, bx + 8);
+          if (x1 <= x0) continue;
+          hp(g, x0, by + 1, x1 - x0, 7, col); hp(g, x0, by + 1, x1 - x0, 1, 'rgba(255,255,255,0.18)');
+        }
+        if (t === TILE.PTREE) { g.fillStyle = 'rgba(30,30,30,0.28)'; g.beginPath(); g.ellipse(X + 16, Y + 27, 15, 5, 0, 0, Math.PI * 2); g.fill(); }
+        return true;
+      }
+      case TILE.PARK:
+        hp(g, X, Y, 32, 32, '#545862');
+        speck(g, X, Y, tx, ty, 28, ['#4a4e57', '#60646e', '#5a5e68'], 500);
+        return true;
+      case TILE.ROAD:
+        hp(g, X, Y, 32, 32, '#5c6067');
+        speck(g, X, Y, tx, ty, 30, ['#52565d', '#6a6e76', '#63676e'], 600);
+        return true;
+      case TILE.SIDEWALK:
+        hp(g, X, Y, 32, 32, '#b3ad9f');
+        for (let r = 0; r < 2; r++) for (let c = -1; c < 2; c++) {
+          const bx = X + c * 16 + (r % 2) * 8, by = Y + r * 16, h0 = hash(tx * 2 + c, ty * 2 + r, 13);
+          const x0 = Math.max(X, bx + 1), x1 = Math.min(X + 32, bx + 16);
+          if (x1 > x0) hp(g, x0, by + 1, x1 - x0, 15, h0 < 0.5 ? '#cbc5b8' : '#c4beb1');
+        }
+        return true;
+      case TILE.SAND:
+        hp(g, X, Y, 32, 32, '#e4cf9f');
+        speck(g, X, Y, tx, ty, 34, ['#d3bb86', '#efdcb0', '#cdb27c'], 700);
+        return true;
+      case TILE.FOREST:
+        hp(g, X, Y, 32, 32, '#2a5f2e');
+        for (let i = 0; i < 7; i++) {
+          const cx = X + 3 + hash(tx, ty, 800 + i) * 26, cy = Y + 3 + hash(tx, ty, 820 + i) * 26, r = 5 + hash(tx, ty, 840 + i) * 4;
+          g.fillStyle = i % 3 === 0 ? '#3d8a42' : i % 3 === 1 ? '#337a38' : '#2f7134'; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
+          g.fillStyle = 'rgba(160,220,120,0.25)'; g.beginPath(); g.arc(cx - r * 0.35, cy - r * 0.35, r * 0.45, 0, Math.PI * 2); g.fill();
+        }
+        return true;
+      case TILE.HALL:
+        hp(g, X, Y, 32, 32, '#d8d2c2');
+        hp(g, X + 1, Y + 1, 31, 31, (tx + ty) % 2 ? '#e7e2d4' : '#ece8dc');
+        hp(g, X + 2, Y + 2, 12, 1, 'rgba(255,255,255,0.5)');
+        return true;
+      case TILE.WOOD:
+        hp(g, X, Y, 32, 32, '#a9743f');
+        for (let r = 0; r < 4; r++) {
+          const h0 = hash(tx, ty * 4 + r, 15);
+          hp(g, X, Y + r * 8, 32, 7, h0 < 0.33 ? '#c48c55' : h0 < 0.66 ? '#cc955d' : '#c08752');
+          hp(g, X, Y + r * 8, 32, 1, 'rgba(255,255,255,0.12)');
+          hp(g, X + Math.floor(hash(tx, ty * 4 + r, 16) * 30), Y + r * 8, 1, 7, '#a9743f');
+          speck(g, X, Y + r * 8, tx * 9 + r, ty, 3, ['#b67e48'], 900, 4, 1);
+        }
+        return true;
+    }
+    return false;
+  }
+  // 운동장 인조잔디: 둥근 모서리를 매끄럽게 (2배 해상도). box = [x0, y0, x1, y1] 칸 경계, rc = 모서리 반지름(칸)
+  function drawFieldHi(g, box, rc, isField) {
+    const [x0, y0, x1, y1] = box;
+    for (let py = y0 * 32; py < y1 * 32; py++) {
+      for (let pxx = x0 * 32; pxx < x1 * 32; pxx++) {
+        const tx = Math.floor(pxx / 32), ty = Math.floor(py / 32);
+        if (!isField(tx, ty)) continue;
+        const u = (pxx + 0.5) / 32, v = (py + 0.5) / 32;
+        const cx = Math.max(x0 + rc, Math.min(x1 - rc, u)), cy = Math.max(y0 + rc, Math.min(y1 - rc, v));
+        const d = Math.hypot(u - cx, v - cy);
+        let col;
+        if (d <= rc) {
+          const band = Math.floor((v - y0) / 2) % 2;
+          col = band ? '#3f9b47' : '#47a64f';
+          const n = hash(pxx, py, 3);
+          if (n < 0.05) col = '#38893f'; else if (n > 0.97) col = '#5bb862';
+          if (d > rc - 0.04) col = '#2f7a36';
+        } else {
+          col = '#c4463a';
+          const n = hash(pxx, py, 4);
+          if (n < 0.06) col = '#b23c31'; else if (n > 0.95) col = '#d0554a';
+        }
+        g.fillStyle = col; g.fillRect(pxx, py, 1, 1);
+      }
+    }
+  }
   // 텃밭 (2배 해상도): 세로 이랑 + 새싹
   function drawGardenHi(g, tx, ty) {
     const X = tx * 32, Y = ty * 32;
@@ -5695,7 +5824,7 @@ const Sprites = (() => {
     return c;
   }
 
-  return { T, TILE, SOLID, drawTile, drawBuilding, makeFieldMarks, makeCourtMarks, makeTireBorder, makeCarTop, drawCanopyRoof, drawStandRoof, treeFor, drawGardenHi, makeChar, makeRobot, makeObj, PLAYER_PALETTES, NPC_PALETTES, randomStudentPalette, shade, EMBLEM, EMBLEM_SVG, onEmblem };
+  return { T, TILE, SOLID, drawTile, drawBuilding, makeFieldMarks, makeCourtMarks, makeTireBorder, makeCarTop, drawCanopyRoof, drawStandRoof, treeFor, drawGardenHi, drawTileHi, drawFieldHi, makeChar, makeRobot, makeObj, PLAYER_PALETTES, NPC_PALETTES, randomStudentPalette, shade, EMBLEM, EMBLEM_SVG, onEmblem };
 })();
 
 // ===== world.js =====
@@ -6799,13 +6928,25 @@ const Game = (() => {
         Sprites.drawTile(g, f != null ? f : World.get(m, x, y), x, y, World.get(m, x, y + 1));
       }
     }
-    for (const b of m.buildings) Sprites.drawBuilding(g, b);
+    // 고해상도: 바닥을 다듬어 2배로 → 자주 보이는 바닥은 2배 그림으로 다시 → 건물은 따로 다듬어 위에 얹는다
     c.hi = smooth2x(c);
-    // 2배 해상도로 덧그리는 바닥 (텃밭)
     if (c.hi) {
       const hg = c.hi.getContext('2d');
-      for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (World.get(m, x, y) === TL.GARDEN) Sprites.drawGardenHi(hg, x, y);
+      let fbox = null;
+      for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+        const t0 = floorAt[x + ',' + y] != null ? floorAt[x + ',' + y] : World.get(m, x, y);
+        if (t0 === TL.GARDEN) Sprites.drawGardenHi(hg, x, y);
+        else Sprites.drawTileHi(hg, t0, x, y);
+        if (t0 === TL.TURF) fbox = fbox ? [Math.min(fbox[0], x), Math.min(fbox[1], y), Math.max(fbox[2], x + 1), Math.max(fbox[3], y + 1)] : [x, y, x + 1, y + 1];
+      }
+      if (fbox) Sprites.drawFieldHi(hg, fbox, 5.5, (x, y) => { const k = World.get(m, x, y); return k === TL.TURF || k === TL.TRACK; });
+      const bc = document.createElement('canvas'); bc.width = c.width; bc.height = c.height;
+      const bg1 = bc.getContext('2d'); bg1.imageSmoothingEnabled = false;
+      for (const b of m.buildings) Sprites.drawBuilding(bg1, b);
+      const bhi = smooth2x(bc);
+      if (bhi) hg.drawImage(bhi, 0, 0);
     }
+    for (const b of m.buildings) Sprites.drawBuilding(g, b);
     // 나무 (앞뒤 순서대로 그리는 키 큰 나무)
     m.treeList = [];
     for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
@@ -7289,7 +7430,9 @@ const Game = (() => {
     const s = scale;
     const ui = dpr;   // 글자 최소 크기용 (CSS 픽셀 → 기기 픽셀)
     sg.imageSmoothingEnabled = false;
+    sg.imageSmoothingEnabled = s / Q > 1.01; sg.imageSmoothingQuality = 'high';
     sg.drawImage(buffer, 0, 0, VW * Q, VH * Q, 0, 0, VW * s, VH * s);
+    sg.imageSmoothingEnabled = false;
     // 교훈석 글씨
     for (const o of map.objects) {
       if (o.kind !== 'mottorock' || o.hidden) continue;
@@ -10120,7 +10263,21 @@ const App = (() => {
     };
   }
 
+  // 새 버전이 배포됐는데 브라우저가 옛 파일을 보여 주면 새 버전으로 다시 연다
+  async function checkNewVersion() {
+    if (!/^https?:/.test(location.protocol)) return;
+    try {
+      const mine = ($('adminLink') && $('adminLink').textContent.trim()) || '';
+      const html = await fetch(location.pathname + '?nc=' + Date.now(), { cache: 'no-store' }).then(r => r.text());
+      const m = html.match(/id="adminLink">([^<]+)</);
+      if (m && m[1].trim() !== mine && !sessionStorage.getItem('rp_reloaded_' + m[1])) {
+        sessionStorage.setItem('rp_reloaded_' + m[1], '1');
+        location.replace(location.pathname + '?v=' + encodeURIComponent(m[1].trim()) + location.hash);
+      }
+    } catch (e) { /* 오프라인이면 그대로 */ }
+  }
   function boot() {
+    checkNewVersion();
     UI.bind();
     Game.init($('game'), {
       modalOpen: () => UI.modalOpen() || !$('title').classList.contains('hidden'),
