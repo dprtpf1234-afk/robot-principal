@@ -174,9 +174,12 @@ def collect_clues(page, order):
     mid = page.evaluate("(m) => Object.keys(Game.maps).find(id => Game.maps[id].objects.some(o => o.interact && o.interact.type==='clue' && o.interact.m===m))", order)
     n = page.evaluate("([mid, m]) => Game.maps[mid].objects.filter(o => o.interact && o.interact.type==='clue' && o.interact.m===m).length", [mid, order])
     for i in range(n):
-        go_obj(page, mid, f"it.type==='clue' && it.m==={order} && it.i==={i}")
-        press_e(page)
-        advance(page)
+        for _ in range(3):   # 바로 옆에 개나리 꽃이 있으면 첫 E는 꽃을 줍는다
+            go_obj(page, mid, f"it.type==='clue' && it.m==={order} && it.i==={i}")
+            press_e(page)
+            advance(page)
+            if page.evaluate("([m, i]) => App.state.clues[m].includes(i)", [order, i]):
+                break
     got = page.evaluate("(m) => App.state.clues[m].length", order)
     assert got == n, ("clues", order, got, n, mid)
 
