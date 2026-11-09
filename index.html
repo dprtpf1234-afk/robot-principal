@@ -559,7 +559,7 @@ table.rec th { background: #f3ead6; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (저학년 · 고학년)</button>
       </div></div>
-      <div id="adminLink">v2.7</div>
+      <div id="adminLink">v2.8</div>
     </form>
   </div>
 </div>
@@ -849,7 +849,7 @@ const DEFAULT_CONTENT = {
   "locks": {
     "card": "문이 잠겨 있어요. 정문 앞 지킴이 선생님께 출입 카드를 받아 오면 학교 건물에 들어갈 수 있어요.",
     "pcKey": "컴퓨터실1 문이 잠겨 있어요. 같은 층 방송실의 방송부 선배가 열쇠를 갖고 있대요.",
-    "storeKey": "AI 스마트존 문이 잠겨 있어요. 본관 1층 교장실 앞 교무부장님이 열쇠를 갖고 계세요."
+    "storeKey": "AI 스마트존 문이 잠겨 있어요. 본관 1층 교장실 앞 교무부장 선생님이 열쇠를 갖고 계세요."
   },
   "collect": {
     "name": "개나리 꽃",
@@ -2836,7 +2836,7 @@ const DEFAULT_CONTENT = {
     },
     {
       "order": 7,
-      "npc": "교무부장님",
+      "npc": "교무부장 선생님",
       "short": "AI존",
       "kind": "dark",
       "part": "AI 칩",
@@ -3988,7 +3988,7 @@ const DEFAULT_CONTENT = {
     "m4": "점심시간 방송을 맡은 방송부 선배. 암호 풀기를 아주 좋아한다.",
     "m5": "컴퓨터실의 정보 선생님. 알고리즘과 코딩이라면 뭐든 물어보세요.",
     "m6": "운동장의 체육 선생님. 숫자 자물쇠를 자주 잃어버린다.",
-    "m7": "학교 행사와 시간표를 챙기는 교무부장님. 교장실 앞에서 AI 스마트존 열쇠와 손전등을 맡아 두었다.",
+    "m7": "학교 행사와 시간표를 챙기는 교무부장 선생님. 교장실 앞에서 AI 스마트존 열쇠와 손전등을 맡아 두었다.",
     "A": "아픈 친구를 돌봐 주는 보건 선생님. 반창고를 자꾸 잃어버린다.",
     "B": "맛있는 급식을 책임지는 영양사 선생님. 퀴즈 내는 걸 좋아한다.",
     "C": "후관 4층 복도에서만 만날 수 있는 전학생 친구. 학교 비밀을 많이 안다.",
@@ -7373,8 +7373,14 @@ const Game = (() => {
     // 분위기 NPC
     const rand = Util.rng(m.id.split('').reduce((a, c) => a * 31 + c.charCodeAt(0), 7));
     let k = 0;
-    for (const z of m.zones) {
-      for (let i = 0; i < z.n; i++) {
+    // 돌아다니는 학생은 모두 40명: 장소마다 정해진 수만큼, 구역을 돌아가며 고르게 나눠 둔다
+    const quota = AMB_QUOTA[m.id] != null ? AMB_QUOTA[m.id] : 4, take = m.zones.map(() => 0);
+    for (let left = quota, moved = true; left > 0 && moved;) {
+      moved = false;
+      for (let zi = 0; zi < m.zones.length && left > 0; zi++) if (take[zi] < m.zones[zi].n) { take[zi]++; left--; moved = true; }
+    }
+    for (const [zi, z] of m.zones.entries()) {
+      for (let i = 0; i < take[zi]; i++) {
         let tries = 0, tx, ty;
         do {
           tx = z.x + Math.floor(rand() * z.w); ty = z.y + Math.floor(rand() * z.h); tries++;
@@ -7392,6 +7398,8 @@ const Game = (() => {
     }
     return list;
   }
+
+  const AMB_QUOTA = { outdoor: 6, b0: 2 };   // 나머지 층은 4명씩 → 6 + 2 + 4×8 = 40명
 
   // 단서·미션 NPC 바로 옆에는 분위기 NPC를 두지 않는다
   function nearSpecial(m, list, x, y) {
@@ -10519,7 +10527,7 @@ const App = (() => {
       const m = content.missions[6];
       if (!inCourse(7)) return UI.dialog([line('단말기', '전원이 꺼져 있다.')]);
       if (isDone(7)) return UI.dialog([line('단말기', 'AI 칩을 이미 꺼냈다. 정문의 로봇 교장선생님께 가자!')]);
-      if (!st.started[7]) return UI.dialog([line('단말기', '전원이 꺼져 있다. 1층 교장실 앞의 교무부장님을 먼저 만나 보자.')]);
+      if (!st.started[7]) return UI.dialog([line('단말기', '전원이 꺼져 있다. 1층 교장실 앞의 교무부장 선생님을 먼저 만나 보자.')]);
       if (st.notes.length < 3) return UI.dialog([line('단말기', `화면에 "쪽지 3장의 내용을 확인한 사람만 열 수 있습니다" 라고 떠 있다. (쪽지 ${st.notes.length}/3)`)]);
       return openMini(m);
     }

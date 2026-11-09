@@ -598,7 +598,7 @@ const App = (() => {
       const m = content.missions[6];
       if (!inCourse(7)) return UI.dialog([line('단말기', '전원이 꺼져 있다.')]);
       if (isDone(7)) return UI.dialog([line('단말기', 'AI 칩을 이미 꺼냈다. 정문의 로봇 교장선생님께 가자!')]);
-      if (!st.started[7]) return UI.dialog([line('단말기', '전원이 꺼져 있다. 1층 교장실 앞의 교무부장님을 먼저 만나 보자.')]);
+      if (!st.started[7]) return UI.dialog([line('단말기', '전원이 꺼져 있다. 1층 교장실 앞의 교무부장 선생님을 먼저 만나 보자.')]);
       if (st.notes.length < 3) return UI.dialog([line('단말기', `화면에 "쪽지 3장의 내용을 확인한 사람만 열 수 있습니다" 라고 떠 있다. (쪽지 ${st.notes.length}/3)`)]);
       return openMini(m);
     }

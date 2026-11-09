@@ -443,8 +443,14 @@ const Game = (() => {
     // 분위기 NPC
     const rand = Util.rng(m.id.split('').reduce((a, c) => a * 31 + c.charCodeAt(0), 7));
     let k = 0;
-    for (const z of m.zones) {
-      for (let i = 0; i < z.n; i++) {
+    // 돌아다니는 학생은 모두 40명: 장소마다 정해진 수만큼, 구역을 돌아가며 고르게 나눠 둔다
+    const quota = AMB_QUOTA[m.id] != null ? AMB_QUOTA[m.id] : 4, take = m.zones.map(() => 0);
+    for (let left = quota, moved = true; left > 0 && moved;) {
+      moved = false;
+      for (let zi = 0; zi < m.zones.length && left > 0; zi++) if (take[zi] < m.zones[zi].n) { take[zi]++; left--; moved = true; }
+    }
+    for (const [zi, z] of m.zones.entries()) {
+      for (let i = 0; i < take[zi]; i++) {
         let tries = 0, tx, ty;
         do {
           tx = z.x + Math.floor(rand() * z.w); ty = z.y + Math.floor(rand() * z.h); tries++;
@@ -462,6 +468,8 @@ const Game = (() => {
     }
     return list;
   }
+
+  const AMB_QUOTA = { outdoor: 6, b0: 2 };   // 나머지 층은 4명씩 → 6 + 2 + 4×8 = 40명
 
   // 단서·미션 NPC 바로 옆에는 분위기 NPC를 두지 않는다
   function nearSpecial(m, list, x, y) {
