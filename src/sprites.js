@@ -699,7 +699,8 @@ const Sprites = (() => {
           hp(g, X, Y + r * 8, 32, 7, h0 < 0.33 ? '#c48c55' : h0 < 0.66 ? '#cc955d' : '#c08752');
           hp(g, X, Y + r * 8, 32, 1, 'rgba(255,255,255,0.12)');
           hp(g, X + Math.floor(hash(tx, ty * 4 + r, 16) * 30), Y + r * 8, 1, 7, '#a9743f');
-          speck(g, X, Y + r * 8, tx * 9 + r, ty, 3, ['#b67e48'], 900, 4, 1);
+          // 나뭇결 점은 그 판자(7px 높이) 안에만 찍는다 (아래 벽으로 번지지 않게)
+          for (let i = 0; i < 3; i++) hp(g, X + Math.floor(hash(tx * 9 + r, ty, 900 + i) * 28), Y + r * 8 + 1 + Math.floor(hash(tx * 9 + r, ty, 950 + i) * 5), 4, 1, '#b67e48');
         }
         return true;
     }
