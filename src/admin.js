@@ -75,13 +75,13 @@ const Admin = (() => {
     const draw = () => {
       const rows = all.filter(r => (!f.g || Util.gradeGroup(r.grade) === f.g) && (!f.grade || r.grade == f.grade) && (!f.cls || r.cls == f.cls))
         .sort((a, b) => a.grade - b.grade || a.cls - b.cls || a.num - b.num);
-      $('recTable').innerHTML = rows.length ? `<table class="rec"><thead><tr><th>학년</th><th>반</th><th>번호</th><th>이름</th><th>최고 기록</th><th>도전</th><th>클리어</th><th>마지막 도전</th><th></th></tr></thead><tbody>` +
-        rows.map(r => `<tr><td>${r.grade}</td><td>${r.cls}</td><td>${r.num}</td><td>${Util.esc(r.name)}</td><td>${r.bestMs != null ? Util.formatTime(r.bestMs) : '-'}</td><td>${r.tries}</td><td>${r.clears}</td><td>${r.lastAt ? new Date(r.lastAt).toLocaleString('ko-KR') : '-'}</td><td><button class="danger small" data-del="${r.id}">삭제</button></td></tr>`).join('') +
+      $('recTable').innerHTML = rows.length ? `<table class="rec"><thead><tr><th>학년</th><th>반</th><th>이름</th><th>최고 기록</th><th>도전</th><th>클리어</th><th>마지막 도전</th><th></th></tr></thead><tbody>` +
+        rows.map(r => `<tr><td>${r.grade}</td><td>${r.cls}</td><td>${Util.esc(r.name)}</td><td>${r.bestMs != null ? Util.formatTime(r.bestMs) : '-'}</td><td>${r.tries}</td><td>${r.clears}</td><td>${r.lastAt ? new Date(r.lastAt).toLocaleString('ko-KR') : '-'}</td><td><button class="danger small" data-del="${r.id}">삭제</button></td></tr>`).join('') +
         '</tbody></table>' : '<p class="muted">기록이 없어요.</p>';
       $('recCount').textContent = `${rows.length}명`;
       $('recTable').querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
         const r = all.find(x => x.id === Number(b.dataset.del));
-        ask(`${r.grade}학년 ${r.cls}반 ${r.num}번 ${r.name} 학생의 기록을 모두 지울까요?`, async () => {
+        ask(`${r.grade}학년 ${r.cls}반 ${r.name} 학생의 기록을 모두 지울까요?`, async () => {
           await Store.adminDeletePlayer(r.id);
           records();
         });
@@ -102,8 +102,8 @@ const Admin = (() => {
     $('fGrade').addEventListener('change', e => { f.grade = e.target.value; draw(); });
     $('fCls').addEventListener('change', e => { f.cls = e.target.value; draw(); });
     const table = () => {
-      const head = ['학년', '반', '번호', '이름', '최고 기록', '최고 기록(초)', '도전 횟수', '클리어 횟수', '마지막 도전'];
-      return [head].concat(body._rows.map(r => [r.grade, r.cls, r.num, r.name, r.bestMs != null ? Util.formatTime(r.bestMs) : '', r.bestMs != null ? (r.bestMs / 1000).toFixed(1) : '', r.tries, r.clears, r.lastAt ? new Date(r.lastAt).toLocaleString('ko-KR') : '']));
+      const head = ['학년', '반', '이름', '최고 기록', '최고 기록(초)', '도전 횟수', '클리어 횟수', '마지막 도전'];
+      return [head].concat(body._rows.map(r => [r.grade, r.cls, r.name, r.bestMs != null ? Util.formatTime(r.bestMs) : '', r.bestMs != null ? (r.bestMs / 1000).toFixed(1) : '', r.tries, r.clears, r.lastAt ? new Date(r.lastAt).toLocaleString('ko-KR') : '']));
     };
     $('csvCopy').addEventListener('click', async () => {
       const tsv = table().map(l => l.join('\t')).join('\n');

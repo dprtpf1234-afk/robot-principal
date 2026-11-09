@@ -1329,8 +1329,15 @@ const Game = (() => {
     setTimeout(() => idle(work), 600);
   }
 
+  // 플레이어가 화면(CSS 픽셀) 어디쯤 있는지: 패널 자동 숨김용
+  function playerRect() {
+    if (!player || !map || !running) return null;
+    const k = scale / dpr, x = (player.x - cam.x) * k, y = (player.y - player.z - cam.y) * k;
+    return { x0: x - 10 * k, x1: x + 10 * k, y0: y - 28 * k, y1: y + 3 * k };
+  }
+
   return {
-    prewarm,
+    prewarm, playerRect,
     init, newGame, stop, facePlayer, zoom, zoomInfo, celebrate, inDark, smooth2x,
     setSpeed(k) { speedK = k || 1; },
     transformRobot, resetRobot() { morphStart = 0; },

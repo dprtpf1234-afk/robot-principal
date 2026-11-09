@@ -164,7 +164,7 @@ const App = (() => {
     setGrade(saved ? Number(saved.grade) : 0);
     setChar(saved && saved.charIdx != null ? saved.charIdx : 0);
     setMode(saved && MODES[saved.mode] ? saved.mode : 'm30');
-    if (saved) { clsSel.value = saved.cls; $('inNum').value = saved.num; $('inName').value = saved.name; }
+    if (saved) { clsSel.value = saved.cls; $('inName').value = saved.name; }
 
     $('btnStart').addEventListener('click', openEntry);
     $('entryClose').addEventListener('click', () => $('entry').classList.add('hidden'));
@@ -182,13 +182,14 @@ const App = (() => {
 
     $('startForm').addEventListener('submit', e => {
       e.preventDefault();
-      const grade = form.grade, cls = Number(clsSel.value), num = Number($('inNum').value);
-      const name = $('inName').value.trim();
+      // 번호는 받지 않는다 (기록 서버 형식에 맞춰 1로 둔다)
+      const grade = form.grade, cls = Number(clsSel.value), num = 1;
+      const name = $('inName').value.replace(/\s+/g, '');
       const err = $('startErr');
       if (!grade) return (err.textContent = '학년을 골라 주세요.');
       if (!cls) return (err.textContent = '반을 골라 주세요.');
-      if (!num || num < 1 || num > 50) return (err.textContent = '번호를 숫자로 입력해 주세요.');
-      if (!/^[가-힣]{2,5}$/.test(name)) return (err.textContent = '이름은 한글 2~5글자로 입력해 주세요.');
+      const bad = Util.checkName(name);
+      if (bad) { $('inName').focus(); return (err.textContent = bad); }
       err.textContent = '';
       const player = { grade, cls, num, name, group: Util.gradeGroup(grade), charIdx: form.charIdx, mode: form.mode };
       Util.storage.set('rp_last_player', { grade, cls, num, name, charIdx: form.charIdx, mode: form.mode });
@@ -939,6 +940,19 @@ const App = (() => {
 
     Title.init($('titleCanvas'));
     bindStart();
+    // 캐릭터가 순서도·부품 패널 뒤로 가면 패널을 잠깐 숨기고, 벗어나면 다시 보인다
+    setInterval(() => {
+      const pr = Game.playerRect();
+      for (const id of ['flowPanel', 'invPanel']) {
+        const el = $(id); if (!el) continue;
+        if (!pr) { el.classList.remove('auto-hide'); continue; }
+        const r = el.getBoundingClientRect();
+        if (!r.width) continue;
+        const hidden = el.classList.contains('auto-hide'), m = hidden ? 28 : 8;   // 다시 보일 때는 조금 더 멀어져야 (깜빡임 방지)
+        const over = pr.x1 > r.left - m && pr.x0 < r.right + m && pr.y1 > r.top - m && pr.y0 < r.bottom + m;
+        el.classList.toggle('auto-hide', over);
+      }
+    }, 120);
     showStart();
     // 첫 화면에 있는 동안 지도·캐릭터 그림을 미리 준비한다
     if (location.hash !== '#admin') setTimeout(() => Game.prewarm(DEFAULT_CONTENT), 400);

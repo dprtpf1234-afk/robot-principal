@@ -246,7 +246,10 @@ const UI = (() => {
   function hud(s) {
     $('hudTime').innerHTML = `<small>${s.label}</small>${s.time}`;
     $('hudTime').parentElement.classList.toggle('warn', !!s.warn);
-    $('hudPlace').textContent = s.place;
+    // "본관 1층 · 밤" → 장소는 크게, 낮/밤은 작게
+    const pl = String(s.place || '').split(' · ');
+    $('hudPlace').textContent = pl[0] || '';
+    $('hudPhase').textContent = pl.slice(1).join(' · ');
     const mi = s.mission || { html: '', pill: '' };
     const key = mi.html + '|' + mi.pill;
     const box = $('hudNext');

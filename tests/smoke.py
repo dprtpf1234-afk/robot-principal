@@ -267,7 +267,6 @@ with sync_playwright() as p:
     page.click('#avatarGrid button[data-c="5"]')
     page.click(f'#modeSeg button[data-m="{mode}"]')
     page.select_option("#inClass", "2")
-    page.fill("#inNum", "15")
     page.fill("#inName", "김민수")
     page.click("#startForm button[type=submit]")
     page.wait_for_timeout(400)

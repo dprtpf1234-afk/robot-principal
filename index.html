@@ -78,36 +78,36 @@ p.small, .small { font-size: 13px; }
 
 /* 입장 정보 창 */
 #entry { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; background: rgba(20, 30, 60, .45); padding: 12px; overflow: auto; }
-.entry-card { position: relative; width: min(520px, 100%); max-height: 100%; overflow: auto; background: var(--paper); border: 4px solid var(--line); border-radius: 14px; box-shadow: 0 8px 0 var(--line); padding: 16px 20px; display: grid; gap: 6px; }
-.entry-close { position: absolute; top: 12px; right: 12px; font-weight: 800; font-size: 15px; background: #fff; border: 3px solid var(--line); border-radius: 8px; padding: 4px 10px; color: var(--ink); }
-.e-school { font-size: 13px; color: var(--muted); font-weight: 700; }
-.e-title { margin: 0; font-family: var(--title-font); font-weight: 400; font-size: 30px; line-height: 1.1; }
-.e-sub { color: var(--accent); font-weight: 700; font-size: 15px; margin-bottom: 2px; }
-.e-label { display: grid; gap: 5px; font-weight: 900; font-size: 14px; margin-top: 2px; }
+.entry-card { position: relative; width: min(430px, 100%); max-height: 100%; overflow: auto; background: var(--paper); border: 3px solid var(--line); border-radius: 12px; box-shadow: 0 6px 0 var(--line); padding: 12px 16px; display: grid; gap: 4px; }
+.entry-close { position: absolute; top: 10px; right: 10px; font-weight: 800; font-size: 13px; background: #fff; border: 2px solid var(--line); border-radius: 7px; padding: 3px 8px; color: var(--ink); }
+.e-school { font-size: 12px; color: var(--muted); font-weight: 700; }
+.e-title { margin: 0; font-family: var(--title-font); font-weight: 400; font-size: 24px; line-height: 1.1; }
+.e-sub { color: var(--accent); font-weight: 700; font-size: 13px; margin-bottom: 0; }
+.e-label { display: grid; gap: 3px; font-weight: 900; font-size: 13px; margin-top: 1px; }
 div.e-label { display: block; }
-.e-cols, .e-col { display: grid; gap: 6px; align-content: start; }
+.e-cols, .e-col { display: grid; gap: 4px; align-content: start; }
 .e-label .muted { font-weight: 600; font-size: 12px; }
 #gradeNote { display: inline; margin-left: 4px; }
 .e-two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.entry-card input, .entry-card select { font-size: 17px; padding: 9px 10px; border: 3px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); width: 100%; font-weight: 600; }
+.entry-card input, .entry-card select { font-size: 16px; padding: 6px 9px; border: 2px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); width: 100%; font-weight: 600; }
 .entry-card input:focus, .entry-card select:focus { outline: none; border-color: #f2b632; box-shadow: 0 0 0 3px #ffe8a3; }
-.seg { display: grid; gap: 6px; }
+.seg { display: grid; gap: 5px; }
 .seg.six { grid-template-columns: repeat(6, 1fr); }
 .seg.three { grid-template-columns: repeat(3, 1fr); }
-.seg button { font-weight: 900; font-size: 15px; padding: 9px 4px; background: #fff; border: 3px solid #d8cba8; border-radius: 8px; color: var(--ink); }
+.seg button { font-weight: 900; font-size: 13px; padding: 6px 3px; background: #fff; border: 2px solid #d8cba8; border-radius: 7px; color: var(--ink); }
 .seg button.on { background: #4caf63; color: #fff; border-color: var(--line); box-shadow: 0 3px 0 var(--line); }
-.avatars { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; }
+.avatars { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
 @media (max-width: 480px) { .avatars { grid-template-columns: repeat(4, 1fr); } .seg .gr { display: none; } }
 @media (max-width: 600px) { .title-head { top: 70px; } .t-logo { font-size: 30px; } .t-sub { font-size: 12px; } }
-.avatars button { background: #fff; border: 3px solid #d8cba8; border-radius: 8px; padding: 4px 2px 3px; display: grid; justify-items: center; gap: 1px; color: var(--ink); font-weight: 800; font-size: 13px; }
-.avatars button canvas { width: 36px; height: 36px; image-rendering: pixelated; }
+.avatars button { background: #fff; border: 2px solid #d8cba8; border-radius: 7px; padding: 2px 1px; display: grid; justify-items: center; gap: 0; color: var(--ink); font-weight: 800; font-size: 11px; }
+.avatars button canvas { width: 28px; height: 28px; image-rendering: pixelated; }
 .avatars button.on { background: #fff3c4; border-color: var(--line); box-shadow: 0 3px 0 var(--line); }
-.mode-desc { margin: 0; font-size: 13px; color: #4a3f55; line-height: 1.45; min-height: 1.45em; }
+.mode-desc { margin: 0; font-size: 12px; color: #4a3f55; line-height: 1.45; min-height: 1.45em; }
 #startErr { margin: 0; min-height: 0; font-size: 14px; }
 #startErr:empty { display: none; }
-.e-enter { font-family: var(--title-font); font-size: 30px; color: #fff; background: #2f6ef0; border: 4px solid var(--line); border-radius: 10px; padding: 8px; box-shadow: 0 5px 0 var(--line), inset 0 -5px 0 #2457c8; }
+.e-enter { font-family: var(--title-font); font-size: 22px; color: #fff; background: #2f6ef0; border: 3px solid var(--line); border-radius: 9px; padding: 5px; box-shadow: 0 4px 0 var(--line), inset 0 -4px 0 #2457c8; margin-top: 2px; }
 .e-enter:active, .e-rank:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line); }
-.e-rank { font-weight: 900; font-size: 15px; background: #fff8e7; border: 3px solid var(--line); border-radius: 10px; padding: 9px; box-shadow: 0 4px 0 var(--line); color: var(--ink); }
+.e-rank { font-weight: 900; font-size: 13px; background: #fff8e7; border: 2px solid var(--line); border-radius: 9px; padding: 6px; box-shadow: 0 3px 0 var(--line); color: var(--ink); margin-top: 3px; }
 #adminLink { text-align: center; font-size: 11px; color: #b9b0c4; }
 
 /* 상단 정보 */
@@ -121,7 +121,11 @@ div.e-label { display: block; }
 #hudTime small { display: block; font-size: 10px; color: var(--muted); }
 .hud-box.warn { background: #ffd6e0; color: #b0123f; }
 table.rank td.mode { color: var(--muted); font-size: 13px; }
-#hudPlace { font-size: 11px; color: var(--muted); }
+.hud-timebox { display: flex; align-items: stretch; gap: 10px; }
+.hud-place { display: flex; flex-direction: column; justify-content: center; border-left: 2px dashed #d8cba8; padding-left: 10px; }
+#hudPlace { font-size: 17px; font-weight: 900; color: #2b5bd7; white-space: nowrap; line-height: 1.15; }
+#hudPlace::before { content: '📍'; font-size: 13px; margin-right: 3px; }
+#hudPhase { font-size: 11px; color: var(--muted); }
 #hudNext { justify-self: center; align-self: start; max-width: 760px; margin-top: 4px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   background: rgba(36, 30, 52, .92); color: #fff; border: 3px solid #ffd84a; border-radius: 12px; padding: 7px 14px; box-shadow: 0 3px 0 #1a1526; font-size: 16px; font-weight: 700; }
 #hudNext:empty { display: none; }
@@ -182,6 +186,9 @@ table.rank td.mode { color: var(--muted); font-size: 13px; }
 .flow-panel { background: rgba(255, 248, 231, .95); border: 3px solid var(--line); border-radius: 10px; box-shadow: 0 3px 0 var(--line); padding: 4px 6px 6px; width: 212px; }
 .flow-toggle { display: block; width: 100%; text-align: left; background: none; border: 0; font-weight: 900; font-size: 13px; padding: 2px 2px 4px; color: var(--ink); }
 .flow-panel.folded { width: auto; padding-bottom: 2px; }
+/* 캐릭터가 패널 뒤로 가면 잠깐 숨긴다 */
+.flow-panel, .inv-panel { transition: opacity .25s, transform .25s; }
+.auto-hide { opacity: 0 !important; transform: scale(.96); pointer-events: none !important; }
 .flow-panel.folded .flow-list { display: none; }
 .flow-list { display: grid; gap: 1px; justify-items: stretch; }
 .fl-stage { display: grid; gap: 3px; }
@@ -426,6 +433,8 @@ table.rec th { background: #f3ead6; }
   #hudNext .mpill { font-size: 11px; }
   #dlgText { font-size: 16px; }
   #dlgWho { font-size: 20px; }
+  #hudPlace { font-size: 14px; }
+  .hud-timebox { gap: 7px; } .hud-place { padding-left: 7px; }
 }
 @media (max-height: 460px) {
   .panel { padding: 12px 14px; }
@@ -532,9 +541,8 @@ table.rec th { background: #f3ead6; }
       <div class="seg six" id="gradeSeg"></div>
       <div class="e-two">
         <label class="e-label">반<select id="inClass"><option value="">고르기</option></select></label>
-        <label class="e-label">번호<input id="inNum" type="number" inputmode="numeric" min="1" max="50" placeholder="예: 15"></label>
+        <label class="e-label">이름<input id="inName" type="text" maxlength="4" placeholder="예: 김하늘"></label>
       </div>
-      <label class="e-label">이름<input id="inName" type="text" maxlength="5" placeholder="예: 김하늘"></label>
       </div><div class="e-col">
 
       <div class="e-label">캐릭터</div>
@@ -551,14 +559,14 @@ table.rec th { background: #f3ead6; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (저학년 · 고학년)</button>
       </div></div>
-      <div id="adminLink">v2.5</div>
+      <div id="adminLink">v2.6</div>
     </form>
   </div>
 </div>
 
 <div id="hud" class="hidden">
   <div class="hud-left">
-    <div class="hud-box"><div id="hudTime">00:00</div><div id="hudPlace"></div></div>
+    <div class="hud-box hud-timebox"><div id="hudTime">00:00</div><div class="hud-place"><div id="hudPlace"></div><div id="hudPhase"></div></div></div>
     <div class="flow-panel" id="flowPanel"><button class="flow-toggle" id="flowToggle">순서도 ▾</button><div class="flow-list" id="flowList"></div></div>
   </div>
   <div id="hudNext" class="hud-box"></div>
@@ -700,7 +708,28 @@ const Util = (() => {
     return { stages: c.stages, list, prereq, has: o => list.includes(o) };
   }
 
-  return { rng, josa, maskName, normalize, shuffle, formatTime, gradeGroup, groupLabel, sha256, esc, clone, storage, course };
+  // ---------- 이름 검사 ----------
+  // 실제 이름 형식(한글 3~4글자, 성으로 시작)만 받고, 욕설·성적인 말·유행어가 들어 있으면 막는다
+  const SURNAMES = ('김 이 박 최 정 강 조 윤 장 임 한 오 서 신 권 황 안 송 전 홍 유 고 문 양 손 배 백 허 남 심 노 하 곽 성 차 주 우 구 민 류 나 진 지 엄 채 원 천 방 공 현 함 변 염 여 추 도 소 석 선 설 마 길 연 위 표 명 기 반 라 왕 금 옥 육 인 맹 제 모 탁 국 어 은 편 용 예 경 봉 사 부 황 가 복 태 목 형 피 두 감 음 빈 동 온 호 범 좌 팽 승 간 상 시 갈 단 견 당 화 창 옹 순 빙 종 풍 엽 개 판 묵 운 계 탄 우 정 뢰 초 근 섭 내 위 야 매 아 영 리 림 라 로 륙 롱 려 렴 량 류').split(' ');
+  const SURNAMES2 = ['남궁', '황보', '제갈', '선우', '독고', '사공', '서문', '동방', '망절', '어금', '장곡', '무본', '황목'];
+  const BAD_WORDS = [
+    // 욕설
+    '시발', '씨발', '씨빨', '시바', '씨바', '쉬발', '슈발', '십알', '씹', '좆', '좃', '존나', '졸라', '병신', '븅신', '빙신', '등신', '멍청', '바보', '미친', '미쳤', '또라', '돌아이', '새끼', '색기', '개새', '개색', '개같', '개놈', '개년', '지랄', '꺼져', '닥쳐', '엠창', '엄창', '애미', '애비', '에미', '에비', '느금', '니미', '니엄', '니애', '느개', '느그', '쌍놈', '쌍년', '썅', '년놈', '호로', '후레', '찐따', '찌질', '틀딱', '한남충', '김치녀', '맘충', '급식충', '충이', '잼민', '일베', '메갈', '죽어', '죽일', '자살', '살인', '똥', '오줌', '방구', '방귀', '변태',
+    // 성적인 말
+    '섹스', '섹시', '야동', '야사', '보지', '자지', '잦이', '봊', '젖', '꼬추', '고추', '불알', '부랄', '딸딸', '자위', '강간', '성폭', '창녀', '걸레', '후장', '빠구리', '떡치', '응디', '엉덩', '팬티', '가슴', '유두', '꼭지', '성교', '정액', '콘돔', '임신',
+    // 유행어 · 장난
+    '줴', '쥐쥐', '엘을', '엘가', '가져가', '킹받', '어쩔', '저쩔', '티비', '뇌절', '오히려', '응애', '뭐요', '알빠', '실화', '레전드', '갓생', '꿀잼', '노잼', '핵잼', '개꿀', '어쩌라', '그래서', '뭐래', '무야호', '킹갓', '마라탕', '탕후루', '스키비', '토일렛', '야르', '헐랭', '하이요', '좋댓', '구독', '알림', '선생', '교장', '관리', '운영', '테스트', '아무개', '홍길동', '누구', '익명', '모름', '없음', '학생'
+  ];
+  function checkName(name) {
+    if (!/^[가-힣]{3,4}$/.test(name)) return '이름은 실제 이름처럼 한글 3~4글자로 입력해 주세요. (예: 김하늘)';
+    const okSurname = SURNAMES2.includes(name.slice(0, 2)) || SURNAMES.includes(name[0]);
+    if (!okSurname) return '성을 포함한 실제 이름을 입력해 주세요. (예: 김하늘)';
+    if (/(.)\1\1/.test(name)) return '실제 이름을 입력해 주세요.';
+    for (const w of BAD_WORDS) if (name.includes(w)) return '사용할 수 없는 이름이에요. 실제 이름을 입력해 주세요.';
+    return '';
+  }
+
+  return { checkName, rng, josa, maskName, normalize, shuffle, formatTime, gradeGroup, groupLabel, sha256, esc, clone, storage, course };
 })();
 
 // ===== daynight.js =====
@@ -8230,8 +8259,15 @@ const Game = (() => {
     setTimeout(() => idle(work), 600);
   }
 
+  // 플레이어가 화면(CSS 픽셀) 어디쯤 있는지: 패널 자동 숨김용
+  function playerRect() {
+    if (!player || !map || !running) return null;
+    const k = scale / dpr, x = (player.x - cam.x) * k, y = (player.y - player.z - cam.y) * k;
+    return { x0: x - 10 * k, x1: x + 10 * k, y0: y - 28 * k, y1: y + 3 * k };
+  }
+
   return {
-    prewarm,
+    prewarm, playerRect,
     init, newGame, stop, facePlayer, zoom, zoomInfo, celebrate, inDark, smooth2x,
     setSpeed(k) { speedK = k || 1; },
     transformRobot, resetRobot() { morphStart = 0; },
@@ -8501,7 +8537,10 @@ const UI = (() => {
   function hud(s) {
     $('hudTime').innerHTML = `<small>${s.label}</small>${s.time}`;
     $('hudTime').parentElement.classList.toggle('warn', !!s.warn);
-    $('hudPlace').textContent = s.place;
+    // "본관 1층 · 밤" → 장소는 크게, 낮/밤은 작게
+    const pl = String(s.place || '').split(' · ');
+    $('hudPlace').textContent = pl[0] || '';
+    $('hudPhase').textContent = pl.slice(1).join(' · ');
     const mi = s.mission || { html: '', pill: '' };
     const key = mi.html + '|' + mi.pill;
     const box = $('hudNext');
@@ -9060,13 +9099,13 @@ const Admin = (() => {
     const draw = () => {
       const rows = all.filter(r => (!f.g || Util.gradeGroup(r.grade) === f.g) && (!f.grade || r.grade == f.grade) && (!f.cls || r.cls == f.cls))
         .sort((a, b) => a.grade - b.grade || a.cls - b.cls || a.num - b.num);
-      $('recTable').innerHTML = rows.length ? `<table class="rec"><thead><tr><th>학년</th><th>반</th><th>번호</th><th>이름</th><th>최고 기록</th><th>도전</th><th>클리어</th><th>마지막 도전</th><th></th></tr></thead><tbody>` +
-        rows.map(r => `<tr><td>${r.grade}</td><td>${r.cls}</td><td>${r.num}</td><td>${Util.esc(r.name)}</td><td>${r.bestMs != null ? Util.formatTime(r.bestMs) : '-'}</td><td>${r.tries}</td><td>${r.clears}</td><td>${r.lastAt ? new Date(r.lastAt).toLocaleString('ko-KR') : '-'}</td><td><button class="danger small" data-del="${r.id}">삭제</button></td></tr>`).join('') +
+      $('recTable').innerHTML = rows.length ? `<table class="rec"><thead><tr><th>학년</th><th>반</th><th>이름</th><th>최고 기록</th><th>도전</th><th>클리어</th><th>마지막 도전</th><th></th></tr></thead><tbody>` +
+        rows.map(r => `<tr><td>${r.grade}</td><td>${r.cls}</td><td>${Util.esc(r.name)}</td><td>${r.bestMs != null ? Util.formatTime(r.bestMs) : '-'}</td><td>${r.tries}</td><td>${r.clears}</td><td>${r.lastAt ? new Date(r.lastAt).toLocaleString('ko-KR') : '-'}</td><td><button class="danger small" data-del="${r.id}">삭제</button></td></tr>`).join('') +
         '</tbody></table>' : '<p class="muted">기록이 없어요.</p>';
       $('recCount').textContent = `${rows.length}명`;
       $('recTable').querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
         const r = all.find(x => x.id === Number(b.dataset.del));
-        ask(`${r.grade}학년 ${r.cls}반 ${r.num}번 ${r.name} 학생의 기록을 모두 지울까요?`, async () => {
+        ask(`${r.grade}학년 ${r.cls}반 ${r.name} 학생의 기록을 모두 지울까요?`, async () => {
           await Store.adminDeletePlayer(r.id);
           records();
         });
@@ -9087,8 +9126,8 @@ const Admin = (() => {
     $('fGrade').addEventListener('change', e => { f.grade = e.target.value; draw(); });
     $('fCls').addEventListener('change', e => { f.cls = e.target.value; draw(); });
     const table = () => {
-      const head = ['학년', '반', '번호', '이름', '최고 기록', '최고 기록(초)', '도전 횟수', '클리어 횟수', '마지막 도전'];
-      return [head].concat(body._rows.map(r => [r.grade, r.cls, r.num, r.name, r.bestMs != null ? Util.formatTime(r.bestMs) : '', r.bestMs != null ? (r.bestMs / 1000).toFixed(1) : '', r.tries, r.clears, r.lastAt ? new Date(r.lastAt).toLocaleString('ko-KR') : '']));
+      const head = ['학년', '반', '이름', '최고 기록', '최고 기록(초)', '도전 횟수', '클리어 횟수', '마지막 도전'];
+      return [head].concat(body._rows.map(r => [r.grade, r.cls, r.name, r.bestMs != null ? Util.formatTime(r.bestMs) : '', r.bestMs != null ? (r.bestMs / 1000).toFixed(1) : '', r.tries, r.clears, r.lastAt ? new Date(r.lastAt).toLocaleString('ko-KR') : '']));
     };
     $('csvCopy').addEventListener('click', async () => {
       const tsv = table().map(l => l.join('\t')).join('\n');
@@ -10046,7 +10085,7 @@ const App = (() => {
     setGrade(saved ? Number(saved.grade) : 0);
     setChar(saved && saved.charIdx != null ? saved.charIdx : 0);
     setMode(saved && MODES[saved.mode] ? saved.mode : 'm30');
-    if (saved) { clsSel.value = saved.cls; $('inNum').value = saved.num; $('inName').value = saved.name; }
+    if (saved) { clsSel.value = saved.cls; $('inName').value = saved.name; }
 
     $('btnStart').addEventListener('click', openEntry);
     $('entryClose').addEventListener('click', () => $('entry').classList.add('hidden'));
@@ -10064,13 +10103,14 @@ const App = (() => {
 
     $('startForm').addEventListener('submit', e => {
       e.preventDefault();
-      const grade = form.grade, cls = Number(clsSel.value), num = Number($('inNum').value);
-      const name = $('inName').value.trim();
+      // 번호는 받지 않는다 (기록 서버 형식에 맞춰 1로 둔다)
+      const grade = form.grade, cls = Number(clsSel.value), num = 1;
+      const name = $('inName').value.replace(/\s+/g, '');
       const err = $('startErr');
       if (!grade) return (err.textContent = '학년을 골라 주세요.');
       if (!cls) return (err.textContent = '반을 골라 주세요.');
-      if (!num || num < 1 || num > 50) return (err.textContent = '번호를 숫자로 입력해 주세요.');
-      if (!/^[가-힣]{2,5}$/.test(name)) return (err.textContent = '이름은 한글 2~5글자로 입력해 주세요.');
+      const bad = Util.checkName(name);
+      if (bad) { $('inName').focus(); return (err.textContent = bad); }
       err.textContent = '';
       const player = { grade, cls, num, name, group: Util.gradeGroup(grade), charIdx: form.charIdx, mode: form.mode };
       Util.storage.set('rp_last_player', { grade, cls, num, name, charIdx: form.charIdx, mode: form.mode });
@@ -10821,6 +10861,19 @@ const App = (() => {
 
     Title.init($('titleCanvas'));
     bindStart();
+    // 캐릭터가 순서도·부품 패널 뒤로 가면 패널을 잠깐 숨기고, 벗어나면 다시 보인다
+    setInterval(() => {
+      const pr = Game.playerRect();
+      for (const id of ['flowPanel', 'invPanel']) {
+        const el = $(id); if (!el) continue;
+        if (!pr) { el.classList.remove('auto-hide'); continue; }
+        const r = el.getBoundingClientRect();
+        if (!r.width) continue;
+        const hidden = el.classList.contains('auto-hide'), m = hidden ? 28 : 8;   // 다시 보일 때는 조금 더 멀어져야 (깜빡임 방지)
+        const over = pr.x1 > r.left - m && pr.x0 < r.right + m && pr.y1 > r.top - m && pr.y0 < r.bottom + m;
+        el.classList.toggle('auto-hide', over);
+      }
+    }, 120);
     showStart();
     // 첫 화면에 있는 동안 지도·캐릭터 그림을 미리 준비한다
     if (location.hash !== '#admin') setTimeout(() => Game.prewarm(DEFAULT_CONTENT), 400);
