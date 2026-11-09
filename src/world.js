@@ -598,6 +598,8 @@ const World = (() => {
     // 동쪽 주차장 (사선 울타리까지)
     for (let y = 24; y <= 50; y++) { const [, b] = inRow(y); for (let x = 53; x < b; x++) set(m, x, y, TILE.PARK); }
     // 왼쪽 줄(체육시설 스탠드 옆) · 가운데 두 줄 · 오른쪽 사선 줄(울타리와 직각) · 아래 끝 세로 칸
+    // 왼쪽 줄 뒤(스탠드·체육시설 쪽)로는 빈 칸 사이로도 넘어가지 못하게 보이지 않는 연석을 둔다
+    m.objects.push({ id: 'o' + (objSeq++), kind: 'curb', img: Object.assign(document.createElement('canvas'), { width: 1, height: 1 }), x: 53 * T, y: 24 * T, w: 1, h: 1, solid: true, interact: null, hidden: false, hit: { x: 52.8 * T, y: 24.5 * T, w: 0.5 * T, h: 26.5 * T } });
     for (const y of [25, 26, 27]) stall(m, 53, y, 'L');
     for (let y = 31; y <= 49; y++) stall(m, 53, y, 'L');
     for (let y = 38; y <= 49; y++) { stall(m, 57.5, y, 'R'); stall(m, 59.5, y, 'L'); }

@@ -551,7 +551,7 @@ table.rec th { background: #f3ead6; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (저학년 · 고학년)</button>
       </div></div>
-      <div id="adminLink">v2.4</div>
+      <div id="adminLink">v2.5</div>
     </form>
   </div>
 </div>
@@ -819,7 +819,7 @@ const DEFAULT_CONTENT = {
   },
   "locks": {
     "card": "문이 잠겨 있어요. 정문 앞 지킴이 선생님께 출입 카드를 받아 오면 학교 건물에 들어갈 수 있어요.",
-    "pcKey": "컴퓨터실1 문이 잠겨 있어요. 같은 층 방송실의 방송부 누나가 열쇠를 갖고 있대요.",
+    "pcKey": "컴퓨터실1 문이 잠겨 있어요. 같은 층 방송실의 방송부 선배가 열쇠를 갖고 있대요.",
     "storeKey": "AI 스마트존 문이 잠겨 있어요. 본관 1층 교장실 앞 교무부장님이 열쇠를 갖고 계세요."
   },
   "collect": {
@@ -2024,7 +2024,7 @@ const DEFAULT_CONTENT = {
     },
     {
       "order": 4,
-      "npc": "방송부 누나",
+      "npc": "방송부 선배",
       "short": "방송실",
       "kind": "code",
       "part": "스피커 입",
@@ -3956,7 +3956,7 @@ const DEFAULT_CONTENT = {
     "m1": "매일 아침 정문에서 학생들을 안전하게 맞이하는 지킴이 선생님. 본관 출입 카드를 갖고 있다.",
     "m2": "실험을 좋아하는 과학 선생님. AI가 사진을 배우는 방법을 잘 안다.",
     "m3": "도서관을 지키는 사서 선생님. 책 사이에 단서를 숨기는 걸 좋아한다.",
-    "m4": "점심시간 방송을 맡은 방송부 누나. 암호 풀기를 아주 좋아한다.",
+    "m4": "점심시간 방송을 맡은 방송부 선배. 암호 풀기를 아주 좋아한다.",
     "m5": "컴퓨터실의 정보 선생님. 알고리즘과 코딩이라면 뭐든 물어보세요.",
     "m6": "운동장의 체육 선생님. 숫자 자물쇠를 자주 잃어버린다.",
     "m7": "학교 행사와 시간표를 챙기는 교무부장님. 교장실 앞에서 AI 스마트존 열쇠와 손전등을 맡아 두었다.",
@@ -6609,6 +6609,8 @@ const World = (() => {
     // 동쪽 주차장 (사선 울타리까지)
     for (let y = 24; y <= 50; y++) { const [, b] = inRow(y); for (let x = 53; x < b; x++) set(m, x, y, TILE.PARK); }
     // 왼쪽 줄(체육시설 스탠드 옆) · 가운데 두 줄 · 오른쪽 사선 줄(울타리와 직각) · 아래 끝 세로 칸
+    // 왼쪽 줄 뒤(스탠드·체육시설 쪽)로는 빈 칸 사이로도 넘어가지 못하게 보이지 않는 연석을 둔다
+    m.objects.push({ id: 'o' + (objSeq++), kind: 'curb', img: Object.assign(document.createElement('canvas'), { width: 1, height: 1 }), x: 53 * T, y: 24 * T, w: 1, h: 1, solid: true, interact: null, hidden: false, hit: { x: 52.8 * T, y: 24.5 * T, w: 0.5 * T, h: 26.5 * T } });
     for (const y of [25, 26, 27]) stall(m, 53, y, 'L');
     for (let y = 31; y <= 49; y++) stall(m, 53, y, 'L');
     for (let y = 38; y <= 49; y++) { stall(m, 57.5, y, 'R'); stall(m, 59.5, y, 'L'); }
