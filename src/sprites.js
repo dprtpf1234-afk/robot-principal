@@ -22,7 +22,7 @@ const Sprites = (() => {
     HEDGE: 32, SIDEWALK: 33, CLIFF: 34, LOWPAVE: 35, GARDEN: 36, OSTAIR: 37, FOREST: 38,
     BTREE: 39, PTREE: 40      // 벽돌·보도블록 위에 심은 나무 (화단 잔디 없이)
   };
-  const SOLID = new Set([TILE.WALL, TILE.FENCE, TILE.TREE, TILE.BUILDING, TILE.VOID, TILE.ROAD, TILE.STAND,
+  const SOLID = new Set([TILE.WALL, TILE.FENCE, TILE.TREE, TILE.BUILDING, TILE.VOID, TILE.ROAD,
     TILE.HEDGE, TILE.SIDEWALK, TILE.CLIFF, TILE.GARDEN, TILE.FOREST, TILE.BTREE, TILE.PTREE]);
 
   // 대교초 교표: 홈페이지 그림을 보고 벡터(SVG)로 다시 그렸다 (tools/emblem.svg). 화면 해상도로 선명하게 그린다.
@@ -107,13 +107,8 @@ const Sprites = (() => {
       case TILE.TREE:
       case TILE.BTREE:
       case TILE.PTREE:
-        if (t === TILE.TREE) px(g, x, y, T, T, '#5fae4b');
-        else drawTile(g, t === TILE.BTREE ? TILE.BRICK : TILE.PAVE, tx, ty, below);
-        px(g, x + 7, y + 11, 3, 5, '#7a4e2c');
-        px(g, x + 2, y + 1, 12, 11, '#2f7d3b');
-        px(g, x + 1, y + 3, 14, 7, '#2f7d3b');
-        px(g, x + 4, y + 2, 5, 4, '#45a052');
-        px(g, x + 3, y + 10, 10, 2, '#24652f');
+        drawTile(g, t === TILE.TREE ? TILE.GRASS : t === TILE.BTREE ? TILE.BRICK : TILE.PAVE, tx, ty, below);
+        g.fillStyle = 'rgba(20,45,20,0.32)'; g.beginPath(); g.ellipse(x + 8, y + 13.5, 7.5, 2.6, 0, 0, Math.PI * 2); g.fill();
         break;
       case TILE.UP:       // 올라가는 계단: 밝은 노란빛 + ▲
       case TILE.DOWN: {   // 내려가는 계단: 어두운 푸른빛 + ▼
@@ -438,10 +433,138 @@ const Sprites = (() => {
     px(g, ox + 2, oy, 3, 1, '#fff6c4'); px(g, ox + 9, oy, 3, 1, '#fff6c4');  // 전조등
     px(g, ox + 2, oy + 23, 3, 1, '#e23b3b'); px(g, ox + 9, oy + 23, 3, 1, '#e23b3b');   // 후미등
   }
+  // ---------- 고해상도(2배) 나무: 가을 학교 (초록·빨강 단풍·주황·노랑 은행·감나무·소나무) ----------
+  // 그림 크기 32×58 = 게임 화면 16×29. c.hiRes = true 이면 게임이 그대로(반으로 줄여) 그린다.
+  const TREE_KINDS = {
+    green: { base: '#3f9a4a', lt: '#66bf5e', hl: '#a6e38a', dk: '#2a7537', ol: '#1a4d24' },
+    red: { base: '#c8392f', lt: '#e8603f', hl: '#ffa070', dk: '#8f2324', ol: '#5a1418' },
+    orange: { base: '#de7a24', lt: '#f49c3c', hl: '#ffce78', dk: '#a7521b', ol: '#6a3314' },
+    yellow: { base: '#e2b21f', lt: '#f4d043', hl: '#fff19a', dk: '#b08511', ol: '#6a4f08' },
+    persimmon: { base: '#6f8f35', lt: '#93b04a', hl: '#c4d77a', dk: '#4f6b25', ol: '#2f4216', fruit: true },
+    pine: { base: '#2f6a40', lt: '#43865a', hl: '#6aa87a', dk: '#1f4a2c', ol: '#12301c', pine: true }
+  };
+  const treeCache = {};
+  function makeTree(kind, v) {
+    const key = kind + v;
+    if (treeCache[key]) return treeCache[key];
+    const P = TREE_KINDS[kind];
+    const [c, g] = canvas(32, 58);
+    const H = (i, j, k) => hash(i * 7 + v * 131, j * 13 + v * 17, k);
+    // 줄기
+    const tr = P.pine ? 4 : 5;
+    px(g, 16 - tr / 2, 36, tr, 20, '#7a4e2c'); px(g, 16 + tr / 2 - 2, 36, 2, 20, '#5b3a20'); px(g, 16 - tr / 2, 36, 1, 20, '#94643a');
+    px(g, 13, 54, 7, 2, '#5b3a20');
+    // 잎 덩어리 모양
+    let lobes;
+    if (P.pine) lobes = [[16, 33, 13, 6], [16, 25, 11, 6], [16, 17, 9, 6], [16, 10, 6, 5]];   // [cx, cy, rx, ry] 층층이
+    else {
+      lobes = [[16, 22, 13, 13], [9, 27, 8, 8], [23, 27, 8, 8], [16, 11, 9, 8], [10, 16, 7, 7], [22, 16, 7, 7]];
+      lobes = lobes.map(([x, y, rx, ry], i) => [x + (H(i, 1, 3) - 0.5) * 2, y + (H(i, 2, 4) - 0.5) * 2, rx, ry]);
+    }
+    const inL = (x, y) => lobes.some(([lx, ly, rx, ry]) => ((x - lx) / rx) ** 2 + ((y - ly) / ry) ** 2 <= 1);
+    for (let j = 0; j < 42; j++) for (let i = 0; i < 32; i++) {
+      const x = i + 0.5, y = j + 0.5;
+      if (!inL(x, y)) continue;
+      const edge = !inL(x - 1, y) || !inL(x + 1, y) || !inL(x, y - 1) || !inL(x, y + 1);
+      let col;
+      if (P.pine) {
+        // 층마다 위쪽이 밝고 아래 끝이 어둡다
+        const ly = lobes.find(([lx, cy, rx, ry]) => ((x - lx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1);
+        const rel = (y - ly[1]) / ly[3];
+        col = rel < -0.4 ? P.lt : rel > 0.55 ? P.dk : P.base;
+        if (x < 13 && rel < 0.2) col = P.lt;
+      } else {
+        const lit = -(x - 16) * 0.55 - (y - 18) * 0.85;
+        col = lit > 9 ? P.hl : lit > 3 ? P.lt : lit < -8 ? P.dk : P.base;
+      }
+      // 잎 무늬
+      const n = H(i, j, 9);
+      if (n < 0.1) col = P.dk; else if (n > 0.93) col = P.lt;
+      if (edge) col = P.ol;
+      px(g, i, j, 1, 1, col);
+    }
+    // 둥근 잎 뭉치 빛
+    if (!P.pine) for (let k = 0; k < 6; k++) {
+      const x = 8 + H(k, 5, 1) * 14, y = 8 + H(k, 6, 2) * 16;
+      if (!inL(x + 1, y + 1) || !inL(x - 1, y - 1)) continue;
+      px(g, Math.round(x), Math.round(y), 3, 2, P.hl); px(g, Math.round(x) + 1, Math.round(y) + 2, 3, 1, P.lt);
+    }
+    // 감
+    if (P.fruit) for (let k = 0; k < 11; k++) {
+      const x = Math.round(6 + H(k, 7, 5) * 20), y = Math.round(8 + H(k, 8, 6) * 24);
+      if (!inL(x + 1, y + 1)) continue;
+      px(g, x, y, 3, 3, '#f07a1a'); px(g, x, y, 1, 1, '#ffb15a'); px(g, x + 1, y - 1, 1, 1, '#3f5a20');
+    }
+    c.hiRes = true;
+    return (treeCache[key] = c);
+  }
+  // 칸 위치로 나무 종류를 고른다 (화단은 초록·소나무 위주)
+  function treeFor(tx, ty, planter) {
+    const r = hash(tx, ty, 51), v = Math.floor(hash(tx, ty, 52) * 3);
+    let kind;
+    if (planter) kind = r < 0.75 ? 'green' : 'pine';
+    else kind = r < 0.28 ? 'green' : r < 0.44 ? 'red' : r < 0.58 ? 'orange' : r < 0.72 ? 'yellow' : r < 0.84 ? 'persimmon' : 'pine';
+    return makeTree(kind, v);
+  }
+  // 텃밭 (2배 해상도): 세로 이랑 + 새싹
+  function drawGardenHi(g, tx, ty) {
+    const X = tx * 32, Y = ty * 32;
+    px(g, X, Y, 32, 32, '#6e5034');
+    for (let i = 0; i < 8; i++) {
+      px(g, X + i * 4, Y, 2, 32, '#8a6640'); px(g, X + i * 4, Y, 1, 32, '#9c7650'); px(g, X + i * 4 + 3, Y, 1, 32, '#5c4129');
+    }
+    for (let k = 0; k < 5; k++) {
+      const sx = X + Math.floor(hash(tx, ty, 60 + k) * 8) * 4, sy = Y + 2 + Math.floor(hash(tx, ty, 70 + k) * 26);
+      px(g, sx, sy, 2, 2, '#4f9a3d'); px(g, sx - 1, sy - 1, 1, 1, '#7fc25e'); px(g, sx + 2, sy - 1, 1, 1, '#7fc25e'); px(g, sx, sy, 1, 1, '#9ad86e');
+    }
+  }
+  // 둥근 나무 (칸마다 모양·색이 조금씩 다르다): 땅 그림자 → 줄기 → 잎 덩어리(밝은 면·그늘·테두리)
+  const TREE_PAL = [
+    { base: '#3f9a4a', lt: '#6cc363', hl: '#9be07f', dk: '#2b7a38', ol: '#1d5428' },
+    { base: '#358c45', lt: '#5cb35b', hl: '#86d276', dk: '#256b33', ol: '#174a22' },
+    { base: '#4aa458', lt: '#7dce6c', hl: '#b0ea8e', dk: '#33843f', ol: '#215f2c' }
+  ];
+  function drawTreeTop(g, x, y, tx, ty) {
+    const v = Math.floor(hash(tx, ty, 41) * 3), P = TREE_PAL[v];
+    const ox = Math.round((hash(tx, ty, 42) - 0.5) * 2), oy = Math.round((hash(tx, ty, 43) - 0.5) * 2);
+    // 땅 그림자와 줄기
+    g.fillStyle = 'rgba(20,50,20,0.35)'; g.beginPath(); g.ellipse(x + 8.5 + ox, y + 14.5, 6, 1.8, 0, 0, Math.PI * 2); g.fill();
+    px(g, x + 7 + ox, y + 10, 3, 5, '#7a4e2c'); px(g, x + 9 + ox, y + 10, 1, 5, '#5b3a20'); px(g, x + 7 + ox, y + 14, 1, 1, '#5b3a20');
+    // 잎 덩어리: 둥근 덩어리 3~4개
+    const lobes = [[8, 6.2, 5.6], [4.6, 8, 3.9], [11.4, 8, 3.9], [8, 3.4, 3.6]];
+    if (v === 1) lobes.push([8, 1.8, 2.6]);
+    const inside = (px0, py0) => lobes.some(([lx, ly, r]) => (px0 - lx - ox) ** 2 + (py0 - ly - oy) ** 2 <= r * r);
+    for (let j = -1; j < 13; j++) {
+      for (let i = 0; i < 16; i++) {
+        const cx0 = i + 0.5, cy0 = j + 0.5;
+        if (!inside(cx0, cy0)) continue;
+        const edge = !inside(cx0 - 1, cy0) || !inside(cx0 + 1, cy0) || !inside(cx0, cy0 - 1) || !inside(cx0, cy0 + 1);
+        let col = P.base;
+        const lit = (cx0 - 8 - ox) * -0.6 + (cy0 - 6 - oy) * -0.8;   // 왼쪽 위가 밝다
+        if (lit > 2.6) col = P.hl; else if (lit > 0.6) col = P.lt; else if (lit < -2.6) col = P.dk;
+        if (hash(tx * 16 + i, ty * 16 + j, 7) < 0.12) col = col === P.base ? P.lt : P.base;   // 잎 무늬
+        if (edge) col = P.ol;
+        px(g, x + i, y + j, 1, 1, col);
+      }
+    }
+  }
   function makeCarTop(col) {
     const [c, g] = canvas(14, 24);
     drawCarV(g, 0, 0, col);
     return c;
+  }
+  // 스탠드 차양막 지붕 (파랑·흰 줄무늬 천막, 캐릭터가 아래로 들어가면 흐려진다)
+  function drawStandRoof(g, cells) {
+    const has = new Set(cells.map(c => c[0] + ',' + c[1]));
+    for (const [x, y] of cells) {
+      const X = x * T, Y = y * T + 6;
+      px(g, X, Y, T, T, '#f2f4f7');
+      for (let i = 0; i < 4; i++) px(g, X + i * 4, Y, 2, T, '#3d6fe9');
+      if (!has.has(x + ',' + (y - 1))) px(g, X, Y, T, 1, '#2c4fae');
+      if (!has.has(x + ',' + (y + 1))) { px(g, X, Y + T - 2, T, 2, '#9aa0a8'); px(g, X, Y + T, T, 3, 'rgba(0,0,0,0.22)'); }
+      if (!has.has((x - 1) + ',' + y)) px(g, X, Y, 1, T, '#7d828b');
+      if (!has.has((x + 1) + ',' + y)) px(g, X + T - 1, Y, 1, T, '#7d828b');
+    }
   }
   // 중앙현관 차양 지붕 (캐릭터가 아래로 들어가면 흐려진다)
   function drawCanopyRoof(g, cells, w, h) {
@@ -872,12 +995,15 @@ const Sprites = (() => {
         [c, g] = canvas(24, 26);
         break;
       }
-      case 'mottorock':     // 교훈석
-        [c, g] = canvas(32, 32);
-        px(g, 3, 6, 26, 24, '#d9cbb3'); px(g, 5, 3, 20, 4, '#d9cbb3'); px(g, 2, 28, 28, 3, '#b7a88f');
-        px(g, 3, 6, 2, 22, '#c4b59b'); px(g, 25, 4, 4, 2, '#cbbda4');
-        px(g, 12, 8, 8, 2, '#3a3028'); for (let r = 0; r < 3; r++) px(g, 8, 13 + r * 5, 16 - r * 2, 2, '#3a3028');
+      case 'mottorock': {   // 교훈석 (큰 자연석). 교훈 글씨는 게임 화면 해상도로 덧쓴다
+        [c, g] = canvas(56, 44);
+        g.fillStyle = 'rgba(0,0,0,0.25)'; g.beginPath(); g.ellipse(28, 40, 27, 4, 0, 0, Math.PI * 2); g.fill();
+        const stone = (col, k) => { g.fillStyle = col; g.beginPath(); g.moveTo(4 + k, 40); g.lineTo(1 + k, 22); g.lineTo(5 + k, 9 + k); g.lineTo(16, 3 + k); g.lineTo(38, 1 + k); g.lineTo(51 - k, 6 + k); g.lineTo(55 - k, 22); g.lineTo(52 - k, 40); g.closePath(); g.fill(); };
+        stone('#a8987c', 0); stone('#d9cbb3', 2);
+        g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(14, 6, 26, 2);
+        px(g, 4, 34, 48, 6, '#c2b398'); px(g, 3, 39, 50, 2, '#9c8d72');
         break;
+      }
       case 'podium':        // 조례대
         [c, g] = canvas(48, 32);
         px(g, 2, 8, 44, 22, '#c9c4b8'); px(g, 2, 8, 44, 3, '#e8e4da'); px(g, 2, 28, 44, 2, '#8a867c');
@@ -972,5 +1098,5 @@ const Sprites = (() => {
     return c;
   }
 
-  return { T, TILE, SOLID, drawTile, drawBuilding, makeFieldMarks, makeCourtMarks, makeTireBorder, makeCarTop, drawCanopyRoof, makeChar, makeRobot, makeObj, PLAYER_PALETTES, NPC_PALETTES, randomStudentPalette, shade, EMBLEM, EMBLEM_SVG, onEmblem };
+  return { T, TILE, SOLID, drawTile, drawBuilding, makeFieldMarks, makeCourtMarks, makeTireBorder, makeCarTop, drawCanopyRoof, drawStandRoof, treeFor, drawGardenHi, makeChar, makeRobot, makeObj, PLAYER_PALETTES, NPC_PALETTES, randomStudentPalette, shade, EMBLEM, EMBLEM_SVG, onEmblem };
 })();

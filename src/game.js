@@ -142,7 +142,7 @@ const Game = (() => {
     VW = Math.ceil(devW / scale); VH = Math.ceil(devH / scale);
     screen.width = devW; screen.height = devH;
     screen.style.width = w + 'px'; screen.style.height = h + 'px';
-    buffer.width = VW; buffer.height = VH;
+    buffer.width = VW * Q; buffer.height = VH * Q;
     bg.imageSmoothingEnabled = false;
     sg.imageSmoothingEnabled = false;
   }
@@ -248,41 +248,116 @@ const Game = (() => {
   }
 
   // ---------------- 맵 ----------------
+  // ---------------- 고화질: 내부 2배 해상도 + 픽셀 계단을 다듬는 Scale2x(EPX) ----------------
+  const Q = 2;
+  const hiCache = new WeakMap();
+  function smooth2x(src) {
+    const w = src.width, h = src.height;
+    if (!w || !h) return null;
+    const g0 = src.getContext ? src.getContext('2d') : null;
+    let data;
+    try { data = (g0 || (() => { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.drawImage(src, 0, 0); return g; })()).getImageData(0, 0, w, h); }
+    catch (e) { return null; }
+    const s = new Uint32Array(data.data.buffer);
+    const out = document.createElement('canvas'); out.width = w * 2; out.height = h * 2;
+    const og = out.getContext('2d'), od = og.createImageData(w * 2, h * 2), d = new Uint32Array(od.data.buffer), W2 = w * 2;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const P = s[y * w + x];
+        const A = y > 0 ? s[(y - 1) * w + x] : P, D = y < h - 1 ? s[(y + 1) * w + x] : P;
+        const C = x > 0 ? s[y * w + x - 1] : P, B = x < w - 1 ? s[y * w + x + 1] : P;
+        const o = (y * 2) * W2 + x * 2;
+        d[o] = (C === A && C !== D && A !== B) ? A : P;
+        d[o + 1] = (A === B && A !== C && B !== D) ? B : P;
+        d[o + W2] = (D === C && D !== B && C !== A) ? C : P;
+        d[o + W2 + 1] = (B === D && B !== A && D !== C) ? D : P;
+      }
+    }
+    og.putImageData(od, 0, 0);
+    return out;
+  }
+  function drawHi(img, x, y) {
+    if (img.hiRes) { bg.drawImage(img, x, y, img.width / 2, img.height / 2); return; }
+    let h = hiCache.get(img);
+    if (h === undefined) { h = smooth2x(img); hiCache.set(img, h); }
+    bg.drawImage(h || img, x, y, img.width, img.height);
+  }
   function renderMap(m) {
     if (mapCache[m.id]) return mapCache[m.id];
     const c = document.createElement('canvas');
     c.width = m.w * T; c.height = m.h * T;
     const g = c.getContext('2d');
     g.imageSmoothingEnabled = false;
+    // 지붕이 있는 칸(중앙현관 차양, 스탠드 차양막)은 덩어리로 묶어 지붕을 따로 그린다
+    const TL = Sprites.TILE, ROOF = new Set([TL.CANOPY, TL.STAND]);
+    const seen = new Set(), groups = [], floorAt = {};
+    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+      const t0 = World.get(m, x, y);
+      if (!ROOF.has(t0) || seen.has(x + ',' + y)) continue;
+      const cells = [], q = [[x, y]]; seen.add(x + ',' + y);
+      while (q.length) {
+        const [cx, cy] = q.pop(); cells.push([cx, cy]);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nx = cx + dx, ny = cy + dy, k = nx + ',' + ny;
+          if (!seen.has(k) && World.get(m, nx, ny) === t0) { seen.add(k); q.push([nx, ny]); }
+        }
+      }
+      // 스탠드 아래 바닥: 넓은 것은 아래쪽, 긴 것은 왼쪽 이웃 칸 중 가장 많은 바닥
+      let floor = null;
+      if (t0 === TL.STAND) {
+        const xs = cells.map(c => c[0]), ys = cells.map(c => c[1]);
+        const wide = Math.max(...xs) - Math.min(...xs) >= Math.max(...ys) - Math.min(...ys);
+        const cnt = {};
+        for (const [cx, cy] of cells) {
+          const nb = wide ? World.get(m, cx, cy + 1) : World.get(m, cx - 1, cy);
+          if (!ROOF.has(nb) && !Sprites.SOLID.has(nb)) cnt[nb] = (cnt[nb] || 0) + 1;
+        }
+        floor = Number(Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0] || TL.PAVE);
+        for (const [cx, cy] of cells) floorAt[cx + ',' + cy] = floor;
+      }
+      groups.push({ type: t0, cells });
+    }
     for (let y = 0; y < m.h; y++) {
       for (let x = 0; x < m.w; x++) {
-        Sprites.drawTile(g, World.get(m, x, y), x, y, World.get(m, x, y + 1));
+        const f = floorAt[x + ',' + y];
+        Sprites.drawTile(g, f != null ? f : World.get(m, x, y), x, y, World.get(m, x, y + 1));
       }
     }
     for (const b of m.buildings) Sprites.drawBuilding(g, b);
+    c.hi = smooth2x(c);
+    // 2배 해상도로 덧그리는 바닥 (텃밭)
+    if (c.hi) {
+      const hg = c.hi.getContext('2d');
+      for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (World.get(m, x, y) === TL.GARDEN) Sprites.drawGardenHi(hg, x, y);
+    }
+    // 나무 (앞뒤 순서대로 그리는 키 큰 나무)
+    m.treeList = [];
+    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+      const t0 = World.get(m, x, y);
+      if (t0 === TL.TREE || t0 === TL.BTREE || t0 === TL.PTREE) m.treeList.push({ x: x * T, y: y * T + T - 29, by: y * T + T - 2, img: Sprites.treeFor(x, y, t0 !== TL.TREE) });
+    }
     mapCache[m.id] = c;
-    // 차양 지붕 덮개
-    const roofs = [];
-    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (World.get(m, x, y) === Sprites.TILE.CANOPY) roofs.push([x, y]);
-    if (roofs.length) {
-      const xs = roofs.map(r => r[0]), ys = roofs.map(r => r[1]);
+    roofCache[m.id] = groups.map(gr => {
+      const xs = gr.cells.map(r => r[0]), ys = gr.cells.map(r => r[1]);
       const x0 = Math.min(...xs), y0 = Math.min(...ys), x1 = Math.max(...xs) + 1, y1 = Math.max(...ys) + 1;
-      const rc = document.createElement('canvas'); rc.width = (x1 - x0) * T; rc.height = (y1 - y0) * T + 4;
-      const rg = rc.getContext('2d');
-      Sprites.drawCanopyRoof(rg, roofs.map(([x, y]) => [x - x0, y - y0]), x1 - x0, y1 - y0);
-      roofCache[m.id] = { img: rc, x: x0 * T, y: y0 * T - 6, rect: { x: x0 * T, y: y0 * T, w: (x1 - x0) * T, h: (y1 - y0) * T }, a: 1 };
-    } else roofCache[m.id] = null;
+      const rc = document.createElement('canvas'); rc.width = (x1 - x0) * T; rc.height = (y1 - y0) * T + 10;
+      const rg = rc.getContext('2d'), local = gr.cells.map(([x, y]) => [x - x0, y - y0]);
+      if (gr.type === TL.CANOPY) Sprites.drawCanopyRoof(rg, local, x1 - x0, y1 - y0); else Sprites.drawStandRoof(rg, local);
+      return { img: rc, x: x0 * T, y: y0 * T - 6, cells: new Set(gr.cells.map(c => c[0] + ',' + c[1])), a: 1 };
+    });
     return c;
   }
   const roofCache = {};
   function drawRoofs(cx, cy) {
-    const r = roofCache[map.id];
-    if (!r) return;
-    const inside = (x, y) => x >= r.rect.x && x < r.rect.x + r.rect.w && y >= r.rect.y && y < r.rect.y + r.rect.h + 4;
-    const target = inside(player.x, player.y) ? 0.32 : 1;
-    r.a += (target - r.a) * 0.18;
-    bg.globalAlpha = r.a;
-    bg.drawImage(r.img, Math.round(r.x - cx), Math.round(r.y - cy));
+    const list = roofCache[map.id];
+    if (!list) return;
+    const ptx = Math.floor(player.x / T), pty = Math.floor((player.y - 1) / T);
+    for (const r of list) {
+      const under = r.cells.has(ptx + ',' + pty) || r.cells.has(ptx + ',' + (pty - 1));
+      r.a += ((under ? 0.32 : 1) - r.a) * 0.18;
+      bg.globalAlpha = r.a;
+      drawHi(r.img, Math.round(r.x) - cx, Math.round(r.y) - cy);
+    }
     bg.globalAlpha = 1;
   }
 
@@ -688,10 +763,13 @@ const Game = (() => {
     sg.fillRect(0, 0, screen.width, screen.height);
     if (!map || !player) return;
 
-    const cx = Math.round(cam.x), cy = Math.round(cam.y);
+    const cx = Math.round(cam.x * Q) / Q, cy = Math.round(cam.y * Q) / Q;
+    bg.setTransform(Q, 0, 0, Q, 0, 0);
+    bg.imageSmoothingEnabled = false;
     bg.fillStyle = '#2a2533';
     bg.fillRect(0, 0, VW, VH);
-    bg.drawImage(mapCache[map.id], -cx, -cy);
+    const mc = mapCache[map.id];
+    bg.drawImage(mc.hi || mc, -cx, -cy, mc.width, mc.height);
 
     // 바닥에 붙은 사물 먼저
     const flat = [], items = [];
@@ -699,12 +777,16 @@ const Game = (() => {
       if (o.hidden) continue;
       if (!o.solid) flat.push(o); else items.push({ y: o.y + o.h, o });
     }
-    for (const o of flat) bg.drawImage(o.img, Math.round(o.x - cx), Math.round(o.y - cy));
+    for (const o of flat) drawHi(o.img, Math.round(o.x) - cx, Math.round(o.y) - cy);
     drawTraffic(cx, cy);
     if (walk) {   // 클릭한 목적지
       const k = (Math.sin(time * 6) + 1) / 2, gx = Math.round(walk.goal[0] - cx), gy = Math.round(walk.goal[1] - cy - 3);
       bg.strokeStyle = `rgba(255,216,74,${0.6 + 0.4 * k})`; bg.lineWidth = 1;
       bg.beginPath(); bg.ellipse(gx, gy, 5 + k, 3 + k * 0.5, 0, 0, Math.PI * 2); bg.stroke();
+    }
+    for (const tr of map.treeList || []) {
+      if (tr.x - cx > VW + 16 || tr.x - cx < -32 || tr.y - cy > VH + 8 || tr.by - cy < -8) continue;
+      items.push({ y: tr.by, tree: tr });
     }
     for (const n of npcs) items.push({ y: n.y, n });
     items.push({ y: player.y + 0.5, p: true });
@@ -712,14 +794,16 @@ const Game = (() => {
 
     const st = hooks.status ? hooks.status() : {};
     for (const it of items) {
+      if (it.tree) { bg.drawImage(it.tree.img, it.tree.x - cx, it.tree.y - cy, 16, 29); continue; }
       if (it.o) {
-        bg.drawImage(it.o.img, Math.round(it.o.x - cx), Math.round(it.o.y - cy));
+        drawHi(it.o.img, Math.round(it.o.x) - cx, Math.round(it.o.y) - cy);
         if (st.sparkle && st.sparkle(it.o)) sparkle(it.o.x + it.o.w / 2 - cx, it.o.y - cy + 2);
       } else if (it.n) drawNpc(it.n, cx, cy, st);
       else drawPlayer(cx, cy);
     }
     for (const o of flat) if (st.sparkle && st.sparkle(o)) sparkle(o.x + o.w / 2 - cx, o.y - cy + 4);
     drawRoofs(cx, cy);
+    bg.globalAlpha = 0.38; drawPlayer(cx, cy); bg.globalAlpha = 1;
 
     drawDark(cx, cy, st);
     applyLighting(cx, cy, st);
@@ -729,7 +813,25 @@ const Game = (() => {
     const s = scale;
     const ui = dpr;   // 글자 최소 크기용 (CSS 픽셀 → 기기 픽셀)
     sg.imageSmoothingEnabled = false;
-    sg.drawImage(buffer, 0, 0, VW, VH, 0, 0, VW * s, VH * s);
+    sg.drawImage(buffer, 0, 0, VW * Q, VH * Q, 0, 0, VW * s, VH * s);
+    // 교훈석 글씨
+    for (const o of map.objects) {
+      if (o.kind !== 'mottorock' || o.hidden) continue;
+      const lines = ['슬기롭고', '정의로우며', '튼튼하게 자란다.'];
+      const fx = (o.x + 28 - cx) * s, fy = (o.y + 9 - cy) * s, fw = 44 * s, fh = 24 * s;
+      sg.save();
+      let size = fh / lines.length * 0.82;
+      sg.font = `700 ${size}px "Nanum Myeongjo", "Batang", "Noto Serif KR", serif`;
+      const widest = Math.max(...lines.map(l => sg.measureText(l).width));
+      if (widest > fw) { size *= fw / widest; sg.font = `700 ${size}px "Nanum Myeongjo", "Batang", "Noto Serif KR", serif`; }
+      sg.textAlign = 'center'; sg.textBaseline = 'middle';
+      lines.forEach((l, i) => {
+        const y = fy + (i + 0.5) * (fh / lines.length);
+        sg.fillStyle = 'rgba(255,255,255,0.45)'; sg.fillText(l, fx + Math.max(1, s * 0.3), y + Math.max(1, s * 0.3));
+        sg.fillStyle = '#3a2c1f'; sg.fillText(l, fx, y);
+      });
+      sg.restore();
+    }
     // 교표는 화면 해상도로 선명하게 덧그린다
     if (Sprites.EMBLEM.complete && Sprites.EMBLEM.naturalWidth) {
       sg.imageSmoothingEnabled = true;
@@ -849,7 +951,7 @@ const Game = (() => {
         hole(px + d[0] * 26, py + d[1] * 22, 30, 1);
       } else hole(px, py, 11, 0.8);
     }
-    bg.drawImage(darkCanvas, 0, 0);
+    bg.imageSmoothingEnabled = true; bg.drawImage(darkCanvas, 0, 0, VW, VH); bg.imageSmoothingEnabled = false;
     // 불빛이 가까이 가면 찾을 물건 위에 별이 떠오른다 (멀리 있으면 안 보인다)
     if (inDark(player.x, player.y) && st.flashlight && st.sparkle) {
       const d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[player.dir];
@@ -929,7 +1031,7 @@ const Game = (() => {
       bg.save();
       bg.translate(Math.round(x), Math.round(y));
       bg.rotate(p.a + Math.PI / 2);
-      bg.drawImage(c.img, -7, -12);
+      drawHi(c.img, -7, -12);
       bg.restore();
     }
   }
@@ -992,7 +1094,7 @@ const Game = (() => {
       if (mk === '!' || mk === '?') hole(n.x - cx, n.y - 12 - cy, 30, 0.8);
     }
     for (const o of map.objects) if (st.sparkle && st.sparkle(o) && !inDark(o.x + o.w / 2, o.y + o.h)) hole(o.x + o.w / 2 - cx, o.y + o.h / 2 - cy, 22, 0.7);
-    bg.drawImage(lightCanvas, 0, 0);
+    bg.imageSmoothingEnabled = true; bg.drawImage(lightCanvas, 0, 0, VW, VH); bg.imageSmoothingEnabled = false;
     // 건물 창문에 불 켜기
     for (const b of map.buildings) {
       (b.windows || []).forEach((w, i) => {
@@ -1033,13 +1135,13 @@ const Game = (() => {
           bg.fillStyle = '#ffd84a'; bg.fillRect(Math.round(x + Math.cos(a) * rr), Math.round(y - 8 + Math.sin(a) * rr), 2, 2);
         }
       }
-      if (mt >= 0.8) bg.drawImage(principalFrames().down[0], x - 8, y - 16);
-      else bg.drawImage(st.robotFixed ? robotImgs.fixed : robotImgs.broken, x - 8, y - 16);
+      if (mt >= 0.8) drawHi(principalFrames().down[0], x - 8, y - 16);
+      else drawHi(st.robotFixed ? robotImgs.fixed : robotImgs.broken, x - 8, y - 16);
       if (mt >= 0 && mt < 0.8 && Math.floor(mt * 12) % 2) { bg.globalAlpha = 0.6; bg.drawImage(principalFrames().down[0], x - 8, y - 16); bg.globalAlpha = 1; }
       n.name = mt >= 0.8 ? '교장선생님' : '로봇 교장선생님';
     } else {
       const f = n.moving ? Math.floor(n.anim) % 2 : 0;
-      bg.drawImage(n.frames[n.dir][f], x - 8, y - 16);
+      drawHi(n.frames[n.dir][f], x - 8, y - 16);
     }
     const mark = st.markFor ? st.markFor(n) : null;
     if (mark === 'new') {
@@ -1068,10 +1170,10 @@ const Game = (() => {
       bg.save();
       bg.translate(x, top + 8);
       bg.rotate(a);
-      bg.drawImage(img, -8, -8);
+      drawHi(img, -8, -8);
       bg.restore();
     } else {
-      bg.drawImage(img, x - 8, top);
+      drawHi(img, x - 8, top);
     }
   }
 

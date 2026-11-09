@@ -261,6 +261,18 @@ const UI = (() => {
       parts.innerHTML = `<span class="tok" title="힌트 토큰">💡${s.tokens}</span>` + Array.from({ length: s.total }, (_, i) => `<span class="slot ${i < s.parts ? 'on' : ''}"></span>`).join('');
     }
   }
+  // 미니맵 아래: 모은 부품 + 가진 것
+  function inventory(s) {
+    const el = $('invPanel');
+    if (!el) return;
+    const key = JSON.stringify(s);
+    if (el.dataset.key === key) return;
+    el.dataset.key = key;
+    el.innerHTML = `<h4>모은 부품 ${s.parts.filter(x => x.on).length}/${s.parts.length}</h4><div class="inv-grid">` +
+      s.parts.map(x => `<span class="inv-slot ${x.on ? 'on' : ''}" title="${Util.esc(x.name)}">${x.on ? Util.esc(x.name) : '?'}</span>`).join('') + '</div>' +
+      `<h4>가진 것</h4><div class="inv-chips">` + s.items.map(x => `<span class="inv-chip ${x.on ? 'on' : ''}">${Util.esc(x.name)}</span>`).join('') +
+      `<span class="inv-chip tok">힌트 토큰 ${s.tokens}</span><span class="inv-chip star">개나리 ${s.stars}/${s.starTotal}</span></div>`;
+  }
   function setTalkButton(label) {
     const b = $('btnTalk');
     if (label) { b.textContent = label; b.classList.remove('off'); }
@@ -458,5 +470,5 @@ const UI = (() => {
     $('dlgSkip').addEventListener('click', e => { e.stopPropagation(); skipDialog(); });
   }
 
-  return { modalOpen, dialog, quiz, quizSet, quizHintEffect, hintArea, bindHint, openPanel, notebook, sign, flow, choose, toast, hud, setTalkButton, setSoundButton, dex, ranking, character, clear, timeUp, closeAll, confirmBox, closePanel, bind, isDialog: () => !!dialogState };
+  return { modalOpen, dialog, quiz, quizSet, quizHintEffect, hintArea, bindHint, openPanel, notebook, sign, flow, choose, toast, hud, inventory, setTalkButton, setSoundButton, dex, ranking, character, clear, timeUp, closeAll, confirmBox, closePanel, bind, isDialog: () => !!dialogState };
 })();

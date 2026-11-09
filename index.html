@@ -134,6 +134,17 @@ table.rank td.mode { color: var(--muted); font-size: 13px; }
 .map-panel { background: rgba(255, 248, 231, .95); border: 3px solid var(--line); border-radius: 10px; box-shadow: 0 3px 0 var(--line); padding: 5px; display: grid; gap: 5px; width: 220px; }
 #minimap { display: block; width: 100%; max-height: 170px; image-rendering: pixelated; border-radius: 5px; background: #2a2533; }
 .map-panel.folded #minimap { display: none; }
+.inv-panel { background: #fff8e6; border: 3px solid var(--line); border-radius: 10px; box-shadow: 0 3px 0 var(--line); padding: 8px 9px 9px; width: 220px; box-sizing: border-box; }
+.inv-panel h4 { margin: 0 0 6px; font-size: 13px; font-weight: 900; color: #2b2233; }
+.inv-panel h4 + .inv-grid { margin-bottom: 8px; }
+.inv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.inv-slot { font-size: 11.5px; font-weight: 800; border-radius: 7px; padding: 4px 5px; text-align: center; border: 2px dashed #cdbf9f; color: #a89c84; background: #fffdf6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.inv-slot.on { border: 2px solid #3f9a4a; background: #e3f6dc; color: #22522a; }
+.inv-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.inv-chip { font-size: 11.5px; font-weight: 800; border-radius: 7px; padding: 3px 7px; border: 2px dashed #cdbf9f; color: #a89c84; background: #fffdf6; }
+.inv-chip.on { border: 2px solid #2b2233; color: #2b2233; background: #fff; }
+.inv-chip.tok { border: 2px solid #7b5cd6; color: #4a2fa8; background: #f1ebff; }
+.inv-chip.star { border: 2px solid #e2b21f; color: #7a5a00; background: #fff6cc; }
 .map-ctrl { display: flex; align-items: center; gap: 5px; }
 .map-ctrl #zoomLabel { min-width: 30px; text-align: center; font-weight: 900; font-size: 14px; color: var(--ink); }
 .map-ctrl #mapToggle { margin-left: auto; font-size: 12px; padding: 4px 8px; }
@@ -420,6 +431,7 @@ table.rec th { background: #f3ead6; }
   .panel { padding: 12px 14px; }
   .quiz-q { font-size: 16px; margin-bottom: 8px; }
   .choice { padding: 7px 12px; font-size: 15px; }
+  .inv-panel { display: none; }
   #dialog { padding: 10px 14px 10px; }
   #dlgWho { font-size: 18px; padding-bottom: 6px; margin-bottom: 8px; }
   #dlgText { font-size: 15px; min-height: 40px; }
@@ -462,6 +474,8 @@ table.rec th { background: #f3ead6; }
   .rk-what { margin: 0 0 4px; font-size: 12px; }
   #toast { top: 58px; }
   .map-panel { width: 176px; padding: 4px; }
+  .inv-panel { width: 176px; padding: 6px; }
+  .inv-slot, .inv-chip { font-size: 10.5px; }
   .side-btns { width: 176px; }
   #minimap { max-height: 96px; }
   .hud-btn.sq { width: 28px; height: 26px; font-size: 17px; }
@@ -537,7 +551,7 @@ table.rec th { background: #f3ead6; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (저학년 · 고학년)</button>
       </div></div>
-      <div id="adminLink">v1.8</div>
+      <div id="adminLink">v1.9</div>
     </form>
   </div>
 </div>
@@ -568,6 +582,7 @@ table.rec th { background: #f3ead6; }
       <button class="hud-btn dex" id="btnDex">도감 0/31</button>
       <button class="hud-btn note" id="btnNote">수첩</button>
     </div>
+    <div class="inv-panel" id="invPanel"></div>
   </div>
 </div>
 
@@ -4604,7 +4619,7 @@ const Sprites = (() => {
     HEDGE: 32, SIDEWALK: 33, CLIFF: 34, LOWPAVE: 35, GARDEN: 36, OSTAIR: 37, FOREST: 38,
     BTREE: 39, PTREE: 40      // 벽돌·보도블록 위에 심은 나무 (화단 잔디 없이)
   };
-  const SOLID = new Set([TILE.WALL, TILE.FENCE, TILE.TREE, TILE.BUILDING, TILE.VOID, TILE.ROAD, TILE.STAND,
+  const SOLID = new Set([TILE.WALL, TILE.FENCE, TILE.TREE, TILE.BUILDING, TILE.VOID, TILE.ROAD,
     TILE.HEDGE, TILE.SIDEWALK, TILE.CLIFF, TILE.GARDEN, TILE.FOREST, TILE.BTREE, TILE.PTREE]);
 
   // 대교초 교표: 홈페이지 그림을 보고 벡터(SVG)로 다시 그렸다 (tools/emblem.svg). 화면 해상도로 선명하게 그린다.
@@ -4689,13 +4704,8 @@ const Sprites = (() => {
       case TILE.TREE:
       case TILE.BTREE:
       case TILE.PTREE:
-        if (t === TILE.TREE) px(g, x, y, T, T, '#5fae4b');
-        else drawTile(g, t === TILE.BTREE ? TILE.BRICK : TILE.PAVE, tx, ty, below);
-        px(g, x + 7, y + 11, 3, 5, '#7a4e2c');
-        px(g, x + 2, y + 1, 12, 11, '#2f7d3b');
-        px(g, x + 1, y + 3, 14, 7, '#2f7d3b');
-        px(g, x + 4, y + 2, 5, 4, '#45a052');
-        px(g, x + 3, y + 10, 10, 2, '#24652f');
+        drawTile(g, t === TILE.TREE ? TILE.GRASS : t === TILE.BTREE ? TILE.BRICK : TILE.PAVE, tx, ty, below);
+        g.fillStyle = 'rgba(20,45,20,0.32)'; g.beginPath(); g.ellipse(x + 8, y + 13.5, 7.5, 2.6, 0, 0, Math.PI * 2); g.fill();
         break;
       case TILE.UP:       // 올라가는 계단: 밝은 노란빛 + ▲
       case TILE.DOWN: {   // 내려가는 계단: 어두운 푸른빛 + ▼
@@ -5020,10 +5030,138 @@ const Sprites = (() => {
     px(g, ox + 2, oy, 3, 1, '#fff6c4'); px(g, ox + 9, oy, 3, 1, '#fff6c4');  // 전조등
     px(g, ox + 2, oy + 23, 3, 1, '#e23b3b'); px(g, ox + 9, oy + 23, 3, 1, '#e23b3b');   // 후미등
   }
+  // ---------- 고해상도(2배) 나무: 가을 학교 (초록·빨강 단풍·주황·노랑 은행·감나무·소나무) ----------
+  // 그림 크기 32×58 = 게임 화면 16×29. c.hiRes = true 이면 게임이 그대로(반으로 줄여) 그린다.
+  const TREE_KINDS = {
+    green: { base: '#3f9a4a', lt: '#66bf5e', hl: '#a6e38a', dk: '#2a7537', ol: '#1a4d24' },
+    red: { base: '#c8392f', lt: '#e8603f', hl: '#ffa070', dk: '#8f2324', ol: '#5a1418' },
+    orange: { base: '#de7a24', lt: '#f49c3c', hl: '#ffce78', dk: '#a7521b', ol: '#6a3314' },
+    yellow: { base: '#e2b21f', lt: '#f4d043', hl: '#fff19a', dk: '#b08511', ol: '#6a4f08' },
+    persimmon: { base: '#6f8f35', lt: '#93b04a', hl: '#c4d77a', dk: '#4f6b25', ol: '#2f4216', fruit: true },
+    pine: { base: '#2f6a40', lt: '#43865a', hl: '#6aa87a', dk: '#1f4a2c', ol: '#12301c', pine: true }
+  };
+  const treeCache = {};
+  function makeTree(kind, v) {
+    const key = kind + v;
+    if (treeCache[key]) return treeCache[key];
+    const P = TREE_KINDS[kind];
+    const [c, g] = canvas(32, 58);
+    const H = (i, j, k) => hash(i * 7 + v * 131, j * 13 + v * 17, k);
+    // 줄기
+    const tr = P.pine ? 4 : 5;
+    px(g, 16 - tr / 2, 36, tr, 20, '#7a4e2c'); px(g, 16 + tr / 2 - 2, 36, 2, 20, '#5b3a20'); px(g, 16 - tr / 2, 36, 1, 20, '#94643a');
+    px(g, 13, 54, 7, 2, '#5b3a20');
+    // 잎 덩어리 모양
+    let lobes;
+    if (P.pine) lobes = [[16, 33, 13, 6], [16, 25, 11, 6], [16, 17, 9, 6], [16, 10, 6, 5]];   // [cx, cy, rx, ry] 층층이
+    else {
+      lobes = [[16, 22, 13, 13], [9, 27, 8, 8], [23, 27, 8, 8], [16, 11, 9, 8], [10, 16, 7, 7], [22, 16, 7, 7]];
+      lobes = lobes.map(([x, y, rx, ry], i) => [x + (H(i, 1, 3) - 0.5) * 2, y + (H(i, 2, 4) - 0.5) * 2, rx, ry]);
+    }
+    const inL = (x, y) => lobes.some(([lx, ly, rx, ry]) => ((x - lx) / rx) ** 2 + ((y - ly) / ry) ** 2 <= 1);
+    for (let j = 0; j < 42; j++) for (let i = 0; i < 32; i++) {
+      const x = i + 0.5, y = j + 0.5;
+      if (!inL(x, y)) continue;
+      const edge = !inL(x - 1, y) || !inL(x + 1, y) || !inL(x, y - 1) || !inL(x, y + 1);
+      let col;
+      if (P.pine) {
+        // 층마다 위쪽이 밝고 아래 끝이 어둡다
+        const ly = lobes.find(([lx, cy, rx, ry]) => ((x - lx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1);
+        const rel = (y - ly[1]) / ly[3];
+        col = rel < -0.4 ? P.lt : rel > 0.55 ? P.dk : P.base;
+        if (x < 13 && rel < 0.2) col = P.lt;
+      } else {
+        const lit = -(x - 16) * 0.55 - (y - 18) * 0.85;
+        col = lit > 9 ? P.hl : lit > 3 ? P.lt : lit < -8 ? P.dk : P.base;
+      }
+      // 잎 무늬
+      const n = H(i, j, 9);
+      if (n < 0.1) col = P.dk; else if (n > 0.93) col = P.lt;
+      if (edge) col = P.ol;
+      px(g, i, j, 1, 1, col);
+    }
+    // 둥근 잎 뭉치 빛
+    if (!P.pine) for (let k = 0; k < 6; k++) {
+      const x = 8 + H(k, 5, 1) * 14, y = 8 + H(k, 6, 2) * 16;
+      if (!inL(x + 1, y + 1) || !inL(x - 1, y - 1)) continue;
+      px(g, Math.round(x), Math.round(y), 3, 2, P.hl); px(g, Math.round(x) + 1, Math.round(y) + 2, 3, 1, P.lt);
+    }
+    // 감
+    if (P.fruit) for (let k = 0; k < 11; k++) {
+      const x = Math.round(6 + H(k, 7, 5) * 20), y = Math.round(8 + H(k, 8, 6) * 24);
+      if (!inL(x + 1, y + 1)) continue;
+      px(g, x, y, 3, 3, '#f07a1a'); px(g, x, y, 1, 1, '#ffb15a'); px(g, x + 1, y - 1, 1, 1, '#3f5a20');
+    }
+    c.hiRes = true;
+    return (treeCache[key] = c);
+  }
+  // 칸 위치로 나무 종류를 고른다 (화단은 초록·소나무 위주)
+  function treeFor(tx, ty, planter) {
+    const r = hash(tx, ty, 51), v = Math.floor(hash(tx, ty, 52) * 3);
+    let kind;
+    if (planter) kind = r < 0.75 ? 'green' : 'pine';
+    else kind = r < 0.28 ? 'green' : r < 0.44 ? 'red' : r < 0.58 ? 'orange' : r < 0.72 ? 'yellow' : r < 0.84 ? 'persimmon' : 'pine';
+    return makeTree(kind, v);
+  }
+  // 텃밭 (2배 해상도): 세로 이랑 + 새싹
+  function drawGardenHi(g, tx, ty) {
+    const X = tx * 32, Y = ty * 32;
+    px(g, X, Y, 32, 32, '#6e5034');
+    for (let i = 0; i < 8; i++) {
+      px(g, X + i * 4, Y, 2, 32, '#8a6640'); px(g, X + i * 4, Y, 1, 32, '#9c7650'); px(g, X + i * 4 + 3, Y, 1, 32, '#5c4129');
+    }
+    for (let k = 0; k < 5; k++) {
+      const sx = X + Math.floor(hash(tx, ty, 60 + k) * 8) * 4, sy = Y + 2 + Math.floor(hash(tx, ty, 70 + k) * 26);
+      px(g, sx, sy, 2, 2, '#4f9a3d'); px(g, sx - 1, sy - 1, 1, 1, '#7fc25e'); px(g, sx + 2, sy - 1, 1, 1, '#7fc25e'); px(g, sx, sy, 1, 1, '#9ad86e');
+    }
+  }
+  // 둥근 나무 (칸마다 모양·색이 조금씩 다르다): 땅 그림자 → 줄기 → 잎 덩어리(밝은 면·그늘·테두리)
+  const TREE_PAL = [
+    { base: '#3f9a4a', lt: '#6cc363', hl: '#9be07f', dk: '#2b7a38', ol: '#1d5428' },
+    { base: '#358c45', lt: '#5cb35b', hl: '#86d276', dk: '#256b33', ol: '#174a22' },
+    { base: '#4aa458', lt: '#7dce6c', hl: '#b0ea8e', dk: '#33843f', ol: '#215f2c' }
+  ];
+  function drawTreeTop(g, x, y, tx, ty) {
+    const v = Math.floor(hash(tx, ty, 41) * 3), P = TREE_PAL[v];
+    const ox = Math.round((hash(tx, ty, 42) - 0.5) * 2), oy = Math.round((hash(tx, ty, 43) - 0.5) * 2);
+    // 땅 그림자와 줄기
+    g.fillStyle = 'rgba(20,50,20,0.35)'; g.beginPath(); g.ellipse(x + 8.5 + ox, y + 14.5, 6, 1.8, 0, 0, Math.PI * 2); g.fill();
+    px(g, x + 7 + ox, y + 10, 3, 5, '#7a4e2c'); px(g, x + 9 + ox, y + 10, 1, 5, '#5b3a20'); px(g, x + 7 + ox, y + 14, 1, 1, '#5b3a20');
+    // 잎 덩어리: 둥근 덩어리 3~4개
+    const lobes = [[8, 6.2, 5.6], [4.6, 8, 3.9], [11.4, 8, 3.9], [8, 3.4, 3.6]];
+    if (v === 1) lobes.push([8, 1.8, 2.6]);
+    const inside = (px0, py0) => lobes.some(([lx, ly, r]) => (px0 - lx - ox) ** 2 + (py0 - ly - oy) ** 2 <= r * r);
+    for (let j = -1; j < 13; j++) {
+      for (let i = 0; i < 16; i++) {
+        const cx0 = i + 0.5, cy0 = j + 0.5;
+        if (!inside(cx0, cy0)) continue;
+        const edge = !inside(cx0 - 1, cy0) || !inside(cx0 + 1, cy0) || !inside(cx0, cy0 - 1) || !inside(cx0, cy0 + 1);
+        let col = P.base;
+        const lit = (cx0 - 8 - ox) * -0.6 + (cy0 - 6 - oy) * -0.8;   // 왼쪽 위가 밝다
+        if (lit > 2.6) col = P.hl; else if (lit > 0.6) col = P.lt; else if (lit < -2.6) col = P.dk;
+        if (hash(tx * 16 + i, ty * 16 + j, 7) < 0.12) col = col === P.base ? P.lt : P.base;   // 잎 무늬
+        if (edge) col = P.ol;
+        px(g, x + i, y + j, 1, 1, col);
+      }
+    }
+  }
   function makeCarTop(col) {
     const [c, g] = canvas(14, 24);
     drawCarV(g, 0, 0, col);
     return c;
+  }
+  // 스탠드 차양막 지붕 (파랑·흰 줄무늬 천막, 캐릭터가 아래로 들어가면 흐려진다)
+  function drawStandRoof(g, cells) {
+    const has = new Set(cells.map(c => c[0] + ',' + c[1]));
+    for (const [x, y] of cells) {
+      const X = x * T, Y = y * T + 6;
+      px(g, X, Y, T, T, '#f2f4f7');
+      for (let i = 0; i < 4; i++) px(g, X + i * 4, Y, 2, T, '#3d6fe9');
+      if (!has.has(x + ',' + (y - 1))) px(g, X, Y, T, 1, '#2c4fae');
+      if (!has.has(x + ',' + (y + 1))) { px(g, X, Y + T - 2, T, 2, '#9aa0a8'); px(g, X, Y + T, T, 3, 'rgba(0,0,0,0.22)'); }
+      if (!has.has((x - 1) + ',' + y)) px(g, X, Y, 1, T, '#7d828b');
+      if (!has.has((x + 1) + ',' + y)) px(g, X + T - 1, Y, 1, T, '#7d828b');
+    }
   }
   // 중앙현관 차양 지붕 (캐릭터가 아래로 들어가면 흐려진다)
   function drawCanopyRoof(g, cells, w, h) {
@@ -5454,12 +5592,15 @@ const Sprites = (() => {
         [c, g] = canvas(24, 26);
         break;
       }
-      case 'mottorock':     // 교훈석
-        [c, g] = canvas(32, 32);
-        px(g, 3, 6, 26, 24, '#d9cbb3'); px(g, 5, 3, 20, 4, '#d9cbb3'); px(g, 2, 28, 28, 3, '#b7a88f');
-        px(g, 3, 6, 2, 22, '#c4b59b'); px(g, 25, 4, 4, 2, '#cbbda4');
-        px(g, 12, 8, 8, 2, '#3a3028'); for (let r = 0; r < 3; r++) px(g, 8, 13 + r * 5, 16 - r * 2, 2, '#3a3028');
+      case 'mottorock': {   // 교훈석 (큰 자연석). 교훈 글씨는 게임 화면 해상도로 덧쓴다
+        [c, g] = canvas(56, 44);
+        g.fillStyle = 'rgba(0,0,0,0.25)'; g.beginPath(); g.ellipse(28, 40, 27, 4, 0, 0, Math.PI * 2); g.fill();
+        const stone = (col, k) => { g.fillStyle = col; g.beginPath(); g.moveTo(4 + k, 40); g.lineTo(1 + k, 22); g.lineTo(5 + k, 9 + k); g.lineTo(16, 3 + k); g.lineTo(38, 1 + k); g.lineTo(51 - k, 6 + k); g.lineTo(55 - k, 22); g.lineTo(52 - k, 40); g.closePath(); g.fill(); };
+        stone('#a8987c', 0); stone('#d9cbb3', 2);
+        g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(14, 6, 26, 2);
+        px(g, 4, 34, 48, 6, '#c2b398'); px(g, 3, 39, 50, 2, '#9c8d72');
         break;
+      }
       case 'podium':        // 조례대
         [c, g] = canvas(48, 32);
         px(g, 2, 8, 44, 22, '#c9c4b8'); px(g, 2, 8, 44, 3, '#e8e4da'); px(g, 2, 28, 44, 2, '#8a867c');
@@ -5554,7 +5695,7 @@ const Sprites = (() => {
     return c;
   }
 
-  return { T, TILE, SOLID, drawTile, drawBuilding, makeFieldMarks, makeCourtMarks, makeTireBorder, makeCarTop, drawCanopyRoof, makeChar, makeRobot, makeObj, PLAYER_PALETTES, NPC_PALETTES, randomStudentPalette, shade, EMBLEM, EMBLEM_SVG, onEmblem };
+  return { T, TILE, SOLID, drawTile, drawBuilding, makeFieldMarks, makeCourtMarks, makeTireBorder, makeCarTop, drawCanopyRoof, drawStandRoof, treeFor, drawGardenHi, makeChar, makeRobot, makeObj, PLAYER_PALETTES, NPC_PALETTES, randomStudentPalette, shade, EMBLEM, EMBLEM_SVG, onEmblem };
 })();
 
 // ===== world.js =====
@@ -6167,7 +6308,7 @@ const World = (() => {
 
     // 현관 앞 마당: 국기 게양대, 교훈석, 조례대, 느티나무
     obj(m, 'flag', 27, 27, { hitH: 6, hitX: 4, hitW: 8, dy: -16, interact: { type: 'clue', m: 6, i: 3, name: '국기 게양대' } });
-    obj(m, 'mottorock', 54, 22, { hitH: 10, interact: { type: 'sign', id: 'motto' } });
+    obj(m, 'mottorock', 53.5, 21.5, { hitH: 10, hitX: 4, hitW: 48, interact: { type: 'sign', id: 'motto' } });
     obj(m, 'podium', 29, 31, { hitH: 10, interact: { type: 'clue', m: 6, i: 2, name: '조례대' } });
     obj(m, 'zelkova', 50, 20, { hitX: 18, hitW: 12, hitH: 6 });
     sign(m, 52, 24, 'symbol'); sign(m, 3, 30, 'gate'); sign(m, 27, 31, 'field');
@@ -6477,7 +6618,7 @@ const Game = (() => {
     VW = Math.ceil(devW / scale); VH = Math.ceil(devH / scale);
     screen.width = devW; screen.height = devH;
     screen.style.width = w + 'px'; screen.style.height = h + 'px';
-    buffer.width = VW; buffer.height = VH;
+    buffer.width = VW * Q; buffer.height = VH * Q;
     bg.imageSmoothingEnabled = false;
     sg.imageSmoothingEnabled = false;
   }
@@ -6583,41 +6724,116 @@ const Game = (() => {
   }
 
   // ---------------- 맵 ----------------
+  // ---------------- 고화질: 내부 2배 해상도 + 픽셀 계단을 다듬는 Scale2x(EPX) ----------------
+  const Q = 2;
+  const hiCache = new WeakMap();
+  function smooth2x(src) {
+    const w = src.width, h = src.height;
+    if (!w || !h) return null;
+    const g0 = src.getContext ? src.getContext('2d') : null;
+    let data;
+    try { data = (g0 || (() => { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.drawImage(src, 0, 0); return g; })()).getImageData(0, 0, w, h); }
+    catch (e) { return null; }
+    const s = new Uint32Array(data.data.buffer);
+    const out = document.createElement('canvas'); out.width = w * 2; out.height = h * 2;
+    const og = out.getContext('2d'), od = og.createImageData(w * 2, h * 2), d = new Uint32Array(od.data.buffer), W2 = w * 2;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const P = s[y * w + x];
+        const A = y > 0 ? s[(y - 1) * w + x] : P, D = y < h - 1 ? s[(y + 1) * w + x] : P;
+        const C = x > 0 ? s[y * w + x - 1] : P, B = x < w - 1 ? s[y * w + x + 1] : P;
+        const o = (y * 2) * W2 + x * 2;
+        d[o] = (C === A && C !== D && A !== B) ? A : P;
+        d[o + 1] = (A === B && A !== C && B !== D) ? B : P;
+        d[o + W2] = (D === C && D !== B && C !== A) ? C : P;
+        d[o + W2 + 1] = (B === D && B !== A && D !== C) ? D : P;
+      }
+    }
+    og.putImageData(od, 0, 0);
+    return out;
+  }
+  function drawHi(img, x, y) {
+    if (img.hiRes) { bg.drawImage(img, x, y, img.width / 2, img.height / 2); return; }
+    let h = hiCache.get(img);
+    if (h === undefined) { h = smooth2x(img); hiCache.set(img, h); }
+    bg.drawImage(h || img, x, y, img.width, img.height);
+  }
   function renderMap(m) {
     if (mapCache[m.id]) return mapCache[m.id];
     const c = document.createElement('canvas');
     c.width = m.w * T; c.height = m.h * T;
     const g = c.getContext('2d');
     g.imageSmoothingEnabled = false;
+    // 지붕이 있는 칸(중앙현관 차양, 스탠드 차양막)은 덩어리로 묶어 지붕을 따로 그린다
+    const TL = Sprites.TILE, ROOF = new Set([TL.CANOPY, TL.STAND]);
+    const seen = new Set(), groups = [], floorAt = {};
+    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+      const t0 = World.get(m, x, y);
+      if (!ROOF.has(t0) || seen.has(x + ',' + y)) continue;
+      const cells = [], q = [[x, y]]; seen.add(x + ',' + y);
+      while (q.length) {
+        const [cx, cy] = q.pop(); cells.push([cx, cy]);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nx = cx + dx, ny = cy + dy, k = nx + ',' + ny;
+          if (!seen.has(k) && World.get(m, nx, ny) === t0) { seen.add(k); q.push([nx, ny]); }
+        }
+      }
+      // 스탠드 아래 바닥: 넓은 것은 아래쪽, 긴 것은 왼쪽 이웃 칸 중 가장 많은 바닥
+      let floor = null;
+      if (t0 === TL.STAND) {
+        const xs = cells.map(c => c[0]), ys = cells.map(c => c[1]);
+        const wide = Math.max(...xs) - Math.min(...xs) >= Math.max(...ys) - Math.min(...ys);
+        const cnt = {};
+        for (const [cx, cy] of cells) {
+          const nb = wide ? World.get(m, cx, cy + 1) : World.get(m, cx - 1, cy);
+          if (!ROOF.has(nb) && !Sprites.SOLID.has(nb)) cnt[nb] = (cnt[nb] || 0) + 1;
+        }
+        floor = Number(Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0] || TL.PAVE);
+        for (const [cx, cy] of cells) floorAt[cx + ',' + cy] = floor;
+      }
+      groups.push({ type: t0, cells });
+    }
     for (let y = 0; y < m.h; y++) {
       for (let x = 0; x < m.w; x++) {
-        Sprites.drawTile(g, World.get(m, x, y), x, y, World.get(m, x, y + 1));
+        const f = floorAt[x + ',' + y];
+        Sprites.drawTile(g, f != null ? f : World.get(m, x, y), x, y, World.get(m, x, y + 1));
       }
     }
     for (const b of m.buildings) Sprites.drawBuilding(g, b);
+    c.hi = smooth2x(c);
+    // 2배 해상도로 덧그리는 바닥 (텃밭)
+    if (c.hi) {
+      const hg = c.hi.getContext('2d');
+      for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (World.get(m, x, y) === TL.GARDEN) Sprites.drawGardenHi(hg, x, y);
+    }
+    // 나무 (앞뒤 순서대로 그리는 키 큰 나무)
+    m.treeList = [];
+    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+      const t0 = World.get(m, x, y);
+      if (t0 === TL.TREE || t0 === TL.BTREE || t0 === TL.PTREE) m.treeList.push({ x: x * T, y: y * T + T - 29, by: y * T + T - 2, img: Sprites.treeFor(x, y, t0 !== TL.TREE) });
+    }
     mapCache[m.id] = c;
-    // 차양 지붕 덮개
-    const roofs = [];
-    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (World.get(m, x, y) === Sprites.TILE.CANOPY) roofs.push([x, y]);
-    if (roofs.length) {
-      const xs = roofs.map(r => r[0]), ys = roofs.map(r => r[1]);
+    roofCache[m.id] = groups.map(gr => {
+      const xs = gr.cells.map(r => r[0]), ys = gr.cells.map(r => r[1]);
       const x0 = Math.min(...xs), y0 = Math.min(...ys), x1 = Math.max(...xs) + 1, y1 = Math.max(...ys) + 1;
-      const rc = document.createElement('canvas'); rc.width = (x1 - x0) * T; rc.height = (y1 - y0) * T + 4;
-      const rg = rc.getContext('2d');
-      Sprites.drawCanopyRoof(rg, roofs.map(([x, y]) => [x - x0, y - y0]), x1 - x0, y1 - y0);
-      roofCache[m.id] = { img: rc, x: x0 * T, y: y0 * T - 6, rect: { x: x0 * T, y: y0 * T, w: (x1 - x0) * T, h: (y1 - y0) * T }, a: 1 };
-    } else roofCache[m.id] = null;
+      const rc = document.createElement('canvas'); rc.width = (x1 - x0) * T; rc.height = (y1 - y0) * T + 10;
+      const rg = rc.getContext('2d'), local = gr.cells.map(([x, y]) => [x - x0, y - y0]);
+      if (gr.type === TL.CANOPY) Sprites.drawCanopyRoof(rg, local, x1 - x0, y1 - y0); else Sprites.drawStandRoof(rg, local);
+      return { img: rc, x: x0 * T, y: y0 * T - 6, cells: new Set(gr.cells.map(c => c[0] + ',' + c[1])), a: 1 };
+    });
     return c;
   }
   const roofCache = {};
   function drawRoofs(cx, cy) {
-    const r = roofCache[map.id];
-    if (!r) return;
-    const inside = (x, y) => x >= r.rect.x && x < r.rect.x + r.rect.w && y >= r.rect.y && y < r.rect.y + r.rect.h + 4;
-    const target = inside(player.x, player.y) ? 0.32 : 1;
-    r.a += (target - r.a) * 0.18;
-    bg.globalAlpha = r.a;
-    bg.drawImage(r.img, Math.round(r.x - cx), Math.round(r.y - cy));
+    const list = roofCache[map.id];
+    if (!list) return;
+    const ptx = Math.floor(player.x / T), pty = Math.floor((player.y - 1) / T);
+    for (const r of list) {
+      const under = r.cells.has(ptx + ',' + pty) || r.cells.has(ptx + ',' + (pty - 1));
+      r.a += ((under ? 0.32 : 1) - r.a) * 0.18;
+      bg.globalAlpha = r.a;
+      drawHi(r.img, Math.round(r.x) - cx, Math.round(r.y) - cy);
+    }
     bg.globalAlpha = 1;
   }
 
@@ -7023,10 +7239,13 @@ const Game = (() => {
     sg.fillRect(0, 0, screen.width, screen.height);
     if (!map || !player) return;
 
-    const cx = Math.round(cam.x), cy = Math.round(cam.y);
+    const cx = Math.round(cam.x * Q) / Q, cy = Math.round(cam.y * Q) / Q;
+    bg.setTransform(Q, 0, 0, Q, 0, 0);
+    bg.imageSmoothingEnabled = false;
     bg.fillStyle = '#2a2533';
     bg.fillRect(0, 0, VW, VH);
-    bg.drawImage(mapCache[map.id], -cx, -cy);
+    const mc = mapCache[map.id];
+    bg.drawImage(mc.hi || mc, -cx, -cy, mc.width, mc.height);
 
     // 바닥에 붙은 사물 먼저
     const flat = [], items = [];
@@ -7034,12 +7253,16 @@ const Game = (() => {
       if (o.hidden) continue;
       if (!o.solid) flat.push(o); else items.push({ y: o.y + o.h, o });
     }
-    for (const o of flat) bg.drawImage(o.img, Math.round(o.x - cx), Math.round(o.y - cy));
+    for (const o of flat) drawHi(o.img, Math.round(o.x) - cx, Math.round(o.y) - cy);
     drawTraffic(cx, cy);
     if (walk) {   // 클릭한 목적지
       const k = (Math.sin(time * 6) + 1) / 2, gx = Math.round(walk.goal[0] - cx), gy = Math.round(walk.goal[1] - cy - 3);
       bg.strokeStyle = `rgba(255,216,74,${0.6 + 0.4 * k})`; bg.lineWidth = 1;
       bg.beginPath(); bg.ellipse(gx, gy, 5 + k, 3 + k * 0.5, 0, 0, Math.PI * 2); bg.stroke();
+    }
+    for (const tr of map.treeList || []) {
+      if (tr.x - cx > VW + 16 || tr.x - cx < -32 || tr.y - cy > VH + 8 || tr.by - cy < -8) continue;
+      items.push({ y: tr.by, tree: tr });
     }
     for (const n of npcs) items.push({ y: n.y, n });
     items.push({ y: player.y + 0.5, p: true });
@@ -7047,14 +7270,16 @@ const Game = (() => {
 
     const st = hooks.status ? hooks.status() : {};
     for (const it of items) {
+      if (it.tree) { bg.drawImage(it.tree.img, it.tree.x - cx, it.tree.y - cy, 16, 29); continue; }
       if (it.o) {
-        bg.drawImage(it.o.img, Math.round(it.o.x - cx), Math.round(it.o.y - cy));
+        drawHi(it.o.img, Math.round(it.o.x) - cx, Math.round(it.o.y) - cy);
         if (st.sparkle && st.sparkle(it.o)) sparkle(it.o.x + it.o.w / 2 - cx, it.o.y - cy + 2);
       } else if (it.n) drawNpc(it.n, cx, cy, st);
       else drawPlayer(cx, cy);
     }
     for (const o of flat) if (st.sparkle && st.sparkle(o)) sparkle(o.x + o.w / 2 - cx, o.y - cy + 4);
     drawRoofs(cx, cy);
+    bg.globalAlpha = 0.38; drawPlayer(cx, cy); bg.globalAlpha = 1;
 
     drawDark(cx, cy, st);
     applyLighting(cx, cy, st);
@@ -7064,7 +7289,25 @@ const Game = (() => {
     const s = scale;
     const ui = dpr;   // 글자 최소 크기용 (CSS 픽셀 → 기기 픽셀)
     sg.imageSmoothingEnabled = false;
-    sg.drawImage(buffer, 0, 0, VW, VH, 0, 0, VW * s, VH * s);
+    sg.drawImage(buffer, 0, 0, VW * Q, VH * Q, 0, 0, VW * s, VH * s);
+    // 교훈석 글씨
+    for (const o of map.objects) {
+      if (o.kind !== 'mottorock' || o.hidden) continue;
+      const lines = ['슬기롭고', '정의로우며', '튼튼하게 자란다.'];
+      const fx = (o.x + 28 - cx) * s, fy = (o.y + 9 - cy) * s, fw = 44 * s, fh = 24 * s;
+      sg.save();
+      let size = fh / lines.length * 0.82;
+      sg.font = `700 ${size}px "Nanum Myeongjo", "Batang", "Noto Serif KR", serif`;
+      const widest = Math.max(...lines.map(l => sg.measureText(l).width));
+      if (widest > fw) { size *= fw / widest; sg.font = `700 ${size}px "Nanum Myeongjo", "Batang", "Noto Serif KR", serif`; }
+      sg.textAlign = 'center'; sg.textBaseline = 'middle';
+      lines.forEach((l, i) => {
+        const y = fy + (i + 0.5) * (fh / lines.length);
+        sg.fillStyle = 'rgba(255,255,255,0.45)'; sg.fillText(l, fx + Math.max(1, s * 0.3), y + Math.max(1, s * 0.3));
+        sg.fillStyle = '#3a2c1f'; sg.fillText(l, fx, y);
+      });
+      sg.restore();
+    }
     // 교표는 화면 해상도로 선명하게 덧그린다
     if (Sprites.EMBLEM.complete && Sprites.EMBLEM.naturalWidth) {
       sg.imageSmoothingEnabled = true;
@@ -7184,7 +7427,7 @@ const Game = (() => {
         hole(px + d[0] * 26, py + d[1] * 22, 30, 1);
       } else hole(px, py, 11, 0.8);
     }
-    bg.drawImage(darkCanvas, 0, 0);
+    bg.imageSmoothingEnabled = true; bg.drawImage(darkCanvas, 0, 0, VW, VH); bg.imageSmoothingEnabled = false;
     // 불빛이 가까이 가면 찾을 물건 위에 별이 떠오른다 (멀리 있으면 안 보인다)
     if (inDark(player.x, player.y) && st.flashlight && st.sparkle) {
       const d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[player.dir];
@@ -7264,7 +7507,7 @@ const Game = (() => {
       bg.save();
       bg.translate(Math.round(x), Math.round(y));
       bg.rotate(p.a + Math.PI / 2);
-      bg.drawImage(c.img, -7, -12);
+      drawHi(c.img, -7, -12);
       bg.restore();
     }
   }
@@ -7327,7 +7570,7 @@ const Game = (() => {
       if (mk === '!' || mk === '?') hole(n.x - cx, n.y - 12 - cy, 30, 0.8);
     }
     for (const o of map.objects) if (st.sparkle && st.sparkle(o) && !inDark(o.x + o.w / 2, o.y + o.h)) hole(o.x + o.w / 2 - cx, o.y + o.h / 2 - cy, 22, 0.7);
-    bg.drawImage(lightCanvas, 0, 0);
+    bg.imageSmoothingEnabled = true; bg.drawImage(lightCanvas, 0, 0, VW, VH); bg.imageSmoothingEnabled = false;
     // 건물 창문에 불 켜기
     for (const b of map.buildings) {
       (b.windows || []).forEach((w, i) => {
@@ -7368,13 +7611,13 @@ const Game = (() => {
           bg.fillStyle = '#ffd84a'; bg.fillRect(Math.round(x + Math.cos(a) * rr), Math.round(y - 8 + Math.sin(a) * rr), 2, 2);
         }
       }
-      if (mt >= 0.8) bg.drawImage(principalFrames().down[0], x - 8, y - 16);
-      else bg.drawImage(st.robotFixed ? robotImgs.fixed : robotImgs.broken, x - 8, y - 16);
+      if (mt >= 0.8) drawHi(principalFrames().down[0], x - 8, y - 16);
+      else drawHi(st.robotFixed ? robotImgs.fixed : robotImgs.broken, x - 8, y - 16);
       if (mt >= 0 && mt < 0.8 && Math.floor(mt * 12) % 2) { bg.globalAlpha = 0.6; bg.drawImage(principalFrames().down[0], x - 8, y - 16); bg.globalAlpha = 1; }
       n.name = mt >= 0.8 ? '교장선생님' : '로봇 교장선생님';
     } else {
       const f = n.moving ? Math.floor(n.anim) % 2 : 0;
-      bg.drawImage(n.frames[n.dir][f], x - 8, y - 16);
+      drawHi(n.frames[n.dir][f], x - 8, y - 16);
     }
     const mark = st.markFor ? st.markFor(n) : null;
     if (mark === 'new') {
@@ -7403,10 +7646,10 @@ const Game = (() => {
       bg.save();
       bg.translate(x, top + 8);
       bg.rotate(a);
-      bg.drawImage(img, -8, -8);
+      drawHi(img, -8, -8);
       bg.restore();
     } else {
-      bg.drawImage(img, x - 8, top);
+      drawHi(img, x - 8, top);
     }
   }
 
@@ -7724,6 +7967,18 @@ const UI = (() => {
       parts.innerHTML = `<span class="tok" title="힌트 토큰">💡${s.tokens}</span>` + Array.from({ length: s.total }, (_, i) => `<span class="slot ${i < s.parts ? 'on' : ''}"></span>`).join('');
     }
   }
+  // 미니맵 아래: 모은 부품 + 가진 것
+  function inventory(s) {
+    const el = $('invPanel');
+    if (!el) return;
+    const key = JSON.stringify(s);
+    if (el.dataset.key === key) return;
+    el.dataset.key = key;
+    el.innerHTML = `<h4>모은 부품 ${s.parts.filter(x => x.on).length}/${s.parts.length}</h4><div class="inv-grid">` +
+      s.parts.map(x => `<span class="inv-slot ${x.on ? 'on' : ''}" title="${Util.esc(x.name)}">${x.on ? Util.esc(x.name) : '?'}</span>`).join('') + '</div>' +
+      `<h4>가진 것</h4><div class="inv-chips">` + s.items.map(x => `<span class="inv-chip ${x.on ? 'on' : ''}">${Util.esc(x.name)}</span>`).join('') +
+      `<span class="inv-chip tok">힌트 토큰 ${s.tokens}</span><span class="inv-chip star">개나리 ${s.stars}/${s.starTotal}</span></div>`;
+  }
   function setTalkButton(label) {
     const b = $('btnTalk');
     if (label) { b.textContent = label; b.classList.remove('off'); }
@@ -7921,7 +8176,7 @@ const UI = (() => {
     $('dlgSkip').addEventListener('click', e => { e.stopPropagation(); skipDialog(); });
   }
 
-  return { modalOpen, dialog, quiz, quizSet, quizHintEffect, hintArea, bindHint, openPanel, notebook, sign, flow, choose, toast, hud, setTalkButton, setSoundButton, dex, ranking, character, clear, timeUp, closeAll, confirmBox, closePanel, bind, isDialog: () => !!dialogState };
+  return { modalOpen, dialog, quiz, quizSet, quizHintEffect, hintArea, bindHint, openPanel, notebook, sign, flow, choose, toast, hud, inventory, setTalkButton, setSoundButton, dex, ranking, character, clear, timeUp, closeAll, confirmBox, closePanel, bind, isDialog: () => !!dialogState };
 })();
 
 // ===== minigames.js =====
@@ -9819,6 +10074,11 @@ const App = (() => {
       parts: st.parts.length, total: session.course.list.length, tokens: st.tokens
     });
     UI.flow(flowData(), pickFlow);
+    UI.inventory({
+      parts: session.course.list.map(o => ({ name: content.missions[o - 1].part, on: st.done.includes(o) })),
+      items: ['card', 'pcKey', 'storeKey', 'flashlight'].map(k => ({ name: content.items[k].name, on: has(st.items, k) })),
+      tokens: st.tokens, stars: st.stars.length, starTotal: content.collect.total
+    });
   }
 
   // 미니맵에 표시할 목표 위치 (지금 보고 있는 맵에 있는 것만)

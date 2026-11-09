@@ -607,7 +607,7 @@ const World = (() => {
 
     // 현관 앞 마당: 국기 게양대, 교훈석, 조례대, 느티나무
     obj(m, 'flag', 27, 27, { hitH: 6, hitX: 4, hitW: 8, dy: -16, interact: { type: 'clue', m: 6, i: 3, name: '국기 게양대' } });
-    obj(m, 'mottorock', 54, 22, { hitH: 10, interact: { type: 'sign', id: 'motto' } });
+    obj(m, 'mottorock', 53.5, 21.5, { hitH: 10, hitX: 4, hitW: 48, interact: { type: 'sign', id: 'motto' } });
     obj(m, 'podium', 29, 31, { hitH: 10, interact: { type: 'clue', m: 6, i: 2, name: '조례대' } });
     obj(m, 'zelkova', 50, 20, { hitX: 18, hitW: 12, hitH: 6 });
     sign(m, 52, 24, 'symbol'); sign(m, 3, 30, 'gate'); sign(m, 27, 31, 'field');

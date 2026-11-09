@@ -134,6 +134,17 @@ table.rank td.mode { color: var(--muted); font-size: 13px; }
 .map-panel { background: rgba(255, 248, 231, .95); border: 3px solid var(--line); border-radius: 10px; box-shadow: 0 3px 0 var(--line); padding: 5px; display: grid; gap: 5px; width: 220px; }
 #minimap { display: block; width: 100%; max-height: 170px; image-rendering: pixelated; border-radius: 5px; background: #2a2533; }
 .map-panel.folded #minimap { display: none; }
+.inv-panel { background: #fff8e6; border: 3px solid var(--line); border-radius: 10px; box-shadow: 0 3px 0 var(--line); padding: 8px 9px 9px; width: 220px; box-sizing: border-box; }
+.inv-panel h4 { margin: 0 0 6px; font-size: 13px; font-weight: 900; color: #2b2233; }
+.inv-panel h4 + .inv-grid { margin-bottom: 8px; }
+.inv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.inv-slot { font-size: 11.5px; font-weight: 800; border-radius: 7px; padding: 4px 5px; text-align: center; border: 2px dashed #cdbf9f; color: #a89c84; background: #fffdf6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.inv-slot.on { border: 2px solid #3f9a4a; background: #e3f6dc; color: #22522a; }
+.inv-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.inv-chip { font-size: 11.5px; font-weight: 800; border-radius: 7px; padding: 3px 7px; border: 2px dashed #cdbf9f; color: #a89c84; background: #fffdf6; }
+.inv-chip.on { border: 2px solid #2b2233; color: #2b2233; background: #fff; }
+.inv-chip.tok { border: 2px solid #7b5cd6; color: #4a2fa8; background: #f1ebff; }
+.inv-chip.star { border: 2px solid #e2b21f; color: #7a5a00; background: #fff6cc; }
 .map-ctrl { display: flex; align-items: center; gap: 5px; }
 .map-ctrl #zoomLabel { min-width: 30px; text-align: center; font-weight: 900; font-size: 14px; color: var(--ink); }
 .map-ctrl #mapToggle { margin-left: auto; font-size: 12px; padding: 4px 8px; }
@@ -420,6 +431,7 @@ table.rec th { background: #f3ead6; }
   .panel { padding: 12px 14px; }
   .quiz-q { font-size: 16px; margin-bottom: 8px; }
   .choice { padding: 7px 12px; font-size: 15px; }
+  .inv-panel { display: none; }
   #dialog { padding: 10px 14px 10px; }
   #dlgWho { font-size: 18px; padding-bottom: 6px; margin-bottom: 8px; }
   #dlgText { font-size: 15px; min-height: 40px; }
@@ -462,6 +474,8 @@ table.rec th { background: #f3ead6; }
   .rk-what { margin: 0 0 4px; font-size: 12px; }
   #toast { top: 58px; }
   .map-panel { width: 176px; padding: 4px; }
+  .inv-panel { width: 176px; padding: 6px; }
+  .inv-slot, .inv-chip { font-size: 10.5px; }
   .side-btns { width: 176px; }
   #minimap { max-height: 96px; }
   .hud-btn.sq { width: 28px; height: 26px; font-size: 17px; }
@@ -537,7 +551,7 @@ table.rec th { background: #f3ead6; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (저학년 · 고학년)</button>
       </div></div>
-      <div id="adminLink">v1.8</div>
+      <div id="adminLink">v1.9</div>
     </form>
   </div>
 </div>
@@ -568,6 +582,7 @@ table.rec th { background: #f3ead6; }
       <button class="hud-btn dex" id="btnDex">도감 0/31</button>
       <button class="hud-btn note" id="btnNote">수첩</button>
     </div>
+    <div class="inv-panel" id="invPanel"></div>
   </div>
 </div>
 

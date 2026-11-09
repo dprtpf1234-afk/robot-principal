@@ -796,6 +796,11 @@ const App = (() => {
       parts: st.parts.length, total: session.course.list.length, tokens: st.tokens
     });
     UI.flow(flowData(), pickFlow);
+    UI.inventory({
+      parts: session.course.list.map(o => ({ name: content.missions[o - 1].part, on: st.done.includes(o) })),
+      items: ['card', 'pcKey', 'storeKey', 'flashlight'].map(k => ({ name: content.items[k].name, on: has(st.items, k) })),
+      tokens: st.tokens, stars: st.stars.length, starTotal: content.collect.total
+    });
   }
 
   // 미니맵에 표시할 목표 위치 (지금 보고 있는 맵에 있는 것만)
