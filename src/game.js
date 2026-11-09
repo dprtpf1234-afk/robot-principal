@@ -291,8 +291,17 @@ const Game = (() => {
     if (h === undefined) { h = smooth2x(img); hiCache.set(img, h); }
     bg.drawImage(h || img, x, y, img.width, img.height);
   }
+  // 지도 그림은 바뀌지 않으므로 한 번 그려 다시 쓴다.
+  // renderMapGen 은 조금씩 나눠 그릴 수 있게 중간중간 쉬어 간다(yield) → 첫 화면에서 틈틈이 미리 그린다.
   function renderMap(m) {
-    if (mapCache[m.id]) { m.treeList = mapCache[m.id].treeList; return mapCache[m.id]; }   // 지도 그림은 바뀌지 않으므로 다시 쓴다
+    if (mapCache[m.id]) { m.treeList = mapCache[m.id].treeList; return mapCache[m.id]; }
+    const it = renderMapGen(m);
+    let r = it.next();
+    while (!r.done) r = it.next();
+    return r.value;
+  }
+  function* renderMapGen(m) {
+    if (mapCache[m.id]) { m.treeList = mapCache[m.id].treeList; return mapCache[m.id]; }
     const c = document.createElement('canvas');
     c.width = m.w * T; c.height = m.h * T;
     const g = c.getContext('2d');
@@ -331,14 +340,17 @@ const Game = (() => {
         const f = floorAt[x + ',' + y];
         Sprites.drawTile(g, f != null ? f : World.get(m, x, y), x, y, World.get(m, x, y + 1));
       }
+      if (y % 6 === 5) yield;
     }
     // 고해상도: 바닥을 다듬어 2배로 → 자주 보이는 바닥은 2배 그림으로 다시 → 건물은 따로 다듬어 위에 얹는다
     // 바깥 지도는 학교와 둘레 길(hiBox)만 2배로 만든다. 학교 밖 동네는 1배 그림을 그대로 키워 쓴다 (가볍게)
     const [bx, by, bw, bh] = m.mmBox || [0, 0, m.w, m.h];
     let crop = c;
     if (m.mmBox) { crop = document.createElement('canvas'); crop.width = bw * T; crop.height = bh * T; crop.getContext('2d').drawImage(c, -bx * T, -by * T); }
+    yield;
     c.hi = smooth2x(crop);
     c.hiBox = [bx, by, bw, bh];
+    yield;
     if (c.hi) {
       const hg = c.hi.getContext('2d');
       hg.translate(-bx * 32, -by * 32);
@@ -348,19 +360,24 @@ const Game = (() => {
         if (t0 === TL.GARDEN) Sprites.drawGardenHi(hg, x, y);
         else Sprites.drawTileHi(hg, t0, x, y);
         if (t0 === TL.TURF) fbox = fbox ? [Math.min(fbox[0], x), Math.min(fbox[1], y), Math.max(fbox[2], x + 1), Math.max(fbox[3], y + 1)] : [x, y, x + 1, y + 1];
+        if (x === bx + bw - 1 && (y - by) % 3 === 2) yield;
       }
+      yield;
       if (fbox) Sprites.drawFieldHi(hg, fbox, 5.5, (x, y) => { const k = World.get(m, x, y); return k === TL.TURF || k === TL.TRACK; });
+      yield;
       // 차선·횡단보도처럼 지도에 바로 그리는 선 (2배 해상도)
       for (const o of m.objects) if (o.bake) { hg.save(); hg.scale(2, 2); o.bake(hg); hg.restore(); }
       // 건물은 2배 크기 캔버스에 바로 그리고(g.hi), 가는 줄눈·창틀 같은 반 칸 디테일을 더한다 (학교 안 건물만)
       const bc = document.createElement('canvas'); bc.width = bw * 32; bc.height = bh * 32;
       const bg1 = bc.getContext('2d'); bg1.imageSmoothingEnabled = false; bg1.scale(2, 2); bg1.translate(-bx * T, -by * T); bg1.hi = true;
       const inBox = b => { for (const k of b.cells) { const [x, y] = k.split(',').map(Number); return x >= bx && y >= by && x < bx + bw && y < by + bh; } return true; };
-      for (const b of m.buildings) if (!b.cells || inBox(b)) Sprites.drawBuilding(bg1, b);
+      for (const b of m.buildings) if (!b.cells || inBox(b)) { Sprites.drawBuilding(bg1, b); yield; }
       hg.drawImage(bc, bx * 32, by * 32);
     }
+    yield;
     for (const o of m.objects) if (o.bake) o.bake(g);
     for (const b of m.buildings) Sprites.drawBuilding(g, b);
+    yield;
     // 나무 (앞뒤 순서대로 그리는 키 큰 나무)
     m.treeList = [];
     for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
@@ -368,6 +385,7 @@ const Game = (() => {
       if (t0 === TL.TREE || t0 === TL.BTREE || t0 === TL.PTREE) m.treeList.push({ x: x * T, y: y * T + T - 29, by: y * T + T - 2, img: Sprites.treeFor(x, y, t0 !== TL.TREE) });
     }
     c.treeList = m.treeList;
+    if (mapCache[m.id]) { m.treeList = mapCache[m.id].treeList; return mapCache[m.id]; }   // 그사이 다른 쪽에서 다 그렸다
     mapCache[m.id] = c;
     roofCache[m.id] = groups.map(gr => {
       const xs = gr.cells.map(r => r[0]), ys = gr.cells.map(r => r[1]);
@@ -393,6 +411,11 @@ const Game = (() => {
     bg.globalAlpha = 1;
   }
 
+  // 캐릭터 그림은 처음 화면에 나올 때 만든다 (입장할 때 수십 명을 한꺼번에 그리지 않게)
+  function lazyFrames(o, key, pal) {
+    Object.defineProperty(o, 'frames', { get: () => charFrames(key, pal), configurable: true, enumerable: true });
+    return o;
+  }
   function charFrames(key, pal) {
     if (!charCache[key]) charCache[key] = Sprites.makeChar(pal);
     return charCache[key];
@@ -409,7 +432,7 @@ const Game = (() => {
       if (d.role === 'robot') {
         n.name = '로봇 교장선생님';
       } else {
-        n.frames = charFrames(d.pal, Sprites.NPC_PALETTES[d.pal]);
+        lazyFrames(n, d.pal, Sprites.NPC_PALETTES[d.pal]);
         if (d.role === 'mission') n.name = content.missions[d.order - 1].npc;
         if (d.role === 'side') n.name = content.sides.find(s => s.id === d.side).npc;
         if (d.role === 'friend') { const f = content.friends.find(x => x.id === d.id); n.name = f ? f.name : d.id; }
@@ -430,11 +453,11 @@ const Game = (() => {
         const teacher = false;   // 교실마다 담임 선생님이 따로 있다
         const pal = teacher ? Sprites.NPC_PALETTES[rand() < 0.5 ? 'teacher1' : 'teacher2'] : Sprites.randomStudentPalette(rand);
         const key = m.id + '_amb' + (k++);
-        list.push({
-          id: key, role: 'ambient', key: z.key, teacher, frames: charFrames(key, pal), name: KID_NAMES[Math.floor(rand() * KID_NAMES.length)],
+        list.push(lazyFrames({
+          id: key, role: 'ambient', key: z.key, teacher, name: KID_NAMES[Math.floor(rand() * KID_NAMES.length)],
           x: tx * T + T / 2, y: ty * T + T - 1, dir: ['down', 'left', 'right', 'up'][Math.floor(rand() * 4)],
           anim: rand() * 2, moving: false, wander: true, zone: z, t: rand() * 3, vx: 0, vy: 0
-        });
+        }, key, pal));
       }
     }
     return list;
@@ -812,7 +835,11 @@ const Game = (() => {
   }
 
   // ---------------- 그리기 ----------------
+  let titleEl = null;
   function render() {
+    // 첫 화면이 덮고 있을 때는 게임 화면을 그리지 않는다
+    titleEl = titleEl || document.getElementById('title');
+    if (!running && titleEl && !titleEl.classList.contains('hidden')) return;
     sg.setTransform(1, 0, 0, 1, 0, 0);
     sg.fillStyle = '#2a2533';
     sg.fillRect(0, 0, screen.width, screen.height);
@@ -1279,20 +1306,27 @@ const Game = (() => {
 
   // 첫 화면에 있는 동안 바깥 지도와 캐릭터 그림을 미리 만들어 둔다 (입장할 때 기다리지 않게)
   let warmed = false;
-  function prewarm(content) {
+  function prewarm() {
     if (warmed) return; warmed = true;
-    let ms;
-    const steps = [
-      () => { ms = World.build(); for (const id in ms) steps.push(() => spawnNpcs(ms[id], content)); },
-      () => renderMap(ms.outdoor),
-      () => { for (const i in Sprites.PLAYER_PALETTES) charFrames('player' + i, Sprites.PLAYER_PALETTES[i]); }
+    let ms = null, gen = null;
+    // 브라우저가 쉬는 틈에 조금씩: 지도 만들기 → 바깥 지도 그리기(나눠서) → 플레이어 캐릭터
+    const jobs = [
+      () => { ms = World.build(); },
+      () => { gen = renderMapGen(ms.outdoor); return 'gen'; },
+      ...Object.keys(Sprites.PLAYER_PALETTES).map(i => () => { charFrames('player' + i, Sprites.PLAYER_PALETTES[i]); })
     ];
-    const run = () => {
-      const f = steps.shift(); if (!f) return;
-      try { f(); } catch (e) { steps.length = 0; return; }
-      setTimeout(run, 30);
+    const idle = window.requestIdleCallback ? f => requestIdleCallback(f, { timeout: 500 }) : f => setTimeout(() => f({ timeRemaining: () => 8 }), 16);
+    const work = dl => {
+      try {
+        while (dl.timeRemaining() > 3) {
+          if (gen) { if (gen.next().done) gen = null; continue; }
+          const j = jobs.shift(); if (!j) return;
+          j();
+        }
+      } catch (e) { return; }
+      idle(work);
     };
-    setTimeout(run, 50);
+    setTimeout(() => idle(work), 600);
   }
 
   return {

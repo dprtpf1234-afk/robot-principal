@@ -6,7 +6,7 @@ const Sprites = (() => {
   function canvas(w, h) {
     const c = document.createElement('canvas');
     c.width = w; c.height = h;
-    const g = c.getContext('2d');
+    const g = c.getContext('2d', { willReadFrequently: true });   // 작은 그림은 CPU에서 그리는 편이 빠르다 (테두리 계산에 화소를 읽는다)
     g.imageSmoothingEnabled = false;
     return [c, g];
   }

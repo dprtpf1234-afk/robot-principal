@@ -60,6 +60,8 @@ const Title = (() => {
 
   function loop(ts) {
     if (!running) return;
+    // 첫 화면은 초당 30장이면 충분하다 (컴퓨터 부담 절반)
+    if (ts - last < 30) { requestAnimationFrame(loop); return; }
     const dt = Math.max(0, Math.min(0.05, (ts - last) / 1000));
     last = ts; t += dt;
     update(dt);
@@ -202,6 +204,7 @@ const Title = (() => {
 
   // 언덕은 움직이지 않으므로 한 번만 그려 둔다
   let front = null, frontKey = '';
+  const SHADES = {};
   function drawHills() {
     // 멀리 있는 산 (흐릿하게)
     bg.fillStyle = 'rgba(120,160,190,0.35)'; bg.beginPath(); bg.moveTo(0, 140);
@@ -220,9 +223,11 @@ const Title = (() => {
       pts.sort((a, c) => a[1] - c[1]);
       for (const [x, y, rad] of pts) {
         const col = ['#c9552f', '#d99a3a', '#b5432b', '#5f9a4a', '#3f7a38', '#4f8f45', '#3a6e34', '#d8b440'][Math.floor(r() * 8)];
-        const tg = bg.createRadialGradient(X(x) - rad * 0.4, y - rad * 0.4, 0, X(x), y, rad);
-        tg.addColorStop(0, mix(col, '#ffffff', 0.2)); tg.addColorStop(1, mix(col, '#1a2a14', 0.3));
-        bg.fillStyle = tg; bg.beginPath(); bg.arc(X(x), y, rad, 0, Math.PI * 2); bg.fill();
+        // 그늘 → 바탕 → 밝은 면 (그라데이션 없이 원 세 개: 빠르게)
+        const k = SHADES[col] || (SHADES[col] = [mix(col, '#1a2a14', 0.3), col, mix(col, '#ffffff', 0.22)]);
+        bg.fillStyle = k[0]; bg.beginPath(); bg.arc(X(x), y, rad, 0, Math.PI * 2); bg.fill();
+        bg.fillStyle = k[1]; bg.beginPath(); bg.arc(X(x) - rad * 0.12, y - rad * 0.12, rad * 0.82, 0, Math.PI * 2); bg.fill();
+        bg.fillStyle = k[2]; bg.beginPath(); bg.arc(X(x) - rad * 0.35, y - rad * 0.38, rad * 0.38, 0, Math.PI * 2); bg.fill();
       }
       bg.fillStyle = 'rgba(255,255,255,0.18)'; bg.beginPath(); bg.moveTo(X(0), top(0));
       for (let x = 0; x <= W / 2; x += 1) bg.lineTo(X(x), top(x));
