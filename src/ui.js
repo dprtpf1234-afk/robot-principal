@@ -27,17 +27,27 @@ const UI = (() => {
     if (line.onShow) line.onShow();
     $('dlgWho').textContent = line.who || '';
     $('dlgWho').style.display = line.who ? '' : 'none';
+    $('dlgPage').textContent = st.lines.length > 1 ? (st.i + 1) + ' / ' + st.lines.length : '';
+    $('dlgNext').textContent = st.i + 1 < st.lines.length ? '다음 ▶' : '확인';
+    $('dlgSkip').style.display = st.lines.length > 1 && st.i + 1 < st.lines.length ? '' : 'none';
     st.full = line.text;
     st.shown = 0;
     $('dlgText').textContent = '';
-    $('dlgNext').style.visibility = 'hidden';
     clearInterval(st.timer);
     st.timer = setInterval(() => {
       st.shown += 2;
       $('dlgText').textContent = st.full.slice(0, st.shown);
       if (st.shown % 6 === 0) Sound.sfx('talk');
-      if (st.shown >= st.full.length) { clearInterval(st.timer); $('dlgNext').style.visibility = 'visible'; }
+      if (st.shown >= st.full.length) { clearInterval(st.timer); }
     }, 30);
+  }
+  function skipDialog() {
+    const st = dialogState;
+    if (!st) return;
+    for (let i = st.i + 1; i < st.lines.length; i++) if (st.lines[i].onShow) st.lines[i].onShow();
+    st.i = st.lines.length - 1; st.shown = st.full.length;
+    clearInterval(st.timer);
+    advance();
   }
   function advance() {
     const st = dialogState;
@@ -46,7 +56,6 @@ const UI = (() => {
       st.shown = st.full.length;
       clearInterval(st.timer);
       $('dlgText').textContent = st.full;
-      $('dlgNext').style.visibility = 'visible';
       return;
     }
     st.i++;
@@ -446,6 +455,7 @@ const UI = (() => {
 
   function bind() {
     $('dialog').addEventListener('click', advance);
+    $('dlgSkip').addEventListener('click', e => { e.stopPropagation(); skipDialog(); });
   }
 
   return { modalOpen, dialog, quiz, quizSet, quizHintEffect, hintArea, bindHint, openPanel, notebook, sign, flow, choose, toast, hud, setTalkButton, setSoundButton, dex, ranking, character, clear, timeUp, closeAll, confirmBox, closePanel, bind, isDialog: () => !!dialogState };

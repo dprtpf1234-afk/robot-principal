@@ -184,9 +184,9 @@ const Sprites = (() => {
         px(g, x, y, T, 5, '#c9c4b8'); px(g, x, y + 5, T, 1, '#7d7a72');
         px(g, x, y + 8, T, 4, '#bdb8ad'); px(g, x, y + 12, T, 1, '#7d7a72');
         break;
-      case TILE.PARK:
-        px(g, x, y, T, T, '#9a9ca3');
-        if (tx % 2 === 0) px(g, x, y, 1, T, '#f4f4f4');
+      case TILE.PARK:         // 주차장 아스팔트 (주차칸 흰 선은 'stall' 사물)
+        px(g, x, y, T, T, '#555963');
+        for (let i = 0; i < 3; i++) px(g, x + Math.floor(hash(tx, ty, i) * 15), y + Math.floor(hash(tx, ty, i + 5) * 15), 1, 1, i % 2 ? '#4a4e57' : '#62666f');
         break;
       case TILE.BRIDGE:       // 연결통로 바닥
         px(g, x, y, T, T, '#cfd8e0');
@@ -202,11 +202,10 @@ const Sprites = (() => {
         for (let i = 0; i < 4; i++) px(g, x + i * 4, y, 2, T, '#3d6fe9');
         px(g, x, y + 14, T, 2, '#9aa0a8');
         break;
-      case TILE.CANOPY:       // 중앙현관 유리 차양 (아래로 걸어 다닌다)
+      case TILE.CANOPY:       // 중앙현관 차양 아래 바닥 (지붕은 덮개로 따로 그린다)
         px(g, x, y, T, T, '#b9583f');
         for (let r = 0; r < 4; r++) px(g, x, y + r * 4 + 3, T, 1, '#9c4733');
-        px(g, x + 1, y + 1, T - 2, T - 2, 'rgba(111, 211, 199, 0.55)');
-        px(g, x, y, T, 1, '#7d828b'); px(g, x, y, 1, T, '#7d828b');
+        for (let r = 0; r < 4; r++) px(g, x + ((r % 2) * 8), y + r * 4, 1, 3, '#9c4733');
         break;
       case TILE.HEDGE:        // 울타리를 따라 심은 산울타리
         px(g, x, y, T, T, '#3f7f3a');
@@ -425,14 +424,39 @@ const Sprites = (() => {
     return c;
   }
   // 위에서 본 자동차 (위쪽이 앞)
+  // 위에서 본 자동차 (세로: 앞이 위). 둥근 차체, 앞유리·지붕·뒷유리, 전조등·후미등, 사이드미러
+  function drawCarV(g, ox, oy, col) {
+    const dk = shade(col, -38), lt = shade(col, 34), glass = '#26303d', gl = '#4e6a86';
+    px(g, ox + 1, oy + 2, 14, 22, 'rgba(0,0,0,0.28)');                       // 그림자
+    px(g, ox + 1, oy + 1, 12, 22, col); px(g, ox + 2, oy, 10, 24, col);      // 차체 (모서리 둥글게)
+    px(g, ox + 1, oy + 1, 1, 22, dk); px(g, ox + 12, oy + 1, 1, 22, dk);      // 옆면 그늘
+    px(g, ox + 3, oy + 1, 8, 1, lt);                                         // 보닛 빛
+    px(g, ox + 2, oy + 6, 10, 4, glass); px(g, ox + 3, oy + 6, 3, 1, gl);   // 앞유리
+    px(g, ox + 3, oy + 10, 8, 7, shade(col, 12)); px(g, ox + 3, oy + 10, 8, 1, lt);   // 지붕
+    px(g, ox + 2, oy + 17, 10, 3, glass); px(g, ox + 3, oy + 17, 2, 1, gl);  // 뒷유리
+    px(g, ox, oy + 7, 1, 2, dk); px(g, ox + 13, oy + 7, 1, 2, dk);           // 사이드미러
+    px(g, ox + 2, oy, 3, 1, '#fff6c4'); px(g, ox + 9, oy, 3, 1, '#fff6c4');  // 전조등
+    px(g, ox + 2, oy + 23, 3, 1, '#e23b3b'); px(g, ox + 9, oy + 23, 3, 1, '#e23b3b');   // 후미등
+  }
   function makeCarTop(col) {
     const [c, g] = canvas(14, 24);
-    px(g, 1, 2, 12, 20, col); px(g, 2, 1, 10, 2, col); px(g, 2, 21, 10, 2, col);
-    px(g, 2, 5, 10, 4, '#2c3a4a'); px(g, 3, 6, 8, 1, '#6fa8d8'); px(g, 2, 16, 10, 3, '#2c3a4a');
-    px(g, 3, 10, 8, 5, shade(col, 18));
-    px(g, 0, 4, 1, 4, '#222'); px(g, 13, 4, 1, 4, '#222'); px(g, 0, 16, 1, 4, '#222'); px(g, 13, 16, 1, 4, '#222');
-    px(g, 2, 0, 3, 1, '#fff6c4'); px(g, 9, 0, 3, 1, '#fff6c4'); px(g, 2, 23, 3, 1, '#e23b3b'); px(g, 9, 23, 3, 1, '#e23b3b');
+    drawCarV(g, 0, 0, col);
     return c;
+  }
+  // 중앙현관 차양 지붕 (캐릭터가 아래로 들어가면 흐려진다)
+  function drawCanopyRoof(g, cells, w, h) {
+    const has = new Set(cells.map(c => c[0] + ',' + c[1]));
+    for (const [x, y] of cells) {
+      const X = x * T, Y = y * T + 6;
+      px(g, X, Y, T, T, '#2f6f63');
+      px(g, X + 1, Y + 1, T - 2, T - 2, '#3f8f80');
+      px(g, X + 2, Y + 2, 5, T - 4, 'rgba(255,255,255,0.12)');
+      px(g, X, Y + 7, T, 1, '#2a5f55');
+      if (!has.has(x + ',' + (y - 1))) px(g, X, Y, T, 2, '#8a929c');
+      if (!has.has(x + ',' + (y + 1))) { px(g, X, Y + T - 2, T, 2, '#6d747d'); px(g, X, Y + T, T, 3, 'rgba(0,0,0,0.25)'); }
+      if (!has.has((x - 1) + ',' + y)) px(g, X, Y, 2, T, '#8a929c');
+      if (!has.has((x + 1) + ',' + y)) px(g, X + T - 2, Y, 2, T, '#6d747d');
+    }
   }
 
   // 체육시설 바닥: 위쪽 농구 코트 + 아래쪽 네트 코트 (항공사진처럼 세로 방향)
@@ -752,11 +776,15 @@ const Sprites = (() => {
         px(g, 3, 3, 10, 5, '#b8794a'); px(g, 19, 3, 10, 5, '#b8794a'); px(g, 15, 0, 2, 16, '#3d2817');
         px(g, 12, 8, 8, 7, '#ffd84a'); px(g, 13, 5, 6, 4, '#ffd84a'); px(g, 14, 6, 4, 3, '#5b3b24'); px(g, 15, 10, 2, 3, '#5b3b24');
         break;
-      case 'sign':          // i 정보 팻말
-        [c, g] = canvas(16, 16);
-        px(g, 7, 9, 2, 7, '#7a5a3a'); px(g, 1, 1, 14, 9, '#2b2233'); px(g, 2, 2, 12, 7, '#3c8de0');
-        px(g, 7, 3, 2, 1, '#fff'); px(g, 7, 5, 2, 3, '#fff');
+      case 'sign': {        // i 정보 팻말: 나무 기둥 + 나무판 + 파란 동그라미 i
+        [c, g] = canvas(16, 18);
+        px(g, 7, 11, 2, 7, '#6b4a2b'); px(g, 7, 11, 1, 7, '#8a6238'); px(g, 5, 17, 6, 1, 'rgba(0,0,0,0.25)');
+        px(g, 1, 1, 14, 11, '#5a3d22'); px(g, 2, 2, 12, 9, '#c8955a'); px(g, 2, 2, 12, 1, '#dcae74'); px(g, 2, 7, 12, 1, '#b5824b');
+        g.fillStyle = '#2f7de0'; g.beginPath(); g.arc(8, 6.5, 3.6, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#1d5fb3'; g.fillRect(5, 9, 6, 1);
+        px(g, 7, 4, 2, 1, '#fff'); px(g, 7, 6, 2, 3, '#fff');
         break;
+      }
       case 'star':          // 수집품: 개나리 꽃 (교화)
         [c, g] = canvas(16, 16);
         px(g, 3, 12, 10, 1, '#7a5a2a'); px(g, 5, 11, 1, 1, '#7a5a2a'); px(g, 10, 11, 1, 1, '#7a5a2a'); px(g, 4, 13, 1, 1, '#5a8a2a'); px(g, 11, 13, 2, 1, '#5a8a2a');
@@ -855,11 +883,19 @@ const Sprites = (() => {
         px(g, 2, 8, 44, 22, '#c9c4b8'); px(g, 2, 8, 44, 3, '#e8e4da'); px(g, 2, 28, 44, 2, '#8a867c');
         px(g, 8, 14, 32, 2, '#a8a397'); px(g, 18, 0, 12, 9, '#7a7f87'); px(g, 20, 2, 8, 2, '#e23b3b');
         break;
-      case 'car': {         // 주차된 차 (색은 무작위)
+      case 'car': {         // 주차된 차 (위에서 본 모습, 색은 무작위)
         [c, g] = canvas(32, 16);
-        const col = ['#f4f4f4', '#2b2b33', '#9aa0a8', '#c4463a', '#3d6fe9'][objSeed++ % 5];
-        px(g, 2, 4, 28, 10, col); px(g, 7, 2, 16, 4, col); px(g, 8, 3, 14, 2, '#6fa8d8');
-        px(g, 4, 13, 5, 3, '#222'); px(g, 23, 13, 5, 3, '#222'); px(g, 2, 7, 28, 1, 'rgba(0,0,0,0.15)');
+        const col = ['#f2f3f5', '#2b2e36', '#a7adb5', '#c4463a', '#3d6fe9', '#e8e8e8', '#4a5568'][objSeed++ % 7];
+        const [vc, vg] = canvas(14, 24);
+        drawCarV(vg, 0, 0, col);
+        g.save(); g.translate(16, 8); g.rotate(objSeed % 2 ? Math.PI / 2 : -Math.PI / 2); g.drawImage(vc, -7, -12); g.restore();
+        break;
+      }
+      case 'stall2':        // 주차칸 흰 선 (칸 간격 2칸 / 3칸)
+      case 'stall3': {
+        const hgt = (kind === 'stall2' ? 2 : 3) * T;
+        [c, g] = canvas(36, hgt + 1);
+        px(g, 0, 0, 36, 1, '#eef0f2'); px(g, 0, hgt, 36, 1, '#eef0f2'); px(g, 0, 0, 1, hgt + 1, '#eef0f2');
         break;
       }
       case 'rock':          // 암석원 바위 표본 + 설명판
@@ -936,5 +972,5 @@ const Sprites = (() => {
     return c;
   }
 
-  return { T, TILE, SOLID, drawTile, drawBuilding, makeFieldMarks, makeCourtMarks, makeTireBorder, makeCarTop, makeChar, makeRobot, makeObj, PLAYER_PALETTES, NPC_PALETTES, randomStudentPalette, shade, EMBLEM, EMBLEM_SVG, onEmblem };
+  return { T, TILE, SOLID, drawTile, drawBuilding, makeFieldMarks, makeCourtMarks, makeTireBorder, makeCarTop, drawCanopyRoof, makeChar, makeRobot, makeObj, PLAYER_PALETTES, NPC_PALETTES, randomStudentPalette, shade, EMBLEM, EMBLEM_SVG, onEmblem };
 })();

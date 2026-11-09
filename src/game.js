@@ -135,7 +135,7 @@ const Game = (() => {
     // 화면 기기 픽셀 기준으로 정수 배율만 써서 픽셀이 고르게 선명하도록 한다.
     // 한 화면에 세로 약 18~22칸이 보이도록 (작은 화면은 조금 더 크게)
     const devW = Math.round(w * dpr), devH = Math.round(h * dpr);
-    const targetH = h < 500 ? 280 : 340;
+    const targetH = h < 500 ? 280 : 460;   // PC는 한 칸이 약 32px: 더 촘촘하고 선명하게
     baseScale = Math.max(1, Math.round(devH / targetH));
     zoomStep = Math.max(1 - baseScale, Math.min(ZOOM_MAX, zoomStep));
     scale = baseScale + zoomStep;
@@ -261,7 +261,29 @@ const Game = (() => {
     }
     for (const b of m.buildings) Sprites.drawBuilding(g, b);
     mapCache[m.id] = c;
+    // 차양 지붕 덮개
+    const roofs = [];
+    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (World.get(m, x, y) === Sprites.TILE.CANOPY) roofs.push([x, y]);
+    if (roofs.length) {
+      const xs = roofs.map(r => r[0]), ys = roofs.map(r => r[1]);
+      const x0 = Math.min(...xs), y0 = Math.min(...ys), x1 = Math.max(...xs) + 1, y1 = Math.max(...ys) + 1;
+      const rc = document.createElement('canvas'); rc.width = (x1 - x0) * T; rc.height = (y1 - y0) * T + 4;
+      const rg = rc.getContext('2d');
+      Sprites.drawCanopyRoof(rg, roofs.map(([x, y]) => [x - x0, y - y0]), x1 - x0, y1 - y0);
+      roofCache[m.id] = { img: rc, x: x0 * T, y: y0 * T - 6, rect: { x: x0 * T, y: y0 * T, w: (x1 - x0) * T, h: (y1 - y0) * T }, a: 1 };
+    } else roofCache[m.id] = null;
     return c;
+  }
+  const roofCache = {};
+  function drawRoofs(cx, cy) {
+    const r = roofCache[map.id];
+    if (!r) return;
+    const inside = (x, y) => x >= r.rect.x && x < r.rect.x + r.rect.w && y >= r.rect.y && y < r.rect.y + r.rect.h + 4;
+    const target = inside(player.x, player.y) ? 0.32 : 1;
+    r.a += (target - r.a) * 0.18;
+    bg.globalAlpha = r.a;
+    bg.drawImage(r.img, Math.round(r.x - cx), Math.round(r.y - cy));
+    bg.globalAlpha = 1;
   }
 
   function charFrames(key, pal) {
@@ -269,6 +291,7 @@ const Game = (() => {
     return charCache[key];
   }
 
+  const KID_NAMES = ['지호', '서연', '하준', '서윤', '도윤', '지우', '시우', '하윤', '주원', '수아', '예준', '지안', '건우', '채원', '우진', '다은', '현우', '소율', '민재', '예린', '태윤', '나은', '준서', '아린', '은우', '서아', '로운', '하린', '이안', '유나'];
   function spawnNpcs(m, content) {
     const list = [];
     for (const d of m.npcDefs) {
@@ -301,7 +324,7 @@ const Game = (() => {
         const pal = teacher ? Sprites.NPC_PALETTES[rand() < 0.5 ? 'teacher1' : 'teacher2'] : Sprites.randomStudentPalette(rand);
         const key = m.id + '_amb' + (k++);
         list.push({
-          id: key, role: 'ambient', key: z.key, teacher, frames: charFrames(key, pal),
+          id: key, role: 'ambient', key: z.key, teacher, frames: charFrames(key, pal), name: KID_NAMES[Math.floor(rand() * KID_NAMES.length)],
           x: tx * T + T / 2, y: ty * T + T - 1, dir: ['down', 'left', 'right', 'up'][Math.floor(rand() * 4)],
           anim: rand() * 2, moving: false, wander: rand() < 0.65, zone: z, t: rand() * 3, vx: 0, vy: 0
         });
@@ -376,6 +399,7 @@ const Game = (() => {
   function loadMap(id) {
     map = maps[id];
     safePos = null;
+    walk = null;
     npcs = allNpcs[id];
     renderMap(map);
     Sound.playMusic(map.music);
@@ -426,7 +450,17 @@ const Game = (() => {
       if (keys.up) my -= 1;
       if (keys.down) my += 1;
       if (joy.active && (joy.dx || joy.dy)) { mx = joy.dx; my = joy.dy; }
-    }
+      if (mx || my) walk = null;   // 방향키·조이스틱을 쓰면 클릭 이동은 멈춘다
+      else if (walk) {
+        const w = walkDir(dt);
+        if (w) {
+          const step = SPEED * speedK * dt;
+          if (step >= w[2]) { mx = w[0] * w[2] / step; my = w[1] * w[2] / step; } else { mx = w[0]; my = w[1]; }
+          const bx = player.x, by = player.y;
+          walk && (walk.lastX = bx, walk.lastY = by);
+        }
+      }
+    } else if (modal) walk = null;
     const len = Math.hypot(mx, my);
     player.moving = len > 0.01;
     if (player.moving) {
@@ -435,6 +469,10 @@ const Game = (() => {
       else player.dir = my < 0 ? 'up' : 'down';
       moveEntity(player, mx * SPEED * speedK * dt, my * SPEED * speedK * dt, 5, 4);
       player.anim += dt * 8;
+      if (walk && walk.lastX != null) {
+        if (Math.abs(player.x - walk.lastX) + Math.abs(player.y - walk.lastY) < 0.05) { walk.stuck += dt; if (walk.stuck > 0.6) walk = null; }
+        else walk.stuck = 0;
+      }
     }
 
     // 점프·공중 회전
@@ -538,11 +576,85 @@ const Game = (() => {
         if (o.interact && !o.hidden && wx >= o.x && wx <= o.x + o.w && wy >= o.y && wy <= o.y + o.h) hit = { type: 'obj', obj: o };
       }
     }
-    if (!hit) return;
-    const hx = hit.npc ? hit.npc.x : hit.obj.hit.x + hit.obj.hit.w / 2;
-    const hy = hit.npc ? hit.npc.y : hit.obj.hit.y + hit.obj.hit.h;
-    if (Math.hypot(hx - player.x, hy - player.y) > 44) { hooks.toast('조금 더 가까이 가서 말을 걸어 보세요!'); return; }
-    hooks.interact(hit);
+    if (hit) {
+      const hx = hit.npc ? hit.npc.x : hit.obj.hit.x + hit.obj.hit.w / 2;
+      const hy = hit.npc ? hit.npc.y : hit.obj.hit.y + hit.obj.hit.h;
+      if (Math.hypot(hx - player.x, hy - player.y) <= 44) { clearPath(); hooks.interact(hit); return; }
+      // 멀리 있으면 그 앞까지 걸어간 뒤 말을 건다
+      if (!planPath(hx, hy + (hit.npc ? 4 : 6), true)) planPath(hx, hy - 14, true);
+      if (walk) walk.then = hit;
+      return;
+    }
+    planPath(wx, wy, false);
+  }
+
+  // ---------------- 클릭한 곳으로 걸어가기 (길 찾기) ----------------
+  let walk = null;   // { pts: [[x,y],...], i, goal:[x,y], then, stuck }
+  function clearPath() { walk = null; }
+  function tileFree(tx, ty, goal) {
+    if (tx < 0 || ty < 0 || tx >= map.w || ty >= map.h) return false;
+    if (!goal && map.warps.some(w => w.x === tx && w.y === ty)) return false;
+    return !blocked(map, tx * T + 8, ty * T + 12, 5, 4);
+  }
+  // 가장 가까운 걸을 수 있는 칸을 목표로 너비 우선 탐색. near = 그 근처까지만 가도 된다
+  function planPath(wx, wy, near) {
+    const sx = Math.floor(player.x / T), sy = Math.floor((player.y - 1) / T);
+    let gx = Math.floor(wx / T), gy = Math.floor(wy / T);
+    if (!tileFree(gx, gy, true)) {
+      let best = null;
+      for (let r = 1; r <= 3 && !best; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r || !tileFree(gx + dx, gy + dy, true)) continue;
+        const d = Math.hypot(dx, dy);
+        if (!best || d < best.d) best = { x: gx + dx, y: gy + dy, d };
+      }
+      if (!best) { walk = null; return false; }
+      gx = best.x; gy = best.y;
+    }
+    const W = map.w, prev = new Int32Array(W * map.h).fill(-1), start = sy * W + sx;
+    prev[start] = start;
+    const q = [start];
+    let found = -1;
+    for (let qi = 0; qi < q.length && qi < 20000; qi++) {
+      const c = q[qi], cx = c % W, cy = (c - cx) / W;
+      if (cx === gx && cy === gy) { found = c; break; }
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = cx + dx, ny = cy + dy, ni = ny * W + nx;
+        if (nx < 0 || ny < 0 || nx >= W || ny >= map.h || prev[ni] >= 0) continue;
+        if (!tileFree(nx, ny, nx === gx && ny === gy)) continue;
+        prev[ni] = c; q.push(ni);
+      }
+    }
+    if (found < 0) { walk = null; hooks.toast && hooks.toast('그곳으로는 갈 수 없어요.'); return false; }
+    const cells = [];
+    for (let c = found; c !== start; c = prev[c]) cells.push([c % W, Math.floor(c / W)]);
+    cells.reverse();
+    // 방향이 바뀌는 곳만 남긴다
+    const pts = [];
+    for (let i = 0; i < cells.length; i++) {
+      const a = cells[i - 1] || [sx, sy], b = cells[i], c2 = cells[i + 1];
+      if (!c2 || (b[0] - a[0]) !== (c2[0] - b[0]) || (b[1] - a[1]) !== (c2[1] - b[1])) pts.push([b[0] * T + 8, b[1] * T + 12]);
+    }
+    walk = { pts, i: 0, goal: [gx * T + 8, gy * T + 12], then: null, stuck: 0, near };
+    return true;
+  }
+  // 이번 프레임에 걸어갈 방향 (없으면 null)
+  function walkDir(dt) {
+    if (!walk) return null;
+    const p = walk.pts[walk.i];
+    if (!p) { const h = walk.then; walk = null; if (h) arrive(h); return null; }
+    const dx = p[0] - player.x, dy = p[1] - player.y, d = Math.hypot(dx, dy);
+    if (d < 1.5) { player.x = p[0]; player.y = p[1]; walk.i++; return walkDir(dt); }
+    if (walk.then) {
+      const h = walk.then, hx = h.npc ? h.npc.x : h.obj.hit.x + h.obj.hit.w / 2, hy = h.npc ? h.npc.y : h.obj.hit.y + h.obj.hit.h;
+      if (Math.hypot(hx - player.x, hy - player.y) < 22) { walk = null; arrive(h); return null; }
+    }
+    return [dx / d, dy / d, d];
+  }
+  function arrive(h) {
+    const hx = h.npc ? h.npc.x : h.obj.hit.x + h.obj.hit.w / 2, hy = h.npc ? h.npc.y : h.obj.hit.y + h.obj.hit.h;
+    const dx = hx - player.x, dy = hy - player.y;
+    player.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+    if (Math.hypot(dx, dy) <= 44) hooks.interact(h);
   }
 
   function facePlayer(n) {
@@ -589,6 +701,11 @@ const Game = (() => {
     }
     for (const o of flat) bg.drawImage(o.img, Math.round(o.x - cx), Math.round(o.y - cy));
     drawTraffic(cx, cy);
+    if (walk) {   // 클릭한 목적지
+      const k = (Math.sin(time * 6) + 1) / 2, gx = Math.round(walk.goal[0] - cx), gy = Math.round(walk.goal[1] - cy - 3);
+      bg.strokeStyle = `rgba(255,216,74,${0.6 + 0.4 * k})`; bg.lineWidth = 1;
+      bg.beginPath(); bg.ellipse(gx, gy, 5 + k, 3 + k * 0.5, 0, 0, Math.PI * 2); bg.stroke();
+    }
     for (const n of npcs) items.push({ y: n.y, n });
     items.push({ y: player.y + 0.5, p: true });
     items.sort((a, b) => a.y - b.y);
@@ -602,6 +719,7 @@ const Game = (() => {
       else drawPlayer(cx, cy);
     }
     for (const o of flat) if (st.sparkle && st.sparkle(o)) sparkle(o.x + o.w / 2 - cx, o.y - cy + 4);
+    drawRoofs(cx, cy);
 
     drawDark(cx, cy, st);
     applyLighting(cx, cy, st);
@@ -634,8 +752,7 @@ const Game = (() => {
       textTag(l.text, (l.x - cam.x) * s, (l.y - cam.y) * s, Math.max(5.2 * s, 11 * ui));
     }
     for (const n of npcs) {
-      if (n.role === 'ambient') continue;
-      if (n.role === 'friend' && !(st.known && st.known(n))) continue;
+      if (!n.name) continue;
       textTag(n.name, (n.x - cam.x) * s, (n.y - 22 - cam.y) * s - Math.max(0, 10 * ui - 4.6 * s) * 0.6, Math.max(4.6 * s, 10 * ui), n.role === 'mission' ? '#fff3c4' : n.role === 'side' ? '#d9f2ff' : n.role === 'friend' ? '#e6ffd9' : n.role === 'teacher' ? '#f1e2ff' : '#eee');
     }
     const tag = hooks.playerTag ? hooks.playerTag() : null;
@@ -1003,7 +1120,7 @@ const Game = (() => {
     setTouch: v => { touchMode = v; },
     clearInput: clearPressed,
     // 테스트용
-    _teleport(mapId, tx, ty) { loadMap(mapId); player.x = tx * T + 8; player.y = ty * T + 12; safePos = null; snapCamera(); },
+    _teleport(mapId, tx, ty) { loadMap(mapId); player.x = tx * T + 8; player.y = ty * T + 12; safePos = null; walk = null; snapCamera(); },
     _press(k) { pressed[k] = true; }
   };
 })();

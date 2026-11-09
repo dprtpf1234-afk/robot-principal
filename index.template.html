@@ -304,12 +304,18 @@ table.rank td.mode { color: var(--muted); font-size: 13px; }
 
 /* 대화창 */
 #dialog {
-  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(760px, calc(100% - 24px)); z-index: 20;
-  background: var(--paper); border: 4px solid var(--line); border-radius: 14px; box-shadow: 0 6px 0 var(--line); padding: 14px 18px 18px; cursor: pointer; min-height: 96px;
+  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(620px, calc(100% - 24px)); z-index: 20;
+  background: #fff8e6; border: 4px solid #2b2233; border-radius: 16px; box-shadow: 0 7px 0 #2b2233, 0 12px 24px rgba(0,0,0,.25); padding: 16px 20px 14px; cursor: pointer;
 }
-#dlgWho { position: absolute; top: -18px; left: 16px; background: var(--accent); color: #fff; font-weight: 900; padding: 4px 12px; border: 3px solid var(--line); border-radius: 8px; font-size: 15px; }
-#dlgText { font-size: 18px; line-height: 1.55; font-weight: 600; white-space: pre-line; min-height: 56px; }
-#dlgNext { position: absolute; right: 14px; bottom: 6px; font-size: 13px; color: var(--muted); animation: blink 1s steps(2) infinite; }
+#dlgWho { font-family: var(--title-font); font-size: 24px; color: #2b2233; padding-bottom: 10px; margin-bottom: 12px; border-bottom: 2px dashed #e0cfa6; letter-spacing: .5px; }
+#dlgText { font-size: 17px; line-height: 1.6; font-weight: 600; white-space: pre-line; min-height: 54px; color: #3a3346; }
+.dlg-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+#dlgPage { font-size: 14px; color: #8a8296; font-weight: 700; }
+.dlg-btns { display: flex; gap: 10px; }
+.dlg-btn { font-family: var(--title-font); font-size: 16px; padding: 7px 16px; border: 3px solid #2b2233; border-radius: 10px; background: #fff8e6; color: #2b2233; box-shadow: 0 4px 0 #2b2233; }
+.dlg-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #2b2233; }
+.dlg-btn.go { background: #f39a1d; color: #fff; -webkit-text-fill-color: #fff; }
+#dlgNext { visibility: visible; }
 @keyframes blink { 50% { opacity: 0; } }
 
 /* 패널 */
@@ -408,13 +414,17 @@ table.rec th { background: #f3ead6; }
   #hudNext .star { width: 16px; height: 16px; }
   #hudNext .mpill { font-size: 11px; }
   #dlgText { font-size: 16px; }
+  #dlgWho { font-size: 20px; }
 }
 @media (max-height: 460px) {
   .panel { padding: 12px 14px; }
   .quiz-q { font-size: 16px; margin-bottom: 8px; }
   .choice { padding: 7px 12px; font-size: 15px; }
-  #dialog { min-height: 76px; padding: 10px 14px 14px; }
-  #dlgText { font-size: 15px; min-height: 44px; }
+  #dialog { padding: 10px 14px 10px; }
+  #dlgWho { font-size: 18px; padding-bottom: 6px; margin-bottom: 8px; }
+  #dlgText { font-size: 15px; min-height: 40px; }
+  .dlg-foot { margin-top: 8px; }
+  .dlg-btn { font-size: 14px; padding: 5px 12px; }
   .t-sub { display: none; }
   .visit-box { font-size: 12px; padding: 4px 8px; }
   .visit-box b { font-size: 13px; }
@@ -527,7 +537,7 @@ table.rec th { background: #f3ead6; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (저학년 · 고학년)</button>
       </div></div>
-      <div id="adminLink">v1.7</div>
+      <div id="adminLink">v1.8</div>
     </form>
   </div>
 </div>
@@ -567,7 +577,7 @@ table.rec th { background: #f3ead6; }
   <button class="tbtn" id="btnJump">점프</button>
 </div>
 
-<div id="dialog" class="hidden"><div id="dlgWho"></div><div id="dlgText"></div><div id="dlgNext">▼ 눌러서 계속</div></div>
+<div id="dialog" class="hidden"><div id="dlgWho"></div><div id="dlgText"></div><div class="dlg-foot"><span id="dlgPage"></span><span class="dlg-btns"><button class="dlg-btn" id="dlgSkip" type="button">건너뛰기</button><button class="dlg-btn go" id="dlgNext" type="button">다음 ▶</button></span></div></div>
 <div id="modal" class="hidden"><div id="modalBody" class="panel"></div></div>
 <div id="toast"></div>
 <div id="rotate">기기를 가로로 돌려 주세요 ↻</div>

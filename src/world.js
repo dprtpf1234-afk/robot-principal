@@ -28,6 +28,12 @@ const World = (() => {
     m.objects.push(o);
     return o;
   }
+  // 주차칸 + 차 (몇 칸은 비워 둔다). sp = 칸 간격(칸 수)
+  let parkSeq = 0;
+  function park(m, tx, ty, sp) {
+    obj(m, 'stall' + sp, tx, ty, { solid: false, dx: -2, dy: 8 - sp * T / 2 });
+    if (parkSeq++ % 5 !== 3) obj(m, 'car', tx, ty);
+  }
   function label(m, tx, ty, text) { m.labels.push({ x: tx * T, y: ty * T, text }); }
   function warp(m, tx, ty, to, ax, ay, dir, lock) { m.warps.push({ x: tx, y: ty, to, ax, ay, dir, lock: lock || null }); }
   function sign(m, tx, ty, id) { obj(m, 'sign', tx, ty, { hitH: 5, hitX: 5, hitW: 6, interact: { type: 'sign', id } }); }
@@ -222,9 +228,9 @@ const World = (() => {
     obj(m, 'counter', caf.ix + 5, 11);
     obj(m, 'table', caf.ix, 13); obj(m, 'table', caf.ix, 15); obj(m, 'table', caf.ix + 5, 15);
 
-    npc(m, { id: 'm7', role: 'mission', order: 7, pal: 'doctor', tx: princ.cx, ty: 8.4, face: 'down', place: '본관 1층 교장실 앞' });
+    npc(m, { id: 'm7', role: 'mission', order: 7, pal: 'affairs', tx: princ.cx, ty: 8.4, face: 'down', place: '본관 1층 교장실 앞' });
     npc(m, { id: 'sB', role: 'side', side: 'B', pal: 'cook', tx: caf.ix + 6.5, ty: 13, face: 'down', place: '본관 1층 식생활교육관(식당)' });
-    friend(m, 'f7', 'affairs', staff.ix + 1, 3); friend(m, 'f8', 'staff', adm.ix + 1, 4); friend(m, 'f29', 'adminHead', adm.ix + adm.iw - 1, 4.5);
+    friend(m, 'f8', 'staff', adm.ix + 1, 4); friend(m, 'f29', 'adminHead', adm.ix + adm.iw - 1, 4.5);
     friend(m, 'f21', 'vpM', staff.cx - 0.5, 8.2, 'down'); friend(m, 'f22', 'vpF', meet.ix + 1, 4);
     obj(m, 'emblem', lx0 + 1, 13.6, { hitH: 6, hitX: 8, hitW: 16, dy: -8, interact: { type: 'sign', id: 'symbol' } });
     friend(m, 'f10', 'guide', lx0 + 3, 9, 'down'); friend(m, 'f20', 'buddy', caf.ix + 2, 12, 'down');
@@ -485,8 +491,8 @@ const World = (() => {
     for (let x = 2; x < inRow(52)[1] - 1; x++) if (x % 3 === 0) obj(m, 'pine', x - 0.5, 50.6, { hitH: 4, hitX: 12, hitW: 8, solid: false });
     // 북서 주차장, 후관 북쪽 주차장
     rect(m, 3, 4, 9, 13, TILE.PARK);
-    for (let y = 5; y <= 15; y += 2) obj(m, 'car', 3, y);
-    for (let y = 8; y <= 14; y += 2) obj(m, 'car', 9, y);
+    for (let y = 5; y <= 15; y += 2) park(m, 3, y, 2);
+    for (let y = 8; y <= 14; y += 2) park(m, 9, y, 2);
     // 후관 뒤편: 텃밭과 바닥 놀이 (주차하지 않는 곳)
     rect(m, 25, 2, 10, 2, TILE.GARDEN); rect(m, 13, 4, 3, 1, TILE.GARDEN); rect(m, 34, 4, 3, 1, TILE.GARDEN);
     label(m, 30, 1.7, '텃밭');
@@ -531,7 +537,7 @@ const World = (() => {
     rect(m, 2, 31, 9, 2, TILE.PAVE);
     // 운동장 쪽: 서쪽 주차장, 나무, 다목적구장, 수돗가
     rect(m, 2, 33, 6, 18, TILE.PARK);
-    for (let y = 34; y <= 48; y += 3) { obj(m, 'car', 2.2, y); obj(m, 'car', 5, y + 1); }
+    for (let y = 34; y <= 48; y += 3) { park(m, 2.2, y, 3); park(m, 5, y + 1, 3); }
     for (let y = 37; y <= 49; y += 2) set(m, 8, y, TILE.TREE);
     rect(m, 9, 33, 2, 18, TILE.GRASS); rect(m, 9, 39, 2, 12, TILE.COURT);
     label(m, 10, 38.6, '다목적구장');
@@ -565,7 +571,7 @@ const World = (() => {
     label(m, 48, 32.6, '체육시설');
     // 동쪽 주차장 (사선 울타리까지)
     for (let y = 24; y <= 50; y++) { const [, b] = inRow(y); for (let x = 53; x < b; x++) set(m, x, y, TILE.PARK); }
-    for (let y = 26; y <= 50; y += 2) { obj(m, 'car', 54, y); if (y > 30) obj(m, 'car', 58, y); if (y > 36) obj(m, 'car', 63, y); }
+    for (let y = 26; y <= 50; y += 2) { park(m, 54, y, 2); if (y > 30) park(m, 58, y, 2); if (y > 36) park(m, 63, y, 2); }
     label(m, 57, 25.6, '주차장'); label(m, 5, 33.6, '주차장'); label(m, 7, 3.6, '주차장');
 
     // 건물

@@ -62,7 +62,7 @@ const App = (() => {
     content.friends.forEach(f => list.push({ id: f.id, name: f.name, place: f.place, profile: f.profile, npc: find(f.id) }));
     return list;
   }
-  function dexTotal() { return 11 + content.friends.length; }
+  function dexTotal() { return 1 + content.missions.length + content.sides.length + content.friends.length; }
   function register(n) {
     const id = dexId(n);
     if (!id || dex.has(id)) return;
@@ -358,7 +358,7 @@ const App = (() => {
     if (n.role === 'ambient') {
       const pool = content.ambient[n.key] || content.ambient.hall;
       const text = pool[Math.floor(Math.random() * pool.length)];
-      UI.dialog([line(n.teacher ? '선생님' : '친구', text)]);
+      UI.dialog([line(n.name || '친구', text)]);
       return;
     }
     if (n.role === 'mission') return talkMission(n);
@@ -595,7 +595,7 @@ const App = (() => {
       const m = content.missions[6];
       if (!inCourse(7)) return UI.dialog([line('단말기', '전원이 꺼져 있다.')]);
       if (isDone(7)) return UI.dialog([line('단말기', 'AI 칩을 이미 꺼냈다. 정문의 로봇 교장선생님께 가자!')]);
-      if (!st.started[7]) return UI.dialog([line('단말기', '전원이 꺼져 있다. 1층 교장실 앞의 박사님을 먼저 만나 보자.')]);
+      if (!st.started[7]) return UI.dialog([line('단말기', '전원이 꺼져 있다. 1층 교장실 앞의 교무부장님을 먼저 만나 보자.')]);
       if (st.notes.length < 3) return UI.dialog([line('단말기', `화면에 "쪽지 3장의 내용을 확인한 사람만 열 수 있습니다" 라고 떠 있다. (쪽지 ${st.notes.length}/3)`)]);
       return openMini(m);
     }
