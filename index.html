@@ -551,7 +551,7 @@ table.rec th { background: #f3ead6; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (저학년 · 고학년)</button>
       </div></div>
-      <div id="adminLink">v2.2</div>
+      <div id="adminLink">v2.3</div>
     </form>
   </div>
 </div>
@@ -737,7 +737,7 @@ const DayNight = (() => {
 // 마지막 reboot = 로봇 교장선생님 재부팅 OX 3문제.
 
 const DEFAULT_CONTENT = {
-  "version": 3,
+  "version": 4,
   "credit": "만든이: 대교초 허남웅 선생님",
   "opening": [
     {
@@ -1246,18 +1246,6 @@ const DEFAULT_CONTENT = {
             "correct": 0,
             "answers": [],
             "explain": "많은 데이터를 보고 규칙을 스스로 찾아내는 것이 머신러닝이에요."
-          },
-          {
-            "format": "text",
-            "question": "사람 뇌의 신경세포를 흉내 내어 만든 AI의 구조를 무엇이라고 할까요? (인공 ○○○)",
-            "choices": [],
-            "correct": 0,
-            "answers": [
-              "인공 신경망",
-              "인공신경망",
-              "신경망"
-            ],
-            "explain": "인공 신경망은 여러 층의 계산으로 특징을 배워요."
           },
           {
             "format": "choice",
@@ -7244,11 +7232,17 @@ const Game = (() => {
       }
     }
     // 고해상도: 바닥을 다듬어 2배로 → 자주 보이는 바닥은 2배 그림으로 다시 → 건물은 따로 다듬어 위에 얹는다
-    c.hi = smooth2x(c);
+    // 바깥 지도는 학교와 둘레 길(hiBox)만 2배로 만든다. 학교 밖 동네는 1배 그림을 그대로 키워 쓴다 (가볍게)
+    const [bx, by, bw, bh] = m.mmBox || [0, 0, m.w, m.h];
+    let crop = c;
+    if (m.mmBox) { crop = document.createElement('canvas'); crop.width = bw * T; crop.height = bh * T; crop.getContext('2d').drawImage(c, -bx * T, -by * T); }
+    c.hi = smooth2x(crop);
+    c.hiBox = [bx, by, bw, bh];
     if (c.hi) {
       const hg = c.hi.getContext('2d');
+      hg.translate(-bx * 32, -by * 32);
       let fbox = null;
-      for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+      for (let y = by; y < by + bh; y++) for (let x = bx; x < bx + bw; x++) {
         const t0 = floorAt[x + ',' + y] != null ? floorAt[x + ',' + y] : World.get(m, x, y);
         if (t0 === TL.GARDEN) Sprites.drawGardenHi(hg, x, y);
         else Sprites.drawTileHi(hg, t0, x, y);
@@ -7257,11 +7251,12 @@ const Game = (() => {
       if (fbox) Sprites.drawFieldHi(hg, fbox, 5.5, (x, y) => { const k = World.get(m, x, y); return k === TL.TURF || k === TL.TRACK; });
       // 차선·횡단보도처럼 지도에 바로 그리는 선 (2배 해상도)
       for (const o of m.objects) if (o.bake) { hg.save(); hg.scale(2, 2); o.bake(hg); hg.restore(); }
-      // 건물은 2배 크기 캔버스에 바로 그리고(g.hi), 가는 줄눈·창틀 같은 반 칸 디테일을 더한다
-      const bc = document.createElement('canvas'); bc.width = c.width * 2; bc.height = c.height * 2;
-      const bg1 = bc.getContext('2d'); bg1.imageSmoothingEnabled = false; bg1.scale(2, 2); bg1.hi = true;
-      for (const b of m.buildings) Sprites.drawBuilding(bg1, b);
-      hg.drawImage(bc, 0, 0);
+      // 건물은 2배 크기 캔버스에 바로 그리고(g.hi), 가는 줄눈·창틀 같은 반 칸 디테일을 더한다 (학교 안 건물만)
+      const bc = document.createElement('canvas'); bc.width = bw * 32; bc.height = bh * 32;
+      const bg1 = bc.getContext('2d'); bg1.imageSmoothingEnabled = false; bg1.scale(2, 2); bg1.translate(-bx * T, -by * T); bg1.hi = true;
+      const inBox = b => { for (const k of b.cells) { const [x, y] = k.split(',').map(Number); return x >= bx && y >= by && x < bx + bw && y < by + bh; } return true; };
+      for (const b of m.buildings) if (!b.cells || inBox(b)) Sprites.drawBuilding(bg1, b);
+      hg.drawImage(bc, bx * 32, by * 32);
     }
     for (const o of m.objects) if (o.bake) o.bake(g);
     for (const b of m.buildings) Sprites.drawBuilding(g, b);
@@ -7729,9 +7724,18 @@ const Game = (() => {
     bg.fillRect(0, 0, VW, VH);
     const mc = mapCache[map.id];
     {   // 화면에 보이는 부분만 잘라 그린다 (큰 지도 전체를 매번 넘기지 않게)
-      const k = mc.hi ? 2 : 1, src = mc.hi || mc;
-      const x0 = Math.max(0, cx), y0 = Math.max(0, cy), x1 = Math.min(mc.width, cx + VW), y1 = Math.min(mc.height, cy + VH);
-      if (x1 > x0 && y1 > y0) bg.drawImage(src, x0 * k, y0 * k, (x1 - x0) * k, (y1 - y0) * k, x0 - cx, y0 - cy, x1 - x0, y1 - y0);
+      const part = (src, k, ox, oy, w, h) => {   // 지도 (ox, oy, w, h) 범위의 그림 src(배율 k)에서 화면에 보이는 부분
+        const x0 = Math.max(ox, cx), y0 = Math.max(oy, cy), x1 = Math.min(ox + w, cx + VW), y1 = Math.min(oy + h, cy + VH);
+        if (x1 > x0 && y1 > y0) bg.drawImage(src, (x0 - ox) * k, (y0 - oy) * k, (x1 - x0) * k, (y1 - y0) * k, x0 - cx, y0 - cy, x1 - x0, y1 - y0);
+      };
+      const hb = mc.hiBox;
+      if (!mc.hi) part(mc, 1, 0, 0, mc.width, mc.height);
+      else {
+        const full = hb[0] === 0 && hb[1] === 0 && hb[2] * T === mc.width && hb[3] * T === mc.height;
+        const inside = cx >= hb[0] * T && cy >= hb[1] * T && cx + VW <= (hb[0] + hb[2]) * T && cy + VH <= (hb[1] + hb[3]) * T;
+        if (!full && !inside) part(mc, 1, 0, 0, mc.width, mc.height);   // 학교 밖 동네 (1배)
+        part(mc.hi, 2, hb[0] * T, hb[1] * T, hb[2] * T, hb[3] * T);
+      }
     }
 
     // 바닥에 붙은 사물 먼저

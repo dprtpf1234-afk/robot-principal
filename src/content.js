@@ -7,7 +7,7 @@
 // 마지막 reboot = 로봇 교장선생님 재부팅 OX 3문제.
 
 const DEFAULT_CONTENT = {
-  "version": 3,
+  "version": 4,
   "credit": "만든이: 대교초 허남웅 선생님",
   "opening": [
     {
@@ -516,18 +516,6 @@ const DEFAULT_CONTENT = {
             "correct": 0,
             "answers": [],
             "explain": "많은 데이터를 보고 규칙을 스스로 찾아내는 것이 머신러닝이에요."
-          },
-          {
-            "format": "text",
-            "question": "사람 뇌의 신경세포를 흉내 내어 만든 AI의 구조를 무엇이라고 할까요? (인공 ○○○)",
-            "choices": [],
-            "correct": 0,
-            "answers": [
-              "인공 신경망",
-              "인공신경망",
-              "신경망"
-            ],
-            "explain": "인공 신경망은 여러 층의 계산으로 특징을 배워요."
           },
           {
             "format": "choice",
