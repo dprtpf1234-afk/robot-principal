@@ -408,12 +408,26 @@ const UI = (() => {
   }
 
   // ---------- 클리어 ----------
+  // 끝 화면 버튼은 몇 초 뒤에 나타난다 (대사를 넘기려고 화면을 계속 누르다가 실수로 다시 시작하지 않게)
+  const END_WAIT = 5;
+  function delayedButtons(body, wrapId, html, bind) {
+    const wrap = body.querySelector('#' + wrapId);
+    let left = END_WAIT;
+    const tick = () => {
+      if (!wrap.isConnected) return;
+      if (left <= 0) { wrap.innerHTML = html; wrap.classList.add('show'); bind(); return; }
+      wrap.innerHTML = `<div class="end-wait"><span class="end-ring">${left}</span>초 뒤에 버튼이 나타나요</div>`;
+      left--;
+      setTimeout(tick, 1000);
+    };
+    tick();
+  }
   function clear(res, h) {
     const explore = res.status === 'explore';
     const rewards = (res.rewards || []).map(r => `<span class="nb-chip">${Util.esc(r)}</span>`).join('');
-    const html = `<div class="confetti-top">🎉</div><h2 class="center">미션 클리어! 로봇 교장선생님을 구했어요!</h2>
+    const html = `<div class="clear-stamp"><div class="cs-burst">🎉</div><div class="cs-big">MISSION CLEAR!</div><div class="cs-sub">로봇 교장선생님을 구했어요!</div></div>
       <div class="result">
-        <div class="muted">${Util.esc(res.modeLabel || '')}</div>
+        <div class="muted">${Util.esc(res.modeLabel || '')} 클리어 기록</div>
         <div class="big-time">${res.durationMs != null ? Util.formatTime(res.durationMs) : '--:--'}</div>
         ${res.penaltyMs ? `<div class="muted small">힌트 벌점 +${Math.round(res.penaltyMs / 60000)}분 포함</div>` : ''}
         ${explore ? '<p class="muted">탐험 모드 기록은 랭킹에 오르지 않아요. 30분·10분 미션에 도전해 보세요!</p>' : `
@@ -422,24 +436,27 @@ const UI = (() => {
         ${res.status === 'offline' ? '<p class="bad">서버에 연결하지 못해 이번 기록은 랭킹에 오르지 못했어요.</p>' : res.status !== 'cleared' && !explore ? '<p class="bad">기록 확인에 실패해 랭킹에 오르지 못했어요.</p>' : ''}
         ${rewards ? `<div class="rewards">${rewards}</div>` : ''}
       </div>
-      <div class="row center"><button class="ghost" id="clHome">처음으로</button><button class="ghost" id="clRank">랭킹 보기</button><button class="primary" id="clAgain">다시 도전</button></div>`;
-    openPanel(html, 'clear');
-    $('clHome').addEventListener('click', () => { closePanel(); h.onHome(); });
-    $('clRank').addEventListener('click', () => { closePanel(); h.onRanking(); });
-    $('clAgain').addEventListener('click', () => { closePanel(); h.onAgain(); });
+      <div class="row center end-btns" id="clBtns"></div>`;
+    const body = openPanel(html, 'clear');
+    delayedButtons(body, 'clBtns', '<button class="ghost" id="clRank">랭킹 보기</button><button class="primary" id="clHome">🏠 홈으로 돌아가기</button>', () => {
+      $('clHome').addEventListener('click', () => { closePanel(); h.onHome(); });
+      $('clRank').addEventListener('click', () => { closePanel(); h.onRanking(); });
+    });
   }
 
   function timeUp(info, h) {
-    const html = `<h2>시간 종료!</h2>
+    const html = `<h2 class="center">시간 종료!</h2>
       <div class="result">
         <div class="muted">${Util.esc(info.modeLabel)}</div>
         <div class="big-time">${info.parts} / ${info.total}</div>
         <div>부품을 ${info.parts}개 모았어요. 조금만 더 하면 로봇 교장선생님을 구할 수 있어요!</div>
       </div>
-      <div class="row center"><button class="ghost" id="tuHome">처음으로</button><button class="primary" id="tuAgain">다시 도전</button></div>`;
-    openPanel(html, 'clear');
-    $('tuHome').addEventListener('click', () => { closePanel(); h.onHome(); });
-    $('tuAgain').addEventListener('click', () => { closePanel(); h.onAgain(); });
+      <div class="row center end-btns" id="tuBtns"></div>`;
+    const body = openPanel(html, 'clear');
+    delayedButtons(body, 'tuBtns', '<button class="ghost" id="tuAgain">다시 도전</button><button class="primary" id="tuHome">🏠 홈으로 돌아가기</button>', () => {
+      $('tuHome').addEventListener('click', () => { closePanel(); h.onHome(); });
+      $('tuAgain').addEventListener('click', () => { closePanel(); h.onAgain(); });
+    });
   }
 
   function closeAll() {

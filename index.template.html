@@ -232,6 +232,16 @@ table.rank td.mode { color: var(--muted); font-size: 13px; }
 .ios-share { display: inline-block; border: 2px solid var(--accent); color: var(--accent); border-radius: 5px; padding: 0 5px; font-weight: 900; }
 .rewards { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
 .confetti-top { text-align: center; font-size: 34px; line-height: 1; animation: pop .6s ease-out; }
+/* 클리어 도장 */
+.clear-stamp { text-align: center; display: grid; gap: 2px; margin-bottom: 6px; }
+.cs-burst { font-size: 38px; line-height: 1; animation: pop .6s ease-out; }
+.cs-big { font-family: var(--title-font); font-size: 44px; line-height: 1.05; color: #ffd84a; -webkit-text-stroke: 2px #2b2233; text-shadow: 0 4px 0 #2b2233; letter-spacing: 1px; animation: stamp .55s cubic-bezier(.2,1.6,.4,1) both; }
+.cs-sub { font-size: 20px; font-weight: 900; color: var(--accent); }
+@keyframes stamp { 0% { transform: scale(2.4) rotate(-8deg); opacity: 0; } 100% { transform: scale(1) rotate(-3deg); opacity: 1; } }
+.end-btns { min-height: 48px; align-items: center; }
+.end-btns.show button { animation: pop .35s ease-out; }
+.end-wait { color: var(--muted); font-weight: 800; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.end-ring { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; border: 3px solid #ffd84a; color: var(--ink); font-weight: 900; }
 @keyframes pop { 0% { transform: scale(.2); } 70% { transform: scale(1.3); } 100% { transform: scale(1); } }
 
 /* 미니게임 공통 */
@@ -437,6 +447,14 @@ table.rec th { background: #f3ead6; }
   .hud-timebox { gap: 7px; } .hud-place { padding-left: 7px; }
 }
 @media (max-height: 460px) {
+  /* 휴대폰 가로 화면: 미션 안내를 작게 */
+  #hudNext { max-width: min(44vw, 400px); margin-top: 2px; font-size: 12px; line-height: 1.3; padding: 4px 9px; gap: 4px 6px; border-width: 2px; border-radius: 9px; }
+  #hudNext .star { width: 13px; height: 13px; }
+  #hudNext .mpill { font-size: 10px; padding: 1px 6px; border-radius: 6px; }
+  #hudNext .mtext .cnt { padding: 0 4px; }
+  #hudTime { font-size: 17px; }
+  #hudPlace { font-size: 13px; }
+  .cs-big { font-size: 30px; } .cs-sub { font-size: 16px; } .cs-burst { font-size: 26px; }
   .panel { padding: 12px 14px; }
   .quiz-q { font-size: 16px; margin-bottom: 8px; }
   .choice { padding: 7px 12px; font-size: 15px; }
@@ -559,7 +577,7 @@ table.rec th { background: #f3ead6; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (저학년 · 고학년)</button>
       </div></div>
-      <div id="adminLink">v2.10</div>
+      <div id="adminLink">v2.11</div>
     </form>
   </div>
 </div>
