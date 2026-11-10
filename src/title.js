@@ -459,16 +459,53 @@ const Title = (() => {
     }
   }
 
+  // 캐릭터들은 마우스(손가락)를 따라 운동장 위를 줄지어 걸어 다닌다
+  let pointer = null, fol = null, lastFig = 0;
+  function onPointer(e) {
+    if (!running || !canvas) return;
+    const r = canvas.getBoundingClientRect();
+    const S = R, offX = Math.floor((canvas.width - W * S) / 2);
+    pointer = { x: ((e.clientX - r.left) * dpr - offX) / S, y: ((e.clientY - r.top) * dpr - offY) / S };
+  }
+  window.addEventListener('pointermove', onPointer, { passive: true });
+  window.addEventListener('pointerdown', onPointer, { passive: true });
   function figures() {
-    // 시작하기 버튼에 가리지 않도록 왼쪽에 둔다
     const btn = document.getElementById('btnStart');
     const half = btn && btn.offsetWidth ? btn.offsetWidth / 2 * dpr / (s * R) : 50;
     const lx = Math.max(24, W / 2 - half - 22), by = layout.base + 20;
-    const bob = k => snap(Math.sin(t * 4 + k) * 1);
-    shadow(lx - 10, by); bg.drawImage(chars[0].right[0], lx - 18, by - 16 + bob(0), 16, 16);
-    shadow(lx + 8, by); bg.drawImage(robot, lx, by - 16 + bob(1.5), 16, 16);
-    shadow(layout.ex + 2, layout.base + 4); bg.drawImage(chars[1].down[0], layout.ex - 6, layout.base - 12 + bob(3), 16, 16);
-    shadow(layout.ex + 52, layout.base + 20); bg.drawImage(chars[2].left[Math.floor(t * 3) % 2], layout.ex + 44, layout.base + 4 + bob(2), 16, 16);
+    if (!fol || fol.W !== W) {   // 처음 자리 (화면 크기가 바뀌면 다시)
+      fol = [
+        { img: chars[0], x: lx - 10, y: by, dir: 'right' },
+        { img: null, x: lx + 8, y: by, dir: 'right' },            // 로봇
+        { img: chars[1], x: layout.ex + 2, y: layout.base + 4, dir: 'down' },
+        { img: chars[2], x: layout.ex + 52, y: layout.base + 20, dir: 'left' }
+      ];
+      fol.W = W;
+    }
+    const dt = Math.min(0.05, Math.max(0, t - lastFig)); lastFig = t;
+    const minY = layout.base + 4, maxY = H - 6;
+    if (pointer) {
+      // 앞사람은 커서를, 뒷사람은 바로 앞사람을 따라간다
+      fol.forEach((f, i) => {
+        const lead = i === 0 ? { x: pointer.x, y: Math.max(minY, Math.min(maxY, pointer.y + 6)) } : fol[i - 1];
+        const gap = i === 0 ? 0 : 13;
+        const dx = lead.x - f.x, dy = lead.y - f.y, d = Math.hypot(dx, dy);
+        if (d > gap + 0.5) {
+          const step = Math.min(d - gap, 80 * dt);
+          f.x += dx / d * step; f.y += dy / d * step;
+          f.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+          f.walk = (f.walk || 0) + step;
+          f.moving = true;
+        } else f.moving = false;
+        f.x = Math.max(8, Math.min(W - 8, f.x)); f.y = Math.max(minY, Math.min(maxY, f.y));
+      });
+    }
+    const bob = (f, k) => f.moving ? snap(-Math.abs(Math.sin((f.walk || 0) * 0.35)) * 1.5) : snap(Math.sin(t * 4 + k) * 1);
+    fol.map((f, i) => [f, i]).sort((a, b) => a[0].y - b[0].y).forEach(([f, i]) => {
+      shadow(f.x, f.y);
+      const img = f.img ? f.img[f.dir][f.moving ? Math.floor((f.walk || 0) / 5) % f.img[f.dir].length : 0] : robot;
+      bg.drawImage(img, f.x - 8, f.y - 16 + bob(f, i * 1.5), 16, 16);
+    });
   }
   function shadow(x, y) {
     bg.fillStyle = 'rgba(0,0,0,0.2)';

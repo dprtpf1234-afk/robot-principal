@@ -152,7 +152,7 @@ const App = (() => {
     const setGrade = gr => {
       form.grade = gr;
       $('gradeSeg').querySelectorAll('button').forEach(b => b.classList.toggle('on', Number(b.dataset.g) === gr));
-      $('gradeNote').textContent = gr ? (gr <= 3 ? '저학년 문제가 나와요' : '고학년 문제가 나와요') : '학년에 맞는 문제가 나와요';
+      $('gradeNote').textContent = gr ? `${Util.groupLabel(Util.gradeGroup(gr))} 문제가 나와요` : '학년에 맞는 문제가 나와요';
     };
     const setChar = i => { form.charIdx = i; $('avatarGrid').querySelectorAll('button').forEach(b => b.classList.toggle('on', Number(b.dataset.c) === i)); };
     const setMode = m => { form.mode = m; $('modeSeg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.m === m)); $('modeDesc').textContent = MODES[m].desc; };
@@ -195,7 +195,7 @@ const App = (() => {
       Util.storage.set('rp_last_player', { grade, cls, num, name, charIdx: form.charIdx, mode: form.mode });
       enter(player);
     });
-    $('btnRankStart').addEventListener('click', () => UI.ranking(form.grade ? Util.gradeGroup(form.grade) : 'low'));
+    $('btnRankStart').addEventListener('click', () => UI.ranking(form.grade ? Util.gradeGroup(form.grade) : 'g12'));
   }
 
   // ---------------- 이어하기 저장 ----------------
@@ -230,6 +230,7 @@ const App = (() => {
 
   async function begin(player, resume) {
     content = await Store.getContent();
+    player.group = Util.gradeGroup(player.grade);   // 예전 저장(저학년·고학년)도 새 학년군으로
     session = { player, attemptId: resume ? resume.attemptId : null, course: Util.course(player.mode) };
     st = resume ? Object.assign(freshState(), resume.st) : freshState();
     for (const k of [3, 6, 8]) if (!st.clues[k]) st.clues[k] = [];

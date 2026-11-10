@@ -322,7 +322,7 @@ with sync_playwright() as p:
             go_npc(page, "sB"); press_e(page); advance(page)
             page.click('.oxbtn[data-v="X"]'); page.wait_for_timeout(900); advance(page)
             go_npc(page, "sC"); press_e(page); advance(page)
-            page.fill("#quizInput", "컴퓨터"); page.click(".answer button"); page.wait_for_timeout(900); advance(page)
+            page.fill("#quizInput", "AI"); page.click(".answer button"); page.wait_for_timeout(900); advance(page)
             print("sides done · tokens", page.evaluate("App.state.tokens"))
             # 별 조각 10개
             for mid, i in page.evaluate("() => { const r = []; for (const id in Game.maps) for (const o of Game.maps[id].objects) if (o.interact && o.interact.type==='star') r.push([id, o.interact.i]); return r; }"):

@@ -108,7 +108,7 @@ returns boolean language sql security definer set search_path = public as $$
   update rp_attempts set status = 'quit', finished_at = now() where id = p_attempt and status = 'playing' returning true
 $$;
 
--- 랭킹: 미션을 모두 깬 기록만, 학생별 최고 기록. p_group: low(1~3학년) | high(4~6학년), p_mode: all | m30 | m10
+-- 랭킹: 미션을 모두 깬 기록만, 학생별 최고 기록. p_group: g12(1~2학년) | g34(3~4학년) | g56(5~6학년) (예전 low·high도 받음), p_mode: all | m30 | m10
 create or replace function rp_ranking_rows(p_group text, p_mode text)
 returns table(player_id bigint, grade int, cls int, name text, best_ms bigint, at timestamptz, mode text, rank bigint)
 language sql stable security definer set search_path = public as $$
@@ -121,7 +121,8 @@ language sql stable security definer set search_path = public as $$
   select b.player_id, p.grade, p.cls, p.name, b.duration_ms, b.finished_at, b.mode,
          row_number() over (order by b.duration_ms, b.finished_at)
   from best b join rp_players p on p.id = b.player_id
-  where (p_group = 'low' and p.grade <= 3) or (p_group = 'high' and p.grade >= 4)
+  where case p_group when 'g12' then p.grade <= 2 when 'g34' then p.grade between 3 and 4 when 'g56' then p.grade >= 5
+                    when 'low' then p.grade <= 3 when 'high' then p.grade >= 4 else false end
 $$;
 
 create or replace function rp_finish_attempt(p_attempt bigint, p_timeout boolean default false, p_penalty bigint default 0)
@@ -143,7 +144,7 @@ begin
       where id = p_attempt returning * into a;
   end if;
   select * into p from rp_players where id = a.player_id;
-  grp := case when p.grade <= 3 then 'low' else 'high' end;
+  grp := case when p.grade <= 2 then 'g12' when p.grade <= 4 then 'g34' else 'g56' end;
   select * into r from rp_ranking_rows(grp, case when a.mode = 'free' then 'all' else a.mode end) x where x.player_id = p.id;
   select count(*) into tot from rp_ranking_rows(grp, case when a.mode = 'free' then 'all' else a.mode end);
   return json_build_object('durationMs', a.duration_ms, 'penaltyMs', a.penalty_ms, 'status', a.status, 'mode', a.mode,

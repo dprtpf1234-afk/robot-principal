@@ -358,7 +358,7 @@ const UI = (() => {
 
   // ---------- 랭킹 ----------
   async function ranking(group, onClose) {
-    const f = { g: group || 'low', mode: 'all' };
+    const f = { g: Util.GROUPS.includes(group) ? group : 'g12', mode: 'all' };
     const render = async () => {
       const rows = await Store.getRanking(f.g, 30, { mode: f.mode });
       const what = '모든 미션을 깨는 데 걸린 시간 (학생별 최고 기록)';
@@ -369,7 +369,7 @@ const UI = (() => {
         : '<p class="muted center empty">아직 기록이 없어요. 첫 번째 주인공이 되어 보세요!</p>';
       const seg = (key, items) => `<div class="rk-seg" data-k="${key}">${items.map(([v, l]) => `<button data-v="${v}" class="${String(f[key]) === String(v) ? 'on' : ''}">${l}</button>`).join('')}</div>`;
       const html = `<h2>명예의 전당</h2>
-        <div class="tabs rk-group">${[['low', '저학년 <small>1~3학년</small>'], ['high', '고학년 <small>4~6학년</small>']].map(([v, l]) => `<button data-g="${v}" class="${f.g === v ? 'on' : ''}">${l}</button>`).join('')}</div>
+        <div class="tabs rk-group">${[['g12', '1~2학년'], ['g34', '3~4학년'], ['g56', '5~6학년']].map(([v, l]) => `<button data-g="${v}" class="${f.g === v ? 'on' : ''}">${l}</button>`).join('')}</div>
         <div class="rk-row"><span class="rk-lab">모드</span>${seg('mode', [['all', '전체'], ['m30', '30분 미션'], ['m10', '10분 미션']])}</div>
         <p class="rk-what">${what}</p>
         <div class="rank-wrap">${body}</div>

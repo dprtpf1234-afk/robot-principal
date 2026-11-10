@@ -47,12 +47,16 @@ const Util = (() => {
     return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
   }
 
+  // 학년군: 1~2학년 g12 · 3~4학년 g34 · 5~6학년 g56 (문제와 랭킹을 나누는 단위)
+  const GROUPS = ['g12', 'g34', 'g56'];
+  const GROUP_NAMES = { g12: '1~2학년군', g34: '3~4학년군', g56: '5~6학년군' };
   function gradeGroup(grade) {
-    return Number(grade) <= 3 ? 'low' : 'high';
+    const n = Number(grade);
+    return n <= 2 ? 'g12' : n <= 4 ? 'g34' : 'g56';
   }
 
   function groupLabel(group) {
-    return group === 'low' ? '저학년 (1~3학년)' : '고학년 (4~6학년)';
+    return GROUP_NAMES[group] || '';
   }
 
   async function sha256(text) {
@@ -118,5 +122,5 @@ const Util = (() => {
     return '';
   }
 
-  return { checkName, rng, josa, maskName, normalize, shuffle, formatTime, gradeGroup, groupLabel, sha256, esc, clone, storage, course };
+  return { GROUPS, GROUP_NAMES, checkName, rng, josa, maskName, normalize, shuffle, formatTime, gradeGroup, groupLabel, sha256, esc, clone, storage, course };
 })();

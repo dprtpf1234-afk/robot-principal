@@ -69,9 +69,12 @@ const Mini = (() => {
 
   // ---------- 2) 암호 풀기 ----------
   function code(d, who, h) {
-    const binary = typeof d.table[0].k === 'number';
+    // 신호 모양: 글자 신호(덧셈식·모스 부호 등) / 예전 이진수 전구 / 기호
+    const textSig = d.sig === 'text';
+    const binary = !textSig && typeof d.table[0].k === 'number' && d.code.every(c => /^[01]+$/.test(String(c)));
     const slots = d.code.map(() => null);
-    const sigHtml = c => binary
+    const sigHtml = c => textSig ? `<div class="cd-sig txt">${E(c)}</div>`
+      : binary
       ? `<div class="cd-sig bin">${c.split('').map(b => `<i class="${b === '1' ? 'on' : ''}"></i>`).join('')}<small>${c}</small></div>`
       : `<div class="cd-sig sym s${symIdx(c)}">${E(c)}</div>`;
     function symIdx(c) { return d.table.findIndex(t => t.k === c); }
@@ -81,7 +84,7 @@ const Mini = (() => {
     const inner = `${binary ? '<div class="cd-place">전구 자리값: <b>8</b> · <b>4</b> · <b>2</b> · <b>1</b></div>' : ''}
       <div class="cd-slots" id="cdSlots"></div>
       <div class="cd-table-title">암호표</div>
-      <div class="cd-table">${d.table.map((t, i) => `<button type="button" class="cd-key" data-v="${E(t.v)}"><span class="k ${binary ? '' : 'sym s' + i}">${E(t.k)}</span><span class="eq">=</span><span class="v">${E(t.v)}</span></button>`).join('')}</div>`;
+      <div class="cd-table">${d.table.map((t, i) => `<button type="button" class="cd-key" data-v="${E(t.v)}"><span class="k ${binary || textSig ? (textSig ? 'txt' : '') : 'sym s' + i}">${E(t.k)}</span><span class="eq">=</span><span class="v">${E(t.v)}</span></button>`).join('')}</div>`;
     frame('code', who, '암호 신호 풀기', d.intro, inner, h, '<button class="ghost" id="cdBack">⌫ 지우기</button><button class="primary" id="cdGo">확인</button>');
     render();
     document.querySelector('.cd-table').addEventListener('click', e => {

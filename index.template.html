@@ -268,6 +268,8 @@ table.rank td.mode { color: var(--muted); font-size: 13px; }
 .cd-col { display: grid; justify-items: center; gap: 4px; }
 .cd-sig { min-width: 56px; height: 52px; display: grid; place-items: center; border: 3px solid var(--line); border-radius: 8px; background: #2b2233; }
 .cd-sig.sym { font-size: 30px; background: #fff; }
+.cd-sig.txt { background: #fff; color: var(--ink); font-size: 20px; font-weight: 900; padding: 0 8px; letter-spacing: 1px; white-space: nowrap; }
+.cd-key .k.txt { font-size: 17px; letter-spacing: 1px; }
 .cd-sig.bin { grid-template-columns: repeat(4, 12px); gap: 3px; padding: 4px 6px; height: auto; }
 .cd-sig.bin i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #8a7f99; display: block; }
 .cd-sig.bin i.on { background: #ffd84a; border-color: #ffd84a; box-shadow: 0 0 6px #ffd84a; }
@@ -575,9 +577,9 @@ table.rec th { background: #f3ead6; }
       <p class="mode-desc" id="modeDesc"></p>
       <p id="startErr" class="bad"></p>
       <button type="submit" class="e-enter">입장하기</button>
-      <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (저학년 · 고학년)</button>
+      <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (학년군별)</button>
       </div></div>
-      <div id="adminLink">v2.11</div>
+      <div id="adminLink">v3.0</div>
     </form>
   </div>
 </div>

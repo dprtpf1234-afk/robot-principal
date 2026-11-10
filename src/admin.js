@@ -4,7 +4,7 @@ const Admin = (() => {
   const $ = id => document.getElementById(id);
   let authed = false;
   let work = null;      // 수정 중인 콘텐츠
-  let group = 'low';
+  let group = 'g12';
   let tab = 'records';
 
   function root() { return $('admin'); }
@@ -89,7 +89,7 @@ const Admin = (() => {
       body._rows = rows;
     };
     body.innerHTML = `<div class="filters">
-        <select id="fG"><option value="">전체</option><option value="low">저학년</option><option value="high">고학년</option></select>
+        <select id="fG"><option value="">전체</option><option value="g12">1~2학년군</option><option value="g34">3~4학년군</option><option value="g56">5~6학년군</option></select>
         <select id="fGrade"><option value="">모든 학년</option>${[1, 2, 3, 4, 5, 6].map(i => `<option value="${i}">${i}학년</option>`).join('')}</select>
         <select id="fCls"><option value="">모든 반</option>${Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}">${i + 1}반</option>`).join('')}</select>
         <span id="recCount" class="muted"></span>
@@ -152,7 +152,7 @@ const Admin = (() => {
 
   async function contentEditor() {
     if (!work) work = Util.clone(await Store.getContent());
-    const g = group, GL = g === 'low' ? '저학년' : '고학년';
+    const g = group, GL = Util.groupLabel(g);
     const E = Util.esc;
     const ta = (path, arr, rows) => `<textarea data-path="${path}" data-kind="lines" rows="${rows || Math.max(2, arr.length)}">${E(arr.join('\n'))}</textarea>`;
     const inp = (path, v, kind) => `<input data-path="${path}" data-kind="${kind || 'str'}" value="${E(v == null ? '' : v)}">`;
@@ -237,12 +237,12 @@ const Admin = (() => {
       </details>`;
 
     $('admBody').innerHTML = `<div class="content-bar">
-        <div class="tabs small"><button data-g="low" class="${g === 'low' ? 'on' : ''}">저학년 문제</button><button data-g="high" class="${g === 'high' ? 'on' : ''}">고학년 문제</button></div>
+        <div class="tabs small">${Util.GROUPS.map(k => `<button data-g="${k}" class="${g === k ? 'on' : ''}">${Util.groupLabel(k)} 문제</button>`).join('')}</div>
         <span id="saveMsg" class="muted"></span>
         <button class="ghost" id="cDefault">처음 값으로 되돌리기</button>
         <button class="primary" id="cSave">저장</button>
       </div>
-      <p class="muted small">대사·NPC 이름은 저학년·고학년이 함께 써요. 문제·정답·단서·힌트·미니게임만 학년군별로 따로예요. 퀴즈는 문제 풀에서 무작위로 3개가 나오고, 틀리면 새로 뽑아 처음부터 풀어요. 저장하면 새로 시작하는 학생부터 바뀐 내용이 나와요.</p>
+      <p class="muted small">대사·NPC 이름은 모든 학년군이 함께 써요. 문제·정답·단서·힌트·미니게임만 학년군별로 따로예요. 퀴즈는 문제 풀에서 무작위로 3개가 나오고, 틀리면 새로 뽑아 처음부터 풀어요. 저장하면 새로 시작하는 학생부터 바뀐 내용이 나와요.</p>
       <h3>메인 미션</h3>${missionCards}${rebootCard}<h3>서브 미션 (힌트 토큰 +2)</h3>${sideCards}<h3>기타</h3>${signCards}${etcCards}`;
 
     const body = $('admBody');
@@ -336,11 +336,11 @@ const Admin = (() => {
     return null;
   }
   function validate(c) {
-    const GL = { low: '저학년', high: '고학년' };
+    const GL = Util.GROUP_NAMES;
     for (const m of c.missions) {
       if (!m.npc.trim()) return `${m.order}번 미션의 NPC 이름이 비어 있어요.`;
       if (!m.start.length || !m.end.length) return `${m.order}번 미션의 대사가 비어 있어요.`;
-      for (const g of ['low', 'high']) {
+      for (const g of Util.GROUPS) {
         const L = `${m.order}번 미션 ${GL[g]}`;
         if (m.pool) {
           const min = POOL_MIN[m.kind];
@@ -367,7 +367,7 @@ const Admin = (() => {
         }
       }
     }
-    for (const g of ['low', 'high']) {
+    for (const g of Util.GROUPS) {
       if (c.reboot.pool[g].length < 3) return `재부팅 ${GL[g]} 문제 풀은 3개 이상이어야 해요.`;
       for (let i = 0; i < c.reboot.pool[g].length; i++) { const e = checkQ(c.reboot.pool[g][i], `재부팅 ${GL[g]} 문제 ${i + 1}`); if (e) return e; }
     }
