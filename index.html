@@ -579,7 +579,7 @@ table.rec th { background: #f3ead6; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (학년군별)</button>
       </div></div>
-      <div id="adminLink">v3.0</div>
+      <div id="adminLink">v3.1</div>
     </form>
   </div>
 </div>
@@ -10524,8 +10524,8 @@ const Title = (() => {
     bg.save(); bg.setTransform(1, 0, 0, 1, 0, 0); bg.drawImage(front, 0, 0); bg.restore();
     flags();
     leaves();
-    figures();
-    tint(ph);
+    tint(ph);          // 밤·노을빛은 풍경에만: 켜진 창문 불빛 위로 캐릭터가 지나가도록 캐릭터는 그다음에 그린다
+    figures(ph);
     for (const p of confetti) {
       bg.save(); bg.translate(p.x % W, p.y); bg.rotate(t * 3 + p.ph); bg.scale(1, Math.cos(t * 5 + p.ph));
       bg.fillStyle = p.c; bg.fillRect(-0.8, -0.45, 1.6, 0.9); bg.restore();
@@ -10883,7 +10883,22 @@ const Title = (() => {
   }
   window.addEventListener('pointermove', onPointer, { passive: true });
   window.addEventListener('pointerdown', onPointer, { passive: true });
-  function figures() {
+  // 캐릭터에도 같은 밤·노을빛을 입힌 그림 (한 번 만들어 둔다)
+  const tinted = new Map();
+  function tintImg(img, ph) {
+    if (ph === 'day') return img;
+    let m = tinted.get(img); if (!m) tinted.set(img, m = {});
+    if (m[ph]) return m[ph];
+    const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+    const x = c.getContext('2d');
+    x.drawImage(img, 0, 0);
+    if (ph === 'night') { x.globalCompositeOperation = 'source-atop'; x.fillStyle = 'rgba(8, 12, 44, 0.55)'; }
+    else { x.globalCompositeOperation = 'multiply'; x.fillStyle = ph === 'sunset' ? '#ffb48a' : '#ffd2c8'; }
+    x.fillRect(0, 0, c.width, c.height);
+    x.globalCompositeOperation = 'destination-in'; x.drawImage(img, 0, 0);
+    return (m[ph] = c);
+  }
+  function figures(ph) {
     const btn = document.getElementById('btnStart');
     const half = btn && btn.offsetWidth ? btn.offsetWidth / 2 * dpr / (s * R) : 50;
     const lx = Math.max(24, W / 2 - half - 22), by = layout.base + 20;
@@ -10918,7 +10933,7 @@ const Title = (() => {
     fol.map((f, i) => [f, i]).sort((a, b) => a[0].y - b[0].y).forEach(([f, i]) => {
       shadow(f.x, f.y);
       const img = f.img ? f.img[f.dir][f.moving ? Math.floor((f.walk || 0) / 5) % f.img[f.dir].length : 0] : robot;
-      bg.drawImage(img, f.x - 8, f.y - 16 + bob(f, i * 1.5), 16, 16);
+      bg.drawImage(tintImg(img, ph || 'day'), f.x - 8, f.y - 16 + bob(f, i * 1.5), 16, 16);
     });
   }
   function shadow(x, y) {
