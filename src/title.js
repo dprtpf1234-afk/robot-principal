@@ -193,9 +193,16 @@ const Title = (() => {
     if (ph === 'night' || ph === 'sunset') {
       (layout.windows || []).forEach((w, i) => {
         if (((i * 7919) % 10) < (ph === 'night' ? 3 : 6)) return;
-        px(w.x - 1, w.y - 1, w.w + 2, w.h + 2, 'rgba(255,214,110,0.25)');
-        px(w.x, w.y, w.w, w.h, '#ffd36b');
-        px(w.x, w.y, 2, 2, '#fff1b8');
+        // 창틀은 그대로 두고 유리 안쪽만 불을 밝힌 뒤, 창살·난간을 다시 그려 틀이 보이게 한다
+        const X = w.x - 0.5, Y = w.y - 0.5, WW = w.w + 1, HH = w.h + 1;
+        const frame = ph === 'night' ? '#8a857a' : '#d8c6a6', rail = ph === 'night' ? '#6f747a' : '#b9b3a8';
+        px(X - 1, Y - 1, WW + 2, HH + 2, 'rgba(255,214,110,0.10)');
+        px(w.x, w.y, w.w, w.h, '#ffcf63');
+        px(w.x, w.y, w.w, w.h * 0.45, '#ffe39a');
+        px(w.x + 0.5, w.y + 0.5, 1.5, 1, '#fff4c8');
+        for (let k = 1; k < 3; k++) px(X + WW * k / 3 - 0.25, Y, 0.5, HH, frame);
+        px(X, Y + HH * 0.5, WW, 0.5, frame);
+        px(X, Y + HH * 0.72, WW, 0.5, rail);
       });
       const L = layout;
       px(L.ex - 15, L.base - (L.base - L.top) / 4 + 4, 30, (L.base - L.top) / 4 - 4, 'rgba(255,214,110,0.55)');
