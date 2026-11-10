@@ -544,6 +544,20 @@ const Title = (() => {
     g.font = font(L.sign.h * s * 0.8);
     g.fillStyle = '#1f2f57';
     g.fillText('대교초등학교', X(L.sign.x + L.sign.w / 2), Y(L.sign.y + L.sign.h / 2 + 0.4), L.sign.w * s * 0.92);
+    // 교표: 학교 이름 판 왼쪽에 둥근 판으로 세운다 (기기 해상도로 또렷하게)
+    if (Sprites.EMBLEM.complete && Sprites.EMBLEM.naturalWidth) {
+      const eh = 15, ew = eh * 200 / 220, ex = L.sign.x - ew - 4, ey = L.sign.y + L.sign.h / 2 - eh / 2 - 1;
+      const cx = X(ex + ew / 2), cy = Y(ey + eh / 2), rad = (eh / 2 + 1.6) * s;
+      g.save();
+      g.fillStyle = 'rgba(0,0,0,0.18)'; g.beginPath(); g.arc(cx + 0.8 * s, cy + 1 * s, rad, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#ffffff'; g.beginPath(); g.arc(cx, cy, rad, 0, Math.PI * 2); g.fill();
+      g.lineWidth = 1 * s; g.strokeStyle = '#20335c'; g.stroke();
+      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+      g.drawImage(Sprites.EMBLEM, X(ex), Y(ey), ew * s, eh * s);
+      g.restore();
+      // 받침 기둥
+      g.fillStyle = '#7a7f87'; g.fillRect(cx - 0.5 * s, cy + rad, 1 * s, (L.sign.y + 14 - (ey + eh / 2)) * s - rad);
+    }
     // 중앙현관 현판 · 전광판
     g.font = font(L.slogan.h * s * 0.62);
     g.fillStyle = '#1f3f8a';
