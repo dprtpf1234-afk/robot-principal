@@ -68,12 +68,15 @@ const UI = (() => {
   }
 
   // ---------- 공용 패널 ----------
+  let panelOpenedAt = 0;
   function openPanel(html, cls) {
     const el = $('modal');
     $('modalBody').innerHTML = html;
     $('modalBody').className = 'panel ' + (cls || '');
     el.classList.remove('hidden');
     modalStack = 1;
+    panelOpenedAt = performance.now();
+    if (document.activeElement && document.activeElement !== document.body && document.activeElement.blur) document.activeElement.blur();
     return $('modalBody');
   }
   function closePanel() {
@@ -479,6 +482,12 @@ const UI = (() => {
     }
     const body = $('modalBody');
     if (modalStack && body && body._keys && !(e.target && e.target.tagName === 'INPUT')) body._keys(e);
+    // 닫기 버튼 하나뿐인 창(안내판·도감·수첩·랭킹)은 스페이스·엔터로도 닫는다
+    if (modalStack && (e.key === ' ' || e.key === 'Enter') && !e.repeat && performance.now() - panelOpenedAt > 250
+        && !(e.target && (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || (e.target.tagName === 'BUTTON' && body.contains(e.target))))) {
+      const close = body.querySelector('#sgClose, #dexClose, #nbClose, #rkClose');
+      if (close) { e.preventDefault(); close.click(); setTimeout(() => Game.clearInput(), 0); return; }
+    }
     if (modalStack && e.key === 'Escape') {
       const close = body.querySelector('#quizClose, #nbClose, #rkClose, #dexClose, #mgClose, #sgClose');
       if (close) close.click();

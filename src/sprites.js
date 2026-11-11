@@ -943,6 +943,12 @@ const Sprites = (() => {
     blob(g, hx, hy, 8.6, 7.8, hair);
     if (p.long && dir !== 'up') { R(7, 9, 3, 10, hair); R(22, 9, 3, 10, hair); }
     if (p.long && dir === 'up') { R(8, 12, 16, 7, hair); }
+    const bowlCut = () => {
+      if (!p.bowl) return;
+      if (dir === 'down') { R(8, 6, 16, 3, hair); R(7, 8, 3, 5, hair); R(22, 8, 3, 5, hair); R(8, 9, 16, 1, shade(hair, -20)); R(11, 4, 10, 1, shade(hair, 30)); }
+      else if (dir === 'up') { R(7, 8, 18, 5, hair); R(7, 13, 18, 1, shade(hair, -20)); }
+      else { R(7, 6, 11, 3, hair); R(7, 9, 2, 1, shade(hair, -20)); R(18, 6, 7, 7, hair); R(18, 13, 7, 1, shade(hair, -20)); }
+    };
     if (dir === 'down') {
       // 얼굴: 앞머리 아래
       blob(g, hx, hy + 2.2, 7.2, 6, skin, (x, y) => y >= 7 + ((x % 4) === 0 ? 1 : 0));
@@ -952,12 +958,13 @@ const Sprites = (() => {
       R(11, 10, 1, 1, '#ffffff'); R(18, 10, 1, 1, '#ffffff');
       R(9, 14, 3, 1, 'rgba(255,120,130,0.45)'); R(20, 14, 3, 1, 'rgba(255,120,130,0.45)');
       R(15, 15, 2, 1, shade(skin, -60));
+      bowlCut();
       if (p.glasses) { g.strokeStyle = p.glasses; g.lineWidth = 1; g.strokeRect(9.5, 9.5, 6, 5); g.strokeRect(16.5, 9.5, 6, 5); R(15, 11, 2, 1, p.glasses); }
       // 머리 빛
       R(11, 3, 5, 1, shade(hair, 35)); R(10, 4, 2, 1, shade(hair, 25));
     } else if (dir === 'up') {
       R(11, 3, 5, 1, shade(hair, 35));
-      R(7, 9, 1, 3, skin); R(24, 9, 1, 3, skin);
+      if (p.bowl) bowlCut(); else { R(7, 9, 1, 3, skin); R(24, 9, 1, 3, skin); }
     } else {
       // 옆얼굴 (왼쪽을 본다; 오른쪽은 뒤집기)
       blob(g, 0, 0, 0, 0, skin);
@@ -970,6 +977,7 @@ const Sprites = (() => {
       R(9, 14, 2, 1, 'rgba(255,120,130,0.45)');
       R(16, 9, 2, 3, shade(skin, -12));   // 귀
       R(13, 3, 5, 1, shade(hair, 35));
+      bowlCut();
       if (p.glasses) { R(8, 10, 5, 1, p.glasses); R(8, 13, 5, 1, p.glasses); R(12, 10, 1, 4, p.glasses); }
     }
     // 모자
@@ -979,6 +987,17 @@ const Sprites = (() => {
       if (dir === 'down') R(9, 7, 14, 1, shade(p.hat, -45));
       if (side) R(4, 6, 6, 2, shade(p.hat, -25));
       R(12, 2, 4, 1, shade(p.hat, 40));
+    }
+    // 반다나 (머리에 두르고 뒤에서 묶은 두건)
+    if (p.bandana) {
+      const b = p.bandana, d = shade(b, -32), w = 'rgba(255,255,255,0.85)';
+      blob(g, hx, hy - 1.6, 9, 6.6, b, (x, y) => y <= 6);
+      R(8, 6, 16, 1, b); R(8, 7, 16, 1, d);
+      R(11, 3, 1, 1, w); R(16, 2, 1, 1, w); R(20, 4, 1, 1, w); R(13, 5, 1, 1, w); R(18, 6, 1, 1, w);
+      R(13, 1, 5, 1, shade(b, 35));
+      if (dir === 'down') { R(23, 5, 3, 3, d); R(25, 8, 2, 3, b); R(24, 8, 1, 2, d); }
+      else if (dir === 'up') { R(14, 6, 4, 3, d); R(13, 9, 2, 4, b); R(17, 9, 2, 4, b); }
+      else { R(22, 5, 3, 3, d); R(24, 8, 2, 3, b); R(25, 6, 2, 2, b); }
     }
   }
 
@@ -1013,16 +1032,26 @@ const Sprites = (() => {
     px(g, 4, 0, 8, 3, hair);
     px(g, 3, 1, 1, 5, hair); px(g, 12, 1, 1, 5, hair);
     if (p.long) { px(g, 3, 6, 1, 4, hair); px(g, 12, 6, 1, 4, hair); }
+    if (p.bowl) px(g, 3, 0, 10, 3, hair);
     if (dir === 'up') { px(g, 4, 1, 8, 6, hair); if (p.long) px(g, 4, 7, 8, 2, hair); }
     else if (dir === 'left') { px(g, 8, 1, 4, 5, hair); px(g, 5, 4, 1, 2, '#2b2233'); }
     else if (dir === 'right') { px(g, 4, 1, 4, 5, hair); px(g, 10, 4, 1, 2, '#2b2233'); }
     else {
       px(g, 4, 3, 8, 1, hair);
+      if (p.bowl) { px(g, 3, 1, 1, 4, hair); px(g, 12, 1, 1, 4, hair); }
       px(g, 6, 4, 1, 2, '#2b2233'); px(g, 9, 4, 1, 2, '#2b2233');
       px(g, 7, 6, 2, 1, shade(skin, -40));
       if (p.glasses) { px(g, 5, 4, 3, 1, p.glasses); px(g, 8, 4, 3, 1, p.glasses); }
     }
     if (p.hat) { px(g, 3, 0, 10, 2, p.hat); if (dir === 'down') px(g, 3, 2, 10, 1, shade(p.hat, -30)); }
+    if (p.bandana) {
+      const b = p.bandana, d = shade(b, -32);
+      px(g, 3, 0, 10, 2, b); px(g, 4, 2, 8, 1, dir === 'up' ? b : d); px(g, 6, 0, 1, 1, '#fff'); px(g, 10, 1, 1, 1, '#fff');
+      if (dir === 'down') { px(g, 12, 2, 2, 1, b); px(g, 13, 3, 1, 2, d); }
+      else if (dir === 'left') { px(g, 12, 1, 2, 2, b); px(g, 13, 3, 1, 2, d); }
+      else if (dir === 'right') { px(g, 2, 1, 2, 2, b); px(g, 2, 3, 1, 2, d); }
+      else { px(g, 7, 3, 2, 1, d); px(g, 7, 4, 1, 2, b); px(g, 8, 4, 1, 2, b); }
+    }
   }
 
   const PLAYER_PALETTES = [
@@ -1056,8 +1085,8 @@ const Sprites = (() => {
     english: { skin: '#f6cfa5', hair: '#c98a3a', shirt: '#3db0e0', pants: '#2d2d3a', shoes: '#222', long: true },
     staff: { skin: '#eebd8f', hair: '#7a7a7a', shirt: '#9aa0a8', pants: '#2d2d3a', shoes: '#222', glasses: '#333' },
     dev: { skin: '#f3c79b', hair: '#1e1a22', shirt: '#2f6ef0', coat: '#2d2d3a', pants: '#3a3a4a', shoes: '#222', glasses: '#333' },
-    mountain: { skin: '#eebd8f', hair: '#2b1d14', shirt: '#4f8a3c', coat: '#5a4a32', pants: '#3a4a5a', shoes: '#6b4428', hat: '#2f6b3a' },
-    yolohoney: { skin: '#f6cfa5', hair: '#c98a3a', shirt: '#ffc23a', coat: '#ff9a3c', pants: '#f4f1e8', shoes: '#fff', long: true },
+    mountain: { skin: '#eebd8f', hair: '#2b1d14', shirt: '#26346b', pants: '#8a8f98', shoes: '#333', bowl: true },
+    yolohoney: { skin: '#eebd8f', hair: '#2b1d14', shirt: '#ffc23a', coat: '#ff9a3c', pants: '#2f4f7f', shoes: '#fff', bandana: '#2f9e44' },
     clerk1: { skin: '#f6cfa5', hair: '#3b2416', shirt: '#ffffff', coat: '#c86a8a', pants: '#3a3a4a', shoes: '#333', long: true },
     clerk2: { skin: '#f3c79b', hair: '#1e1a22', shirt: '#f4f1e8', coat: '#5a8a6a', pants: '#2d2d3a', shoes: '#222', glasses: '#333' },
     youngest: { skin: '#f6cfa5', hair: '#2b1d14', shirt: '#ffd84a', pants: '#ff8fb1', shoes: '#fff', long: true, hat: '#ff8fb1' },

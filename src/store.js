@@ -156,6 +156,8 @@ const LocalStore = (() => {
     for (const k in d) if (c[k] == null) c[k] = Util.clone(d[k]);
     c.common = Object.assign({}, d.common, c.common);
     c.signs = Object.assign({}, Util.clone(d.signs), c.signs);
+    if (!Array.isArray(c.friends)) c.friends = [];
+    d.friends.forEach(df => { const f = c.friends.find(x => x.id === df.id); if (!f) c.friends.push(Util.clone(df)); else if (df.secret) f.secret = true; });
     c.missions.forEach((m, i) => { const dm = d.missions[i]; for (const k in dm) if (m[k] == null) m[k] = Util.clone(dm[k]); m.kind = dm.kind; m.order = dm.order; });
     return c;
   }

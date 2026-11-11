@@ -59,13 +59,14 @@ const App = (() => {
     list.push({ id: 'robot', name: '로봇 교장선생님', place: '정문 앞', profile: content.profiles.robot, npc: find('robot') });
     content.missions.forEach(m => { const n = find('m' + m.order); list.push({ id: 'm' + m.order, name: m.npc, place: n ? n.def.place : '', profile: content.profiles['m' + m.order], npc: n }); });
     content.sides.forEach(sd => { const n = find('s' + sd.id); list.push({ id: sd.id, name: sd.npc, place: n ? n.def.place : '', profile: content.profiles[sd.id], npc: n }); });
-    content.friends.forEach(f => list.push({ id: f.id, name: f.name, place: f.place, profile: f.profile, npc: find(f.id) }));
+    content.friends.filter(f => !f.secret).forEach(f => list.push({ id: f.id, name: f.name, place: f.place, profile: f.profile, npc: find(f.id) }));
     return list;
   }
-  function dexTotal() { return 1 + content.missions.length + content.sides.length + content.friends.length; }
+  const SECRET_IDS = () => new Set(content.friends.filter(f => f.secret).map(f => f.id));
+  function dexTotal() { return 1 + content.missions.length + content.sides.length + content.friends.filter(f => !f.secret).length; }
   function register(n) {
     const id = dexId(n);
-    if (!id || dex.has(id)) return;
+    if (!id || dex.has(id) || SECRET_IDS().has(id)) return;
     dex.add(id);
     Util.storage.set(dexKey(session.player), Array.from(dex));
     updateDexButton();
@@ -234,7 +235,7 @@ const App = (() => {
     session = { player, attemptId: resume ? resume.attemptId : null, course: Util.course(player.mode) };
     st = resume ? Object.assign(freshState(), resume.st) : freshState();
     for (const k of [3, 6, 8]) if (!st.clues[k]) st.clues[k] = [];
-    dex = new Set(Util.storage.get(dexKey(player), []));
+    dex = new Set(Util.storage.get(dexKey(player), []).filter(id => !SECRET_IDS().has(id)));
     badges = Util.storage.get(badgeKey(player), {});
     updateDexButton();
     Title.stop();
@@ -872,7 +873,7 @@ const App = (() => {
         if (n.role === 'mission' && available(n.def.order) && !(content.missions[n.def.order - 1].kind === 'dark' && st.started[n.def.order])) return '!';
         if (n.role === 'robot' && allDone() && !st.rebooted) return '!';
         if (n.role === 'side' && st.side[n.def.side] !== 'done') return '?';
-        if (n.role === 'friend' && !dex.has(n.def.id)) return 'new';
+        if (n.role === 'friend' && !dex.has(n.def.id) && !SECRET_IDS().has(n.def.id)) return 'new';
         return null;
       },
       known: n => dex.has(dexId(n)),
