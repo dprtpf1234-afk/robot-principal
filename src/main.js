@@ -293,9 +293,10 @@ const App = (() => {
     if (!session || !st || st.secretOpen || mapId !== 'outdoor') return;
     const hs = Game.maps.outdoor.secretHatch;
     if (!hs || Math.hypot(x - hs.podium[0], y - hs.podium[1]) > 4) { secretJumps = []; return; }
-    const now = performance.now();
-    secretJumps = secretJumps.filter(t => now - t < 5000);
-    secretJumps.push(now);
+    // 연속 점프만 센다: 착지(약 0.56초) 후 곧바로 다시 뛰고, 제자리에서(1칸 이내) 뛰어야 한다
+    const now = performance.now(), last = secretJumps[secretJumps.length - 1];
+    if (last && (now - last.t > 1200 || Math.hypot(x - last.x, y - last.y) > 1)) secretJumps = [];
+    secretJumps.push({ t: now, x, y });
     if (secretJumps.length >= 3) { secretJumps = []; openSecret(true); }
   }
   function openSecret(announce) {
