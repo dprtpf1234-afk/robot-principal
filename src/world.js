@@ -254,7 +254,8 @@ const World = (() => {
     npc(m, { id: 'm7', role: 'mission', order: 7, pal: 'affairs', tx: princ.cx, ty: 8.4, face: 'down', place: '본관 1층 교장실 앞' });
     npc(m, { id: 'sB', role: 'side', side: 'B', pal: 'cook', tx: caf.ix + 6.5, ty: 13, face: 'down', place: '본관 1층 식생활교육관(식당)' });
     friend(m, 'f8', 'staff', adm.ix + 1, 4); friend(m, 'f29', 'adminHead', adm.ix + adm.iw - 1, 4.5);
-    friend(m, 'f21', 'vpM', staff.cx - 0.5, 8.2, 'down'); friend(m, 'f22', 'vpF', meet.ix + 1, 4);
+    friend(m, 'f21', 'vpM', staff.cx - 0.5, 8.2, 'down');
+    friend(m, 'f23', 'research', staff.ix, 4.4, 'right');   // 연구부장 선생님: 교무실 friend(m, 'f22', 'vpF', meet.ix + 1, 4);
     obj(m, 'emblem', lx0 + 1, 13.6, { hitH: 6, hitX: 8, hitW: 16, dy: -8, interact: { type: 'sign', id: 'symbol' } });
     friend(m, 'f10', 'guide', lx0 + 3, 9, 'down'); friend(m, 'f20', 'buddy', caf.ix + 2, 12, 'down');
     roomZone(m, nb4, 2); roomZone(m, nb5, 2); hallZone(m, 2, 30, 3); hallZone(m, 42, 18, 2);
@@ -329,7 +330,7 @@ const World = (() => {
 
     c.concat(c2).forEach(r => classroom(m, r));
     office(m, lab5); office(m, t2); office(m, head);
-    friend(m, 'f23', 'research', lab5.ix + 1, 4); friend(m, 'f24', 'chiefT', head.ix + 1, 4); friend(m, 'f26', 'welfare', t2.ix + 1, 4);
+    friend(m, 'f24', 'chiefT', head.ix + 1, 4); friend(m, 'f26', 'welfare', t2.ix + 1, 4);
     for (let i = 0; i < 2; i++) { obj(m, 'lab', sci2.ix + i * 2, 2); obj(m, 'computer', sci2.ix + i * 2, 4); }
     // 도서관 책장 (빨간 책장 3개가 미션 3 단서)
     const L = lib.ix;
