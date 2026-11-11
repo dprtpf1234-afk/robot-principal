@@ -900,6 +900,8 @@ const World = (() => {
       m.objects.push({ id: 'o' + (objSeq++), kind: 'robotproto', img, x: x * T, y: y * T, w: img.width, h: img.height, solid: true, interact: { type: 'sign', id: 'devrobot' }, hidden: false, hit: { x: x * T + 2, y: y * T + 10, w: 12, h: 6 } });
     }
     friend(m, 'f33', 'dev', 9, 3.4, 'down');
+    friend(m, 'f34', 'mountain', 3, 3.6, 'down');
+    friend(m, 'f35', 'yolohoney', 14, 3.6, 'down');
     m.start = [9, 10];
     return m;
   }

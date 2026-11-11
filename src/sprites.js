@@ -1056,6 +1056,8 @@ const Sprites = (() => {
     english: { skin: '#f6cfa5', hair: '#c98a3a', shirt: '#3db0e0', pants: '#2d2d3a', shoes: '#222', long: true },
     staff: { skin: '#eebd8f', hair: '#7a7a7a', shirt: '#9aa0a8', pants: '#2d2d3a', shoes: '#222', glasses: '#333' },
     dev: { skin: '#f3c79b', hair: '#1e1a22', shirt: '#2f6ef0', coat: '#2d2d3a', pants: '#3a3a4a', shoes: '#222', glasses: '#333' },
+    mountain: { skin: '#eebd8f', hair: '#2b1d14', shirt: '#4f8a3c', coat: '#5a4a32', pants: '#3a4a5a', shoes: '#6b4428', hat: '#2f6b3a' },
+    yolohoney: { skin: '#f6cfa5', hair: '#c98a3a', shirt: '#ffc23a', coat: '#ff9a3c', pants: '#f4f1e8', shoes: '#fff', long: true },
     clerk1: { skin: '#f6cfa5', hair: '#3b2416', shirt: '#ffffff', coat: '#c86a8a', pants: '#3a3a4a', shoes: '#333', long: true },
     clerk2: { skin: '#f3c79b', hair: '#1e1a22', shirt: '#f4f1e8', coat: '#5a8a6a', pants: '#2d2d3a', shoes: '#222', glasses: '#333' },
     youngest: { skin: '#f6cfa5', hair: '#2b1d14', shirt: '#ffd84a', pants: '#ff8fb1', shoes: '#fff', long: true, hat: '#ff8fb1' },

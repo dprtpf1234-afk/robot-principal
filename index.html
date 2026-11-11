@@ -579,7 +579,7 @@ table.rec th { background: #f3ead6; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (학년군별)</button>
       </div></div>
-      <div id="adminLink">v3.7</div>
+      <div id="adminLink">v3.8</div>
     </form>
   </div>
 </div>
@@ -5170,6 +5170,20 @@ const DEFAULT_CONTENT = {
       "place": "??? (비밀 공간)",
       "profile": "이 게임을 만든 대교초 선생님. 로봇과 코딩, 그리고 우리 학교를 좋아해요.",
       "line": "와, 여기를 찾아내다니! 조례대에서 세 번 뛰는 비밀을 어떻게 알았니? 이 방에서 로봇 교장선생님 게임을 만들었단다. 끝까지 도전해 줘서 정말 고마워!"
+    },
+    {
+      "id": "f34",
+      "name": "마운틴",
+      "place": "??? (비밀 공간)",
+      "profile": "산처럼 듬직한 개발 도우미. 아무리 큰 버그도 한 걸음씩 올라가서 잡아내요.",
+      "line": "안녕, 나는 마운틴이야! 버그라는 산이 아무리 높아도 한 걸음씩 오르면 꼭 정상에 닿는단다. 너도 포기하지 말고 끝까지 가 보자!"
+    },
+    {
+      "id": "f35",
+      "name": "욜로허니",
+      "place": "??? (비밀 공간)",
+      "profile": "꿀처럼 달콤한 아이디어 담당. \"한 번뿐인 오늘을 즐겁게!\"가 좌우명이에요.",
+      "line": "반가워, 나는 욜로허니야! 오늘은 한 번뿐이니까 신나게 즐겨야지! 비밀 방을 찾아낸 너에게 꿀처럼 달콤한 하루를 선물할게~"
     }
   ],
   "ambient": {
@@ -6620,6 +6634,8 @@ const Sprites = (() => {
     english: { skin: '#f6cfa5', hair: '#c98a3a', shirt: '#3db0e0', pants: '#2d2d3a', shoes: '#222', long: true },
     staff: { skin: '#eebd8f', hair: '#7a7a7a', shirt: '#9aa0a8', pants: '#2d2d3a', shoes: '#222', glasses: '#333' },
     dev: { skin: '#f3c79b', hair: '#1e1a22', shirt: '#2f6ef0', coat: '#2d2d3a', pants: '#3a3a4a', shoes: '#222', glasses: '#333' },
+    mountain: { skin: '#eebd8f', hair: '#2b1d14', shirt: '#4f8a3c', coat: '#5a4a32', pants: '#3a4a5a', shoes: '#6b4428', hat: '#2f6b3a' },
+    yolohoney: { skin: '#f6cfa5', hair: '#c98a3a', shirt: '#ffc23a', coat: '#ff9a3c', pants: '#f4f1e8', shoes: '#fff', long: true },
     clerk1: { skin: '#f6cfa5', hair: '#3b2416', shirt: '#ffffff', coat: '#c86a8a', pants: '#3a3a4a', shoes: '#333', long: true },
     clerk2: { skin: '#f3c79b', hair: '#1e1a22', shirt: '#f4f1e8', coat: '#5a8a6a', pants: '#2d2d3a', shoes: '#222', glasses: '#333' },
     youngest: { skin: '#f6cfa5', hair: '#2b1d14', shirt: '#ffd84a', pants: '#ff8fb1', shoes: '#fff', long: true, hat: '#ff8fb1' },
@@ -7925,6 +7941,8 @@ const World = (() => {
       m.objects.push({ id: 'o' + (objSeq++), kind: 'robotproto', img, x: x * T, y: y * T, w: img.width, h: img.height, solid: true, interact: { type: 'sign', id: 'devrobot' }, hidden: false, hit: { x: x * T + 2, y: y * T + 10, w: 12, h: 6 } });
     }
     friend(m, 'f33', 'dev', 9, 3.4, 'down');
+    friend(m, 'f34', 'mountain', 3, 3.6, 'down');
+    friend(m, 'f35', 'yolohoney', 14, 3.6, 'down');
     m.start = [9, 10];
     return m;
   }
