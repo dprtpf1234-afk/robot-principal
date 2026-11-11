@@ -665,8 +665,9 @@ const World = (() => {
       if (nb.length && nb.filter(v => v === TILE.BRICK).length * 2 >= nb.length) set(m, x, y, TILE.BTREE);
     }
     // 운동장 단서: 축구 골대, 농구 골대
-    obj(m, 'goal', 16.4, 40, { hitH: 32, interact: { type: 'clue', m: 6, i: 0, name: '축구 골대' } });
-    obj(m, 'goal', 40.6, 40, { hitH: 32 });
+    // 축구장: 왼쪽 골라인 x=17.5, 오른쪽 골라인 x=40.25, 세로 가운데 y=41.5 (칸). 골 입구가 골라인에 붙고 그물은 바깥쪽
+    obj(m, 'goal', 17.5 - 14 / 16, 40.5, { hitH: 32, interact: { type: 'clue', m: 6, i: 0, name: '축구 골대' } });
+    obj(m, 'goalR', 40.25 - 2 / 16, 40.5, { hitH: 32 });
     obj(m, 'hoop', 47.5, 32.2, { hitH: 6, interact: { type: 'clue', m: 6, i: 1, name: '농구 골대' } });
     obj(m, 'hoop', 47.5, 42.4, { hitH: 6 });
 

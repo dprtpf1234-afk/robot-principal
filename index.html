@@ -579,7 +579,7 @@ table.rec th { background: #f3ead6; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (학년군별)</button>
       </div></div>
-      <div id="adminLink">v3.13</div>
+      <div id="adminLink">v3.14</div>
     </form>
   </div>
 </div>
@@ -6808,6 +6808,12 @@ const Sprites = (() => {
         for (let i = 4; i < 30; i += 3) px(g, 5, i, 9, 1, 'rgba(255,255,255,0.5)');
         for (let i = 6; i < 14; i += 3) px(g, i, 2, 1, 28, 'rgba(255,255,255,0.5)');
         break;
+      case 'goalR':   // 오른쪽 골대: 그물이 경기장 바깥(오른쪽)으로 가도록 좌우를 뒤집은 모양
+        [c, g] = canvas(16, 32);
+        px(g, 12, 0, 2, 32, '#f4f4f4'); px(g, 2, 0, 12, 2, '#f4f4f4'); px(g, 2, 30, 12, 2, '#f4f4f4');
+        for (let i = 4; i < 30; i += 3) px(g, 2, i, 9, 1, 'rgba(255,255,255,0.5)');
+        for (let i = 2; i < 11; i += 3) px(g, i, 2, 1, 28, 'rgba(255,255,255,0.5)');
+        break;
       case 'bars':
         [c, g] = canvas(32, 16);
         px(g, 2, 2, 2, 14, '#7a7f87'); px(g, 15, 4, 2, 12, '#7a7f87'); px(g, 28, 6, 2, 10, '#7a7f87');
@@ -7740,8 +7746,9 @@ const World = (() => {
       if (nb.length && nb.filter(v => v === TILE.BRICK).length * 2 >= nb.length) set(m, x, y, TILE.BTREE);
     }
     // 운동장 단서: 축구 골대, 농구 골대
-    obj(m, 'goal', 16.4, 40, { hitH: 32, interact: { type: 'clue', m: 6, i: 0, name: '축구 골대' } });
-    obj(m, 'goal', 40.6, 40, { hitH: 32 });
+    // 축구장: 왼쪽 골라인 x=17.5, 오른쪽 골라인 x=40.25, 세로 가운데 y=41.5 (칸). 골 입구가 골라인에 붙고 그물은 바깥쪽
+    obj(m, 'goal', 17.5 - 14 / 16, 40.5, { hitH: 32, interact: { type: 'clue', m: 6, i: 0, name: '축구 골대' } });
+    obj(m, 'goalR', 40.25 - 2 / 16, 40.5, { hitH: 32 });
     obj(m, 'hoop', 47.5, 32.2, { hitH: 6, interact: { type: 'clue', m: 6, i: 1, name: '농구 골대' } });
     obj(m, 'hoop', 47.5, 42.4, { hitH: 6 });
 
