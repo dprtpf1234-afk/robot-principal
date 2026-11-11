@@ -357,7 +357,7 @@ const App = (() => {
     }
     if (n.role === 'robot') return talkRobot();
     if (n.role === 'teacher') {
-      const pool = content.homeroom || ['안녕! 로봇 교장선생님을 꼭 고쳐 주렴.'];
+      const pool = n.def.lines || content.homeroom || ['안녕! 로봇 교장선생님을 꼭 고쳐 주렴.'];
       const text = pool[Math.floor(Math.random() * pool.length)].replace(/\{cls\}/g, n.def.cls).replace(/\{name\}/g, session.player.name);
       UI.dialog([line(n.name, text)]);
       return;

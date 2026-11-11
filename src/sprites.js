@@ -1055,6 +1055,8 @@ const Sprites = (() => {
     garden: { skin: '#eebd8f', hair: '#3b2a1a', shirt: '#46b866', coat: '#2f7d3b', pants: '#594a3a', shoes: '#333' },
     english: { skin: '#f6cfa5', hair: '#c98a3a', shirt: '#3db0e0', pants: '#2d2d3a', shoes: '#222', long: true },
     staff: { skin: '#eebd8f', hair: '#7a7a7a', shirt: '#9aa0a8', pants: '#2d2d3a', shoes: '#222', glasses: '#333' },
+    clerk1: { skin: '#f6cfa5', hair: '#3b2416', shirt: '#ffffff', coat: '#c86a8a', pants: '#3a3a4a', shoes: '#333', long: true },
+    clerk2: { skin: '#f3c79b', hair: '#1e1a22', shirt: '#f4f1e8', coat: '#5a8a6a', pants: '#2d2d3a', shoes: '#222', glasses: '#333' },
     youngest: { skin: '#f6cfa5', hair: '#2b1d14', shirt: '#ffd84a', pants: '#ff8fb1', shoes: '#fff', long: true, hat: '#ff8fb1' },
     guide: { skin: '#f3c79b', hair: '#1e1a22', shirt: '#ffffff', coat: '#3d6fe9', pants: '#2d2d3a', shoes: '#222' },
     sciKid: { skin: '#f6cfa5', hair: '#5a341d', shirt: '#46b866', coat: '#f4f4f4', pants: '#3a3a4a', shoes: '#333', glasses: '#333' },

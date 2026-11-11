@@ -579,7 +579,7 @@ table.rec th { background: #f3ead6; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (학년군별)</button>
       </div></div>
-      <div id="adminLink">v3.5</div>
+      <div id="adminLink">v3.6</div>
     </form>
   </div>
 </div>
@@ -6588,6 +6588,8 @@ const Sprites = (() => {
     garden: { skin: '#eebd8f', hair: '#3b2a1a', shirt: '#46b866', coat: '#2f7d3b', pants: '#594a3a', shoes: '#333' },
     english: { skin: '#f6cfa5', hair: '#c98a3a', shirt: '#3db0e0', pants: '#2d2d3a', shoes: '#222', long: true },
     staff: { skin: '#eebd8f', hair: '#7a7a7a', shirt: '#9aa0a8', pants: '#2d2d3a', shoes: '#222', glasses: '#333' },
+    clerk1: { skin: '#f6cfa5', hair: '#3b2416', shirt: '#ffffff', coat: '#c86a8a', pants: '#3a3a4a', shoes: '#333', long: true },
+    clerk2: { skin: '#f3c79b', hair: '#1e1a22', shirt: '#f4f1e8', coat: '#5a8a6a', pants: '#2d2d3a', shoes: '#222', glasses: '#333' },
     youngest: { skin: '#f6cfa5', hair: '#2b1d14', shirt: '#ffd84a', pants: '#ff8fb1', shoes: '#fff', long: true, hat: '#ff8fb1' },
     guide: { skin: '#f3c79b', hair: '#1e1a22', shirt: '#ffffff', coat: '#3d6fe9', pants: '#2d2d3a', shoes: '#222' },
     sciKid: { skin: '#f6cfa5', hair: '#5a341d', shirt: '#46b866', coat: '#f4f4f4', pants: '#3a3a4a', shoes: '#333', glasses: '#333' },
@@ -7215,7 +7217,11 @@ const World = (() => {
     npc(m, { id: 'sB', role: 'side', side: 'B', pal: 'cook', tx: caf.ix + 6.5, ty: 13, face: 'down', place: '본관 1층 식생활교육관(식당)' });
     friend(m, 'f8', 'staff', adm.ix + 1, 4); friend(m, 'f29', 'adminHead', adm.ix + adm.iw - 1, 4.5);
     friend(m, 'f21', 'vpM', staff.cx - 0.5, 8.2, 'down');
-    friend(m, 'f23', 'research', staff.ix, 4.4, 'right');   // 연구부장 선생님: 교무실 friend(m, 'f22', 'vpF', meet.ix + 1, 4);
+    friend(m, 'f23', 'research', staff.ix, 4.4, 'right');   // 연구부장 선생님: 교무실
+    // 교무실무사 선생님 두 분 (교무실 안)
+    const CLERK = ['교무실 일은 우리가 척척! 로봇 교장선생님도 꼭 고쳐 주렴.', '궁금한 게 있으면 교무실에 언제든 오렴.', '학교 행사 안내문도 여기서 만든단다. 오늘은 SW·AI 행사 날이지!'];
+    m.npcDefs.push({ id: 'clerk1', role: 'teacher', name: '교무실무사 선생님', pal: 'clerk1', tx: staff.ix, ty: 2.3, face: 'down', lines: CLERK });
+    m.npcDefs.push({ id: 'clerk2', role: 'teacher', name: '교무실무사 선생님', pal: 'clerk2', tx: staff.ix + 1, ty: 5.2, face: 'down', lines: CLERK }); friend(m, 'f22', 'vpF', meet.ix + 1, 4);
     obj(m, 'emblem', lx0 + 1, 13.6, { hitH: 6, hitX: 8, hitW: 16, dy: -8, interact: { type: 'sign', id: 'symbol' } });
     friend(m, 'f10', 'guide', lx0 + 3, 9, 'down'); friend(m, 'f20', 'buddy', caf.ix + 2, 12, 'down');
     roomZone(m, nb4, 2); roomZone(m, nb5, 2); hallZone(m, 2, 30, 3); hallZone(m, 42, 18, 2);
@@ -11360,7 +11366,7 @@ const App = (() => {
     }
     if (n.role === 'robot') return talkRobot();
     if (n.role === 'teacher') {
-      const pool = content.homeroom || ['안녕! 로봇 교장선생님을 꼭 고쳐 주렴.'];
+      const pool = n.def.lines || content.homeroom || ['안녕! 로봇 교장선생님을 꼭 고쳐 주렴.'];
       const text = pool[Math.floor(Math.random() * pool.length)].replace(/\{cls\}/g, n.def.cls).replace(/\{name\}/g, session.player.name);
       UI.dialog([line(n.name, text)]);
       return;

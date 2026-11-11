@@ -255,7 +255,11 @@ const World = (() => {
     npc(m, { id: 'sB', role: 'side', side: 'B', pal: 'cook', tx: caf.ix + 6.5, ty: 13, face: 'down', place: '본관 1층 식생활교육관(식당)' });
     friend(m, 'f8', 'staff', adm.ix + 1, 4); friend(m, 'f29', 'adminHead', adm.ix + adm.iw - 1, 4.5);
     friend(m, 'f21', 'vpM', staff.cx - 0.5, 8.2, 'down');
-    friend(m, 'f23', 'research', staff.ix, 4.4, 'right');   // 연구부장 선생님: 교무실 friend(m, 'f22', 'vpF', meet.ix + 1, 4);
+    friend(m, 'f23', 'research', staff.ix, 4.4, 'right');   // 연구부장 선생님: 교무실
+    // 교무실무사 선생님 두 분 (교무실 안)
+    const CLERK = ['교무실 일은 우리가 척척! 로봇 교장선생님도 꼭 고쳐 주렴.', '궁금한 게 있으면 교무실에 언제든 오렴.', '학교 행사 안내문도 여기서 만든단다. 오늘은 SW·AI 행사 날이지!'];
+    m.npcDefs.push({ id: 'clerk1', role: 'teacher', name: '교무실무사 선생님', pal: 'clerk1', tx: staff.ix, ty: 2.3, face: 'down', lines: CLERK });
+    m.npcDefs.push({ id: 'clerk2', role: 'teacher', name: '교무실무사 선생님', pal: 'clerk2', tx: staff.ix + 1, ty: 5.2, face: 'down', lines: CLERK }); friend(m, 'f22', 'vpF', meet.ix + 1, 4);
     obj(m, 'emblem', lx0 + 1, 13.6, { hitH: 6, hitX: 8, hitW: 16, dy: -8, interact: { type: 'sign', id: 'symbol' } });
     friend(m, 'f10', 'guide', lx0 + 3, 9, 'down'); friend(m, 'f20', 'buddy', caf.ix + 2, 12, 'down');
     roomZone(m, nb4, 2); roomZone(m, nb5, 2); hallZone(m, 2, 30, 3); hallZone(m, 42, 18, 2);
