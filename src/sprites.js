@@ -1055,6 +1055,7 @@ const Sprites = (() => {
     garden: { skin: '#eebd8f', hair: '#3b2a1a', shirt: '#46b866', coat: '#2f7d3b', pants: '#594a3a', shoes: '#333' },
     english: { skin: '#f6cfa5', hair: '#c98a3a', shirt: '#3db0e0', pants: '#2d2d3a', shoes: '#222', long: true },
     staff: { skin: '#eebd8f', hair: '#7a7a7a', shirt: '#9aa0a8', pants: '#2d2d3a', shoes: '#222', glasses: '#333' },
+    dev: { skin: '#f3c79b', hair: '#1e1a22', shirt: '#2f6ef0', coat: '#2d2d3a', pants: '#3a3a4a', shoes: '#222', glasses: '#333' },
     clerk1: { skin: '#f6cfa5', hair: '#3b2416', shirt: '#ffffff', coat: '#c86a8a', pants: '#3a3a4a', shoes: '#333', long: true },
     clerk2: { skin: '#f3c79b', hair: '#1e1a22', shirt: '#f4f1e8', coat: '#5a8a6a', pants: '#2d2d3a', shoes: '#222', glasses: '#333' },
     youngest: { skin: '#f6cfa5', hair: '#2b1d14', shirt: '#ffd84a', pants: '#ff8fb1', shoes: '#fff', long: true, hat: '#ff8fb1' },
@@ -1262,6 +1263,37 @@ const Sprites = (() => {
         px(g, 2, 4, 12, 26, '#4a5160'); px(g, 3, 5, 10, 8, '#1b2a3a'); px(g, 4, 6, 8, 6, '#2b4d6a');
         px(g, 4, 16, 8, 2, '#7a8496'); px(g, 4, 20, 3, 2, '#e8533f'); px(g, 9, 20, 3, 2, '#46b866'); px(g, 2, 29, 12, 1, '#2b2f38');
         break;
+      case 'hatch': {       // 조례대 앞 비밀 뚜껑 (열리면 사다리가 보인다)
+        [c, g] = canvas(16, 16);
+        px(g, 1, 2, 14, 13, '#3a2a1a'); px(g, 2, 3, 12, 11, '#120d08');
+        for (let y = 4; y < 14; y += 3) px(g, 4, y, 8, 1, '#b88a52');
+        px(g, 4, 3, 1, 11, '#8a6236'); px(g, 11, 3, 1, 11, '#8a6236');
+        px(g, 0, 0, 16, 3, '#8a6236'); px(g, 0, 0, 16, 1, '#b88a52'); px(g, 6, 1, 4, 1, '#ffd23a');
+        break;
+      }
+      case 'devdesk': {     // 개발자 책상: 모니터 두 대와 키보드
+        [c, g] = canvas(32, 24);
+        px(g, 1, 12, 30, 9, '#8a5a36'); px(g, 1, 12, 30, 2, '#b07a4a'); px(g, 3, 21, 2, 3, '#5a3a20'); px(g, 27, 21, 2, 3, '#5a3a20');
+        for (const [x, col] of [[3, '#3d6fe9'], [17, '#46b866']]) {
+          px(g, x, 1, 12, 9, '#1e1a22'); px(g, x + 1, 2, 10, 7, col);
+          for (let k = 0; k < 4; k++) px(g, x + 2, 3 + k * 1.5, 3 + (k * 5) % 6, 0.8, '#ffffff');
+          px(g, x + 5, 10, 2, 2, '#444');
+        }
+        px(g, 9, 14, 12, 2, '#ddd'); px(g, 23, 14, 3, 2, '#ddd'); px(g, 5, 13, 3, 3, '#f4f1e8'); px(g, 5, 13, 3, 1, '#7a4a24');
+        break;
+      }
+      case 'arcade': {      // 오락기 (로봇 교장선생님 게임이 켜져 있다)
+        [c, g] = canvas(16, 24);
+        px(g, 2, 0, 12, 24, '#3d2b6e'); px(g, 3, 1, 10, 3, '#ff8a2a'); px(g, 4, 5, 8, 7, '#111'); px(g, 5, 6, 6, 5, '#4fa3ff');
+        px(g, 6, 7, 2, 2, '#ffd23a'); px(g, 8, 8, 2, 2, '#e23b3b'); px(g, 2, 13, 12, 3, '#5a4a8e'); px(g, 5, 14, 1, 1, '#e23b3b'); px(g, 9, 14, 2, 1, '#ffd23a');
+        break;
+      }
+      case 'poster': {      // 벽에 붙은 포스터
+        [c, g] = canvas(16, 16);
+        px(g, 2, 1, 12, 14, '#ffffff'); px(g, 2, 1, 12, 4, '#2f6ef0'); px(g, 4, 6, 8, 5, '#ffd23a'); px(g, 6, 7, 4, 3, '#9aa0a8');
+        px(g, 4, 12, 8, 1, '#999'); px(g, 7, 0, 2, 2, '#e23b3b');
+        break;
+      }
       case 'box':           // 창고 상자
         [c, g] = canvas(16, 16);
         px(g, 1, 3, 14, 12, '#b88a52'); px(g, 1, 3, 14, 2, '#d1a46a'); px(g, 7, 3, 2, 12, '#8a6236'); px(g, 1, 14, 14, 1, '#7a5428');

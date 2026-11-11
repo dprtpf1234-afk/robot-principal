@@ -579,7 +579,7 @@ table.rec th { background: #f3ead6; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (학년군별)</button>
       </div></div>
-      <div id="adminLink">v3.6</div>
+      <div id="adminLink">v3.7</div>
     </form>
   </div>
 </div>
@@ -4897,6 +4897,30 @@ const DEFAULT_CONTENT = {
     "aizone": {
       "title": "AI 스마트존 주의!",
       "text": "정전 때문에 AI 스마트존 안이 아주 어두워요.\n손전등이 있어야 잘 보여요. 쪽지 3장을 찾으면 맨 안쪽 단말기가 켜져요."
+    },
+    "devposter": {
+      "title": "포스터: 로봇 교장선생님 구하기!",
+      "text": "대교초 SW·AI 행사 메타버스\n에피소드 1 · 고장 난 로봇 교장선생님을 깨워라\n\n\"코딩은 마법이 아니라, 생각을 차례대로 적는 일이에요.\""
+    },
+    "devboard": {
+      "title": "화이트보드: 게임 설계도",
+      "text": "① 정문 → ② 과학실 · ③ 도서관 → ④ 방송실 · ⑧ 후관 → ⑤ 컴퓨터실 · ⑥ 운동장 → ⑦ AI존 → 재부팅!\n\n· 미션마다 숨은 개념: AI · 데이터 · 암호 · 알고리즘 · 정렬 · 반복 · 네트워크\n· 할 일: 버그 잡기, 또 버그 잡기, 그리고… 또 버그 잡기 😅"
+    },
+    "devmap": {
+      "title": "지도 스케치",
+      "text": "항공사진을 보고 한 칸 한 칸 학교를 옮겨 그렸어요.\n본관·후관·운동장·주차장, 그리고 학교 주변 아파트와 숲까지!\n실제 학교와 어디가 닮았는지 찾아보세요."
+    },
+    "devlog": {
+      "title": "개발 일지 (책장 속 공책)",
+      "text": "1일차: 로봇 교장선생님이 고장 났다는 이야기를 떠올렸다.\n5일차: 운동장을 둥글게 다시 그렸다. 축구장은 각지면 안 된다!\n9일차: 이진수 대신 모스 부호를 넣었다. 삐-삐삐-.\n마지막 날: 이 방을 몰래 만들었다. 찾은 친구에게 박수! 👏"
+    },
+    "devarcade": {
+      "title": "오락기",
+      "text": "화면 속에서 아주 작은 로봇 교장선생님이 깜빡이고 있어요.\n\"INSERT COIN… 이 아니라, 미션을 계속하세요!\""
+    },
+    "devrobot": {
+      "title": "로봇 교장선생님 시제품",
+      "text": "처음 만들어 본 로봇 교장선생님이에요. 아직 말을 못 해요.\n바퀴도 하나 빠져 있네요. 진짜 로봇 교장선생님은 정문 앞에서 기다리고 있어요!"
     }
   },
   "profiles": {
@@ -5139,6 +5163,13 @@ const DEFAULT_CONTENT = {
       "place": "본관 2층 강당",
       "profile": "운동회와 체육 행사를 맡은 체육부장 선생님.",
       "line": "몸도 튼튼, 마음도 튼튼! 운동장 미션도 힘내!"
+    },
+    {
+      "id": "f33",
+      "name": "개발자 허남웅 선생님",
+      "place": "??? (비밀 공간)",
+      "profile": "이 게임을 만든 대교초 선생님. 로봇과 코딩, 그리고 우리 학교를 좋아해요.",
+      "line": "와, 여기를 찾아내다니! 조례대에서 세 번 뛰는 비밀을 어떻게 알았니? 이 방에서 로봇 교장선생님 게임을 만들었단다. 끝까지 도전해 줘서 정말 고마워!"
     }
   ],
   "ambient": {
@@ -6588,6 +6619,7 @@ const Sprites = (() => {
     garden: { skin: '#eebd8f', hair: '#3b2a1a', shirt: '#46b866', coat: '#2f7d3b', pants: '#594a3a', shoes: '#333' },
     english: { skin: '#f6cfa5', hair: '#c98a3a', shirt: '#3db0e0', pants: '#2d2d3a', shoes: '#222', long: true },
     staff: { skin: '#eebd8f', hair: '#7a7a7a', shirt: '#9aa0a8', pants: '#2d2d3a', shoes: '#222', glasses: '#333' },
+    dev: { skin: '#f3c79b', hair: '#1e1a22', shirt: '#2f6ef0', coat: '#2d2d3a', pants: '#3a3a4a', shoes: '#222', glasses: '#333' },
     clerk1: { skin: '#f6cfa5', hair: '#3b2416', shirt: '#ffffff', coat: '#c86a8a', pants: '#3a3a4a', shoes: '#333', long: true },
     clerk2: { skin: '#f3c79b', hair: '#1e1a22', shirt: '#f4f1e8', coat: '#5a8a6a', pants: '#2d2d3a', shoes: '#222', glasses: '#333' },
     youngest: { skin: '#f6cfa5', hair: '#2b1d14', shirt: '#ffd84a', pants: '#ff8fb1', shoes: '#fff', long: true, hat: '#ff8fb1' },
@@ -6795,6 +6827,37 @@ const Sprites = (() => {
         px(g, 2, 4, 12, 26, '#4a5160'); px(g, 3, 5, 10, 8, '#1b2a3a'); px(g, 4, 6, 8, 6, '#2b4d6a');
         px(g, 4, 16, 8, 2, '#7a8496'); px(g, 4, 20, 3, 2, '#e8533f'); px(g, 9, 20, 3, 2, '#46b866'); px(g, 2, 29, 12, 1, '#2b2f38');
         break;
+      case 'hatch': {       // 조례대 앞 비밀 뚜껑 (열리면 사다리가 보인다)
+        [c, g] = canvas(16, 16);
+        px(g, 1, 2, 14, 13, '#3a2a1a'); px(g, 2, 3, 12, 11, '#120d08');
+        for (let y = 4; y < 14; y += 3) px(g, 4, y, 8, 1, '#b88a52');
+        px(g, 4, 3, 1, 11, '#8a6236'); px(g, 11, 3, 1, 11, '#8a6236');
+        px(g, 0, 0, 16, 3, '#8a6236'); px(g, 0, 0, 16, 1, '#b88a52'); px(g, 6, 1, 4, 1, '#ffd23a');
+        break;
+      }
+      case 'devdesk': {     // 개발자 책상: 모니터 두 대와 키보드
+        [c, g] = canvas(32, 24);
+        px(g, 1, 12, 30, 9, '#8a5a36'); px(g, 1, 12, 30, 2, '#b07a4a'); px(g, 3, 21, 2, 3, '#5a3a20'); px(g, 27, 21, 2, 3, '#5a3a20');
+        for (const [x, col] of [[3, '#3d6fe9'], [17, '#46b866']]) {
+          px(g, x, 1, 12, 9, '#1e1a22'); px(g, x + 1, 2, 10, 7, col);
+          for (let k = 0; k < 4; k++) px(g, x + 2, 3 + k * 1.5, 3 + (k * 5) % 6, 0.8, '#ffffff');
+          px(g, x + 5, 10, 2, 2, '#444');
+        }
+        px(g, 9, 14, 12, 2, '#ddd'); px(g, 23, 14, 3, 2, '#ddd'); px(g, 5, 13, 3, 3, '#f4f1e8'); px(g, 5, 13, 3, 1, '#7a4a24');
+        break;
+      }
+      case 'arcade': {      // 오락기 (로봇 교장선생님 게임이 켜져 있다)
+        [c, g] = canvas(16, 24);
+        px(g, 2, 0, 12, 24, '#3d2b6e'); px(g, 3, 1, 10, 3, '#ff8a2a'); px(g, 4, 5, 8, 7, '#111'); px(g, 5, 6, 6, 5, '#4fa3ff');
+        px(g, 6, 7, 2, 2, '#ffd23a'); px(g, 8, 8, 2, 2, '#e23b3b'); px(g, 2, 13, 12, 3, '#5a4a8e'); px(g, 5, 14, 1, 1, '#e23b3b'); px(g, 9, 14, 2, 1, '#ffd23a');
+        break;
+      }
+      case 'poster': {      // 벽에 붙은 포스터
+        [c, g] = canvas(16, 16);
+        px(g, 2, 1, 12, 14, '#ffffff'); px(g, 2, 1, 12, 4, '#2f6ef0'); px(g, 4, 6, 8, 5, '#ffd23a'); px(g, 6, 7, 4, 3, '#9aa0a8');
+        px(g, 4, 12, 8, 1, '#999'); px(g, 7, 0, 2, 2, '#e23b3b');
+        break;
+      }
       case 'box':           // 창고 상자
         [c, g] = canvas(16, 16);
         px(g, 1, 3, 14, 12, '#b88a52'); px(g, 1, 3, 14, 2, '#d1a46a'); px(g, 7, 3, 2, 12, '#8a6236'); px(g, 1, 14, 14, 1, '#7a5428');
@@ -7613,6 +7676,8 @@ const World = (() => {
     obj(m, 'flag', 27, 27, { hitH: 6, hitX: 4, hitW: 8, dy: -16, interact: { type: 'clue', m: 6, i: 3, name: '국기 게양대' } });
     obj(m, 'mottorock', 53.5, 21.5, { hitH: 10, hitX: 4, hitW: 48, interact: { type: 'sign', id: 'motto' } });
     obj(m, 'podium', 29, 31, { hitH: 10, interact: { type: 'clue', m: 6, i: 2, name: '조례대' } });
+    // 비밀: 조례대 앞에서 세 번 뛰면 열리는 뚜껑 (처음에는 숨어 있다)
+    { const h = obj(m, 'hatch', 30, 33.2, { solid: false, interact: { type: 'secret' } }); h.hidden = true; h.secret = true; }
     obj(m, 'zelkova', 50, 20, { hitX: 18, hitW: 12, hitH: 6 });
     sign(m, 52, 24, 'symbol'); sign(m, 3, 30, 'gate'); sign(m, 27, 31, 'field');
     // 교표: 교목·교화 안내판 옆 안내판, 본관 중앙현관 위 벽
@@ -7833,6 +7898,37 @@ const World = (() => {
     m.mirrored = true;
   }
 
+  // ---------- 비밀 공간: 개발자 허남웅의 방 (조례대 아래) ----------
+  function buildDev() {
+    const m = newMap('dev', '개발자 허남웅의 방', 18, 12, TILE.WALL, 'indoor');
+    room(m, 0, 0, 18, 12, TILE.WOOD);
+    rect(m, 6, 5, 7, 4, TILE.CARPET);
+    set(m, 9, 11, TILE.UP);   // 사다리 (나가는 곳)
+    label(m, 9.5, 10.6, '↑ 조례대로');
+    obj(m, 'emblemwall', 8, 0.2, { solid: false });
+    obj(m, 'devdesk', 2, 1.4, { hitH: 10 });
+    obj(m, 'devdesk', 12, 1.4, { hitH: 10 });
+    obj(m, 'poster', 5, 0.2, { solid: false, interact: { type: 'sign', id: 'devposter' } });
+    obj(m, 'board', 10, 0.2, { solid: false, interact: { type: 'sign', id: 'devboard' } });
+    obj(m, 'poster', 15, 0.2, { solid: false, interact: { type: 'sign', id: 'devmap' } });
+    for (const y of [4, 5, 6, 7]) obj(m, 'shelf', 1, y);
+    obj(m, 'note', 1.2, 8.4, { solid: false, interact: { type: 'sign', id: 'devlog' } });
+    obj(m, 'arcade', 16, 3.6, { hitH: 10, interact: { type: 'sign', id: 'devarcade' } });
+    obj(m, 'table', 8.5, 6, { hitH: 8 });
+    obj(m, 'bench', 7, 8.4); obj(m, 'bench', 10, 8.4);
+    obj(m, 'box', 15, 8); obj(m, 'box', 16, 8); obj(m, 'box', 16, 7.2);
+    obj(m, 'plant', 1, 10); obj(m, 'plant', 16, 10);
+    obj(m, 'mic', 13, 6, { hitH: 6 });
+    // 만들다 만 로봇 교장선생님 시제품들
+    for (const [x, y] of [[14.6, 4.2], [12.4, 8.6]]) {
+      const img = Sprites.makeRobot(false);
+      m.objects.push({ id: 'o' + (objSeq++), kind: 'robotproto', img, x: x * T, y: y * T, w: img.width, h: img.height, solid: true, interact: { type: 'sign', id: 'devrobot' }, hidden: false, hit: { x: x * T + 2, y: y * T + 10, w: 12, h: 6 } });
+    }
+    friend(m, 'f33', 'dev', 9, 3.4, 'down');
+    m.start = [9, 10];
+    return m;
+  }
+
   function build() {
     objSeq = 1; parkN = 0; OUT = outdoorDoors(); IN = {};
     const inner = [buildB(), buildF1(), buildF2(), buildF3(), buildF4(), buildBack(1), buildBack(2), buildBack(3), buildBack(4)];
@@ -7842,6 +7938,10 @@ const World = (() => {
     const [PL, PT] = padOutdoor(maps);
     // 강당과 연결동 사이 좁은 골목은 출입 금지: 입구를 철문으로 막는다 (패딩 뒤라 울타리→생울타리 변환을 피한다)
     for (const x of [16, 17]) set(maps.outdoor, x + PL, 28 + PT, TILE.FENCE);
+    // 비밀 방: 사다리로 올라가면 조례대 앞 뚜껑 자리로
+    maps.dev = buildDev();
+    warp(maps.dev, 9, 11, 'outdoor', 30 + PL + 0.5, 34.4 + PT, 'down');
+    maps.outdoor.secretHatch = { x: 30 + PL, y: 33 + PT, podium: [29 + PL + 1, 31 + PT + 1] };
     for (const m of inner) mirror(m);
     // 뒤집힌 지도로 들어가는 문은 도착 지점도 뒤집는다
     for (const id in maps) for (const w of maps[id].warps) {
@@ -8326,7 +8426,7 @@ const Game = (() => {
     return list;
   }
 
-  const AMB_QUOTA = { outdoor: 6, b0: 2 };   // 나머지 층은 4명씩 → 6 + 2 + 4×8 = 40명
+  const AMB_QUOTA = { outdoor: 6, b0: 2, dev: 0 };   // 나머지 층은 4명씩 → 6 + 2 + 4×8 = 40명
 
   // 단서·미션 NPC 바로 옆에는 분위기 NPC를 두지 않는다
   function nearSpecial(m, list, x, y) {
@@ -8473,6 +8573,7 @@ const Game = (() => {
     if (!frozen && consume('space')) {
       if (player.z <= 0) {
         player.vz = JUMP_V; player.z = 0.01; player.spinUsed = false; Sound.sfx('jump');
+        if (hooks.jumped) hooks.jumped(map.id, player.x / T, player.y / T);
       } else if (!player.spinUsed) {
         player.spinUsed = true; player.spin = SPIN_TIME; player.vz = Math.max(player.vz, 80); Sound.sfx('spin');
       }
@@ -9234,7 +9335,7 @@ const Game = (() => {
       }
       return (spots[id] = out);
     };
-    const indoor = Util.shuffle(Object.keys(maps).filter(id => id !== 'outdoor'), rand);
+    const indoor = Util.shuffle(Object.keys(maps).filter(id => id !== 'outdoor' && id !== 'dev'), rand);   // 비밀 방에는 꽃을 두지 않는다
     const targets = ['outdoor', 'outdoor', 'outdoor'];
     for (let i = 0; targets.length < stars.length; i++) targets.push(indoor[i % indoor.length]);
     const placed = {};
@@ -11291,7 +11392,43 @@ const App = (() => {
       if (it.type === 'star') o.hidden = has(st.stars, it.i);
       if (it.type === 'note') o.hidden = has(st.notes, it.i);
     }
+    if (st.secretOpen) openSecret(false);
     refreshLocks();
+  }
+
+  // ---------- 비밀 공간: 조례대 앞에서 세 번 뛰면 뚜껑이 열린다 ----------
+  let secretJumps = [];
+  function onJumped(mapId, x, y) {
+    if (!session || !st || st.secretOpen || mapId !== 'outdoor') return;
+    const hs = Game.maps.outdoor.secretHatch;
+    if (!hs || Math.hypot(x - hs.podium[0], y - hs.podium[1]) > 4) { secretJumps = []; return; }
+    const now = performance.now();
+    secretJumps = secretJumps.filter(t => now - t < 5000);
+    secretJumps.push(now);
+    if (secretJumps.length >= 3) { secretJumps = []; openSecret(true); }
+  }
+  function openSecret(announce) {
+    const m = Game.maps.outdoor, hs = m.secretHatch;
+    if (!hs) return;
+    st.secretOpen = true;
+    for (const o of m.objects) if (o.secret) o.hidden = false;
+    if (!m.warps.some(w => w.to === 'dev')) m.warps.push({ x: hs.x, y: hs.y, to: 'dev', ax: 9.5, ay: 10.2, dir: 'up', lock: null });
+    if (announce) {
+      Sound.sfx('clear');
+      Game.celebrate && Game.celebrate();
+      UI.toast('덜컹! 조례대 앞 땅에 비밀 뚜껑이 열렸어요…');
+      save();
+    }
+  }
+  function enteredSecret() {
+    if (!st || st.secretFound) return;
+    st.secretFound = true;
+    save();
+    Sound.sfx('clear');
+    UI.dialog([
+      line('안내', '🔑 비밀 공간 발견! 이곳은 이 게임을 만든 개발자 허남웅 선생님의 방이에요.'),
+      line('안내', '방 안의 포스터·화이트보드·오락기를 살펴보고, 허남웅 선생님께 말을 걸어 보세요. 비밀 방에 있는 동안에도 시간은 흘러요!')
+    ]);
   }
   function unlocked(key) { return session.player.mode === 'free' || has(st.items, key); }
   function refreshLocks() {
@@ -11576,6 +11713,10 @@ const App = (() => {
       save(); updateHud();
       return;
     }
+    if (it.type === 'secret') {
+      UI.dialog([line('안내', '뚜껑 아래로 사다리가 이어져 있어요. 뚜껑 위로 걸어가면 내려갈 수 있어요.')]);
+      return;
+    }
     if (it.type === 'sign') {
       const sg = content.signs[it.id];
       if (sg) UI.sign(sg.title, sg.text, it.id === 'symbol' ? Sprites.EMBLEM.src : null);
@@ -11633,6 +11774,7 @@ const App = (() => {
     res.rewards = [];
     if (playerTitle()) res.rewards.push(`칭호 [${playerTitle()}]`);
     if (badges.star) res.rewards.push(`🌼 ${content.collect.badge}`);
+    if (st.secretFound) res.rewards.push('🔑 비밀 방 발견');
     res.rewards.push(`도감 ${dex.size}/${dexTotal()}`);
     res.rewards.push(`${content.collect.name} ${st.stars.length}/${content.collect.total}`);
     const endLines = content.ending.map(l => ({ who: l.who, text: fill(l.text),
@@ -11885,7 +12027,8 @@ const App = (() => {
         saveTimer += dt;
         if (saveTimer > 4) { saveTimer = 0; save(); }
       },
-      mapChanged: () => { updateHud(); save(); },
+      mapChanged: () => { updateHud(); save(); if (Game.map && Game.map.id === 'dev') enteredSecret(); },
+      jumped: onJumped,
       targetChanged: t => UI.setTalkButton(t ? (t.type === 'npc' ? '대화' : '살펴보기') : null),
       minimapTargets,
       guide: guideTarget,

@@ -282,7 +282,43 @@ const App = (() => {
       if (it.type === 'star') o.hidden = has(st.stars, it.i);
       if (it.type === 'note') o.hidden = has(st.notes, it.i);
     }
+    if (st.secretOpen) openSecret(false);
     refreshLocks();
+  }
+
+  // ---------- 비밀 공간: 조례대 앞에서 세 번 뛰면 뚜껑이 열린다 ----------
+  let secretJumps = [];
+  function onJumped(mapId, x, y) {
+    if (!session || !st || st.secretOpen || mapId !== 'outdoor') return;
+    const hs = Game.maps.outdoor.secretHatch;
+    if (!hs || Math.hypot(x - hs.podium[0], y - hs.podium[1]) > 4) { secretJumps = []; return; }
+    const now = performance.now();
+    secretJumps = secretJumps.filter(t => now - t < 5000);
+    secretJumps.push(now);
+    if (secretJumps.length >= 3) { secretJumps = []; openSecret(true); }
+  }
+  function openSecret(announce) {
+    const m = Game.maps.outdoor, hs = m.secretHatch;
+    if (!hs) return;
+    st.secretOpen = true;
+    for (const o of m.objects) if (o.secret) o.hidden = false;
+    if (!m.warps.some(w => w.to === 'dev')) m.warps.push({ x: hs.x, y: hs.y, to: 'dev', ax: 9.5, ay: 10.2, dir: 'up', lock: null });
+    if (announce) {
+      Sound.sfx('clear');
+      Game.celebrate && Game.celebrate();
+      UI.toast('덜컹! 조례대 앞 땅에 비밀 뚜껑이 열렸어요…');
+      save();
+    }
+  }
+  function enteredSecret() {
+    if (!st || st.secretFound) return;
+    st.secretFound = true;
+    save();
+    Sound.sfx('clear');
+    UI.dialog([
+      line('안내', '🔑 비밀 공간 발견! 이곳은 이 게임을 만든 개발자 허남웅 선생님의 방이에요.'),
+      line('안내', '방 안의 포스터·화이트보드·오락기를 살펴보고, 허남웅 선생님께 말을 걸어 보세요. 비밀 방에 있는 동안에도 시간은 흘러요!')
+    ]);
   }
   function unlocked(key) { return session.player.mode === 'free' || has(st.items, key); }
   function refreshLocks() {
@@ -567,6 +603,10 @@ const App = (() => {
       save(); updateHud();
       return;
     }
+    if (it.type === 'secret') {
+      UI.dialog([line('안내', '뚜껑 아래로 사다리가 이어져 있어요. 뚜껑 위로 걸어가면 내려갈 수 있어요.')]);
+      return;
+    }
     if (it.type === 'sign') {
       const sg = content.signs[it.id];
       if (sg) UI.sign(sg.title, sg.text, it.id === 'symbol' ? Sprites.EMBLEM.src : null);
@@ -624,6 +664,7 @@ const App = (() => {
     res.rewards = [];
     if (playerTitle()) res.rewards.push(`칭호 [${playerTitle()}]`);
     if (badges.star) res.rewards.push(`🌼 ${content.collect.badge}`);
+    if (st.secretFound) res.rewards.push('🔑 비밀 방 발견');
     res.rewards.push(`도감 ${dex.size}/${dexTotal()}`);
     res.rewards.push(`${content.collect.name} ${st.stars.length}/${content.collect.total}`);
     const endLines = content.ending.map(l => ({ who: l.who, text: fill(l.text),
@@ -876,7 +917,8 @@ const App = (() => {
         saveTimer += dt;
         if (saveTimer > 4) { saveTimer = 0; save(); }
       },
-      mapChanged: () => { updateHud(); save(); },
+      mapChanged: () => { updateHud(); save(); if (Game.map && Game.map.id === 'dev') enteredSecret(); },
+      jumped: onJumped,
       targetChanged: t => UI.setTalkButton(t ? (t.type === 'npc' ? '대화' : '살펴보기') : null),
       minimapTargets,
       guide: guideTarget,

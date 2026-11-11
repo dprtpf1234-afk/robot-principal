@@ -469,7 +469,7 @@ const Game = (() => {
     return list;
   }
 
-  const AMB_QUOTA = { outdoor: 6, b0: 2 };   // 나머지 층은 4명씩 → 6 + 2 + 4×8 = 40명
+  const AMB_QUOTA = { outdoor: 6, b0: 2, dev: 0 };   // 나머지 층은 4명씩 → 6 + 2 + 4×8 = 40명
 
   // 단서·미션 NPC 바로 옆에는 분위기 NPC를 두지 않는다
   function nearSpecial(m, list, x, y) {
@@ -616,6 +616,7 @@ const Game = (() => {
     if (!frozen && consume('space')) {
       if (player.z <= 0) {
         player.vz = JUMP_V; player.z = 0.01; player.spinUsed = false; Sound.sfx('jump');
+        if (hooks.jumped) hooks.jumped(map.id, player.x / T, player.y / T);
       } else if (!player.spinUsed) {
         player.spinUsed = true; player.spin = SPIN_TIME; player.vz = Math.max(player.vz, 80); Sound.sfx('spin');
       }
@@ -1377,7 +1378,7 @@ const Game = (() => {
       }
       return (spots[id] = out);
     };
-    const indoor = Util.shuffle(Object.keys(maps).filter(id => id !== 'outdoor'), rand);
+    const indoor = Util.shuffle(Object.keys(maps).filter(id => id !== 'outdoor' && id !== 'dev'), rand);   // 비밀 방에는 꽃을 두지 않는다
     const targets = ['outdoor', 'outdoor', 'outdoor'];
     for (let i = 0; targets.length < stars.length; i++) targets.push(indoor[i % indoor.length]);
     const placed = {};

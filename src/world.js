@@ -651,6 +651,8 @@ const World = (() => {
     obj(m, 'flag', 27, 27, { hitH: 6, hitX: 4, hitW: 8, dy: -16, interact: { type: 'clue', m: 6, i: 3, name: '국기 게양대' } });
     obj(m, 'mottorock', 53.5, 21.5, { hitH: 10, hitX: 4, hitW: 48, interact: { type: 'sign', id: 'motto' } });
     obj(m, 'podium', 29, 31, { hitH: 10, interact: { type: 'clue', m: 6, i: 2, name: '조례대' } });
+    // 비밀: 조례대 앞에서 세 번 뛰면 열리는 뚜껑 (처음에는 숨어 있다)
+    { const h = obj(m, 'hatch', 30, 33.2, { solid: false, interact: { type: 'secret' } }); h.hidden = true; h.secret = true; }
     obj(m, 'zelkova', 50, 20, { hitX: 18, hitW: 12, hitH: 6 });
     sign(m, 52, 24, 'symbol'); sign(m, 3, 30, 'gate'); sign(m, 27, 31, 'field');
     // 교표: 교목·교화 안내판 옆 안내판, 본관 중앙현관 위 벽
@@ -871,6 +873,37 @@ const World = (() => {
     m.mirrored = true;
   }
 
+  // ---------- 비밀 공간: 개발자 허남웅의 방 (조례대 아래) ----------
+  function buildDev() {
+    const m = newMap('dev', '개발자 허남웅의 방', 18, 12, TILE.WALL, 'indoor');
+    room(m, 0, 0, 18, 12, TILE.WOOD);
+    rect(m, 6, 5, 7, 4, TILE.CARPET);
+    set(m, 9, 11, TILE.UP);   // 사다리 (나가는 곳)
+    label(m, 9.5, 10.6, '↑ 조례대로');
+    obj(m, 'emblemwall', 8, 0.2, { solid: false });
+    obj(m, 'devdesk', 2, 1.4, { hitH: 10 });
+    obj(m, 'devdesk', 12, 1.4, { hitH: 10 });
+    obj(m, 'poster', 5, 0.2, { solid: false, interact: { type: 'sign', id: 'devposter' } });
+    obj(m, 'board', 10, 0.2, { solid: false, interact: { type: 'sign', id: 'devboard' } });
+    obj(m, 'poster', 15, 0.2, { solid: false, interact: { type: 'sign', id: 'devmap' } });
+    for (const y of [4, 5, 6, 7]) obj(m, 'shelf', 1, y);
+    obj(m, 'note', 1.2, 8.4, { solid: false, interact: { type: 'sign', id: 'devlog' } });
+    obj(m, 'arcade', 16, 3.6, { hitH: 10, interact: { type: 'sign', id: 'devarcade' } });
+    obj(m, 'table', 8.5, 6, { hitH: 8 });
+    obj(m, 'bench', 7, 8.4); obj(m, 'bench', 10, 8.4);
+    obj(m, 'box', 15, 8); obj(m, 'box', 16, 8); obj(m, 'box', 16, 7.2);
+    obj(m, 'plant', 1, 10); obj(m, 'plant', 16, 10);
+    obj(m, 'mic', 13, 6, { hitH: 6 });
+    // 만들다 만 로봇 교장선생님 시제품들
+    for (const [x, y] of [[14.6, 4.2], [12.4, 8.6]]) {
+      const img = Sprites.makeRobot(false);
+      m.objects.push({ id: 'o' + (objSeq++), kind: 'robotproto', img, x: x * T, y: y * T, w: img.width, h: img.height, solid: true, interact: { type: 'sign', id: 'devrobot' }, hidden: false, hit: { x: x * T + 2, y: y * T + 10, w: 12, h: 6 } });
+    }
+    friend(m, 'f33', 'dev', 9, 3.4, 'down');
+    m.start = [9, 10];
+    return m;
+  }
+
   function build() {
     objSeq = 1; parkN = 0; OUT = outdoorDoors(); IN = {};
     const inner = [buildB(), buildF1(), buildF2(), buildF3(), buildF4(), buildBack(1), buildBack(2), buildBack(3), buildBack(4)];
@@ -880,6 +913,10 @@ const World = (() => {
     const [PL, PT] = padOutdoor(maps);
     // 강당과 연결동 사이 좁은 골목은 출입 금지: 입구를 철문으로 막는다 (패딩 뒤라 울타리→생울타리 변환을 피한다)
     for (const x of [16, 17]) set(maps.outdoor, x + PL, 28 + PT, TILE.FENCE);
+    // 비밀 방: 사다리로 올라가면 조례대 앞 뚜껑 자리로
+    maps.dev = buildDev();
+    warp(maps.dev, 9, 11, 'outdoor', 30 + PL + 0.5, 34.4 + PT, 'down');
+    maps.outdoor.secretHatch = { x: 30 + PL, y: 33 + PT, podium: [29 + PL + 1, 31 + PT + 1] };
     for (const m of inner) mirror(m);
     // 뒤집힌 지도로 들어가는 문은 도착 지점도 뒤집는다
     for (const id in maps) for (const w of maps[id].warps) {

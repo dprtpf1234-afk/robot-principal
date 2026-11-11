@@ -7,7 +7,7 @@ from collections import deque
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path('/home/claude/robot-principal')
 OUT = ROOT / "tests" / "shots"
 OUT.mkdir(exist_ok=True)
 device = sys.argv[1] if len(sys.argv) > 1 else "desktop"
