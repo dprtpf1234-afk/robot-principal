@@ -579,7 +579,7 @@ table.rec th { background: #f3ead6; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (학년군별)</button>
       </div></div>
-      <div id="adminLink">v3.12</div>
+      <div id="adminLink">v3.13</div>
     </form>
   </div>
 </div>
@@ -11460,7 +11460,7 @@ const App = (() => {
   }
 
   // ---------- 비밀 공간: 조례대 앞에서 세 번 뛰면 뚜껑이 열린다 ----------
-  let secretJumps = [], secretArmedAt = 0;
+  let secretJumps = [];
   function onJumped(mapId, x, y) {
     if (!session || !st || st.secretOpen || mapId !== 'outdoor') return;
     const hs = Game.maps.outdoor.secretHatch;
@@ -11469,7 +11469,7 @@ const App = (() => {
     const now = performance.now(), last = secretJumps[secretJumps.length - 1];
     if (last && (now - last.t > 1200 || Math.hypot(x - last.x, y - last.y) > 1)) secretJumps = [];
     secretJumps.push({ t: now, x, y });
-    if (secretJumps.length >= 3) { secretJumps = []; secretArmedAt = now; }   // 이제 조례대를 살펴보면 열린다
+    if (secretJumps.length >= 3) { secretJumps = []; openSecret(true); }
   }
   function openSecret(announce) {
     const m = Game.maps.outdoor, hs = m.secretHatch;
@@ -11734,10 +11734,6 @@ const App = (() => {
   function inspect(o) {
     const it = o.interact;
     const g = G();
-    // 비밀: 조례대 앞에서 연속 3번 점프한 뒤 10초 안에 조례대를 살펴보면 뚜껑이 열린다
-    if (o.kind === 'podium' && st && !st.secretOpen && secretArmedAt && performance.now() - secretArmedAt < 10000) {
-      secretArmedAt = 0; openSecret(true); return;
-    }
     if (it.type === 'clue') {
       const m = content.missions[it.m - 1];
       const list = m.clues[g] || [];
