@@ -631,7 +631,8 @@ const Game = (() => {
     // 문·계단
     if (!fadeDir && player.z === 0) {
       const tx = Math.floor(player.x / T), ty = Math.floor((player.y - 2) / T);
-      const w = map.warps.find(q => q.x === tx && q.y === ty);
+      for (const q of map.warps) if (q.wait && !(q.x === tx && q.y === ty)) q.wait = false;   // 막 열린 뚜껑: 한 번 벗어났다 밟아야 내려간다
+      const w = map.warps.find(q => q.x === tx && q.y === ty && !q.wait);
       if (w) {
         const msg = w.lock && hooks.lockedWarp ? hooks.lockedWarp(w) : null;
         if (msg) {

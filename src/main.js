@@ -288,7 +288,7 @@ const App = (() => {
   }
 
   // ---------- 비밀 공간: 조례대 앞에서 세 번 뛰면 뚜껑이 열린다 ----------
-  let secretJumps = [];
+  let secretJumps = [], secretArmedAt = 0;
   function onJumped(mapId, x, y) {
     if (!session || !st || st.secretOpen || mapId !== 'outdoor') return;
     const hs = Game.maps.outdoor.secretHatch;
@@ -297,14 +297,14 @@ const App = (() => {
     const now = performance.now(), last = secretJumps[secretJumps.length - 1];
     if (last && (now - last.t > 1200 || Math.hypot(x - last.x, y - last.y) > 1)) secretJumps = [];
     secretJumps.push({ t: now, x, y });
-    if (secretJumps.length >= 3) { secretJumps = []; openSecret(true); }
+    if (secretJumps.length >= 3) { secretJumps = []; secretArmedAt = now; }   // 이제 조례대를 살펴보면 열린다
   }
   function openSecret(announce) {
     const m = Game.maps.outdoor, hs = m.secretHatch;
     if (!hs) return;
     st.secretOpen = true;
     for (const o of m.objects) if (o.secret) o.hidden = false;
-    if (!m.warps.some(w => w.to === 'dev')) m.warps.push({ x: hs.x, y: hs.y, to: 'dev', ax: 9.5, ay: 10.2, dir: 'up', lock: null });
+    if (!m.warps.some(w => w.to === 'dev')) m.warps.push({ x: hs.x, y: hs.y, to: 'dev', ax: 9.5, ay: 10.2, dir: 'up', lock: null, wait: !!announce });
     if (announce) {
       Sound.sfx('clear');
       Game.celebrate && Game.celebrate();
@@ -562,6 +562,10 @@ const App = (() => {
   function inspect(o) {
     const it = o.interact;
     const g = G();
+    // 비밀: 조례대 앞에서 연속 3번 점프한 뒤 10초 안에 조례대를 살펴보면 뚜껑이 열린다
+    if (o.kind === 'podium' && st && !st.secretOpen && secretArmedAt && performance.now() - secretArmedAt < 10000) {
+      secretArmedAt = 0; openSecret(true); return;
+    }
     if (it.type === 'clue') {
       const m = content.missions[it.m - 1];
       const list = m.clues[g] || [];
