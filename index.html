@@ -526,6 +526,11 @@ table.rec th { background: #f3ead6; }
   .explain { font-size: 13px; padding: 4px 8px; }
   .credit { font-size: 10px; }
 }
+.sound-hint { position: absolute; right: max(12px, env(safe-area-inset-right)); top: 66px; z-index: 5; pointer-events: none;
+  background: rgba(30,24,40,0.92); color: #fff; font-weight: 700; font-size: 14px; padding: 7px 14px; border-radius: 999px; border: 2px solid #ffd84a;
+  animation: hintPulse 1.6s ease-in-out infinite; white-space: nowrap; }
+@keyframes hintPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.8; } }
+@media (max-height: 460px) { .sound-hint { font-size: 12px; padding: 5px 10px; top: 52px; } }
 </style>
 </head>
 <body>
@@ -543,6 +548,7 @@ table.rec th { background: #f3ead6; }
     <div class="t-sub">에피소드 1 · 고장 난 로봇 교장선생님을 깨워라</div>
   </div>
   <div class="credit" id="credit"></div>
+  <div class="sound-hint hidden" id="soundHint">🔊 화면을 누르면 음악이 나와요</div>
   <div class="visit-box" id="visitBox"><div>오늘 접속 <b id="visToday">0</b>명</div><div>누적 접속 <b id="visTotal">0</b>명</div></div>
   <div class="title-bottom">
     <button class="t-start" id="btnStart" type="button">시작하기</button>
@@ -579,7 +585,7 @@ table.rec th { background: #f3ead6; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (학년군별)</button>
       </div></div>
-      <div id="adminLink">v3.14</div>
+      <div id="adminLink">v3.15</div>
     </form>
   </div>
 </div>
@@ -5577,7 +5583,7 @@ const Sound = (() => {
     if (master) master.gain.value = m ? 0 : 0.5;
   }
 
-  return { init, playMusic, stopMusic, sfx, setMuted, isMuted: () => muted, current: () => track };
+  return { init, running: () => !!ctx && ctx.state === 'running', onRunning: fn => { if (ctx) ctx.addEventListener('statechange', () => { if (ctx.state === 'running') fn(); }); }, playMusic, stopMusic, sfx, setMuted, isMuted: () => muted, current: () => track };
 })();
 
 // ===== sprites.js =====
@@ -12147,11 +12153,21 @@ const App = (() => {
     UI.setSoundButton(Sound.isMuted());
     $('btnSound').addEventListener('click', () => { Sound.init(); Sound.setMuted(!Sound.isMuted()); UI.setSoundButton(Sound.isMuted()); });
     $('btnSoundTitle').addEventListener('click', () => { Sound.setMuted(!Sound.isMuted()); titleMusic(); UI.setSoundButton(Sound.isMuted()); });
-    // 브라우저는 사용자가 화면을 한 번 누르기 전에는 소리를 막는다. 첫 클릭·키·터치 때 첫 화면 음악을 켠다.
-    const unlock = () => { titleMusic(); window.removeEventListener('pointerdown', unlock, true); window.removeEventListener('keydown', unlock, true); window.removeEventListener('touchstart', unlock, true); };
-    window.addEventListener('pointerdown', unlock, true);
-    window.addEventListener('keydown', unlock, true);
-    window.addEventListener('touchstart', unlock, true);
+    // 브라우저(크롬·엣지·사파리)는 사용자가 화면을 한 번 누르거나 키를 누르기 전에는 웹페이지 소리를 막는다.
+    // 첫 화면이 뜨자마자 음악을 켜 보고(허용된 브라우저면 바로 나온다), 막혔으면 첫 클릭·키·터치 때 바로 켠다.
+    const UNLOCK_EVENTS = ['pointerdown', 'mousedown', 'click', 'keydown', 'touchstart', 'touchend'];
+    const soundOn = () => {
+      $('soundHint').classList.add('hidden');
+      UNLOCK_EVENTS.forEach(ev => window.removeEventListener(ev, unlock, true));
+    };
+    const unlock = () => { Sound.init(); titleMusic(); if (Sound.running()) soundOn(); };
+    UNLOCK_EVENTS.forEach(ev => window.addEventListener(ev, unlock, true));
+    Sound.init();
+    Sound.onRunning(soundOn);
+    setTimeout(() => {   // 막혀 있으면 첫 화면에 '한 번 누르면 음악이 나와요' 안내
+      if (!Sound.running() && !Sound.isMuted() && !$('title').classList.contains('hidden')) $('soundHint').classList.remove('hidden');
+      else if (Sound.running()) soundOn();
+    }, 600);
     $('btnFullGame').addEventListener('click', toggleFullscreen);
     $('btnHome').addEventListener('click', () => {
       if (UI.modalOpen()) return;

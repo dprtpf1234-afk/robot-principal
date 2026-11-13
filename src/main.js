@@ -968,11 +968,21 @@ const App = (() => {
     UI.setSoundButton(Sound.isMuted());
     $('btnSound').addEventListener('click', () => { Sound.init(); Sound.setMuted(!Sound.isMuted()); UI.setSoundButton(Sound.isMuted()); });
     $('btnSoundTitle').addEventListener('click', () => { Sound.setMuted(!Sound.isMuted()); titleMusic(); UI.setSoundButton(Sound.isMuted()); });
-    // 브라우저는 사용자가 화면을 한 번 누르기 전에는 소리를 막는다. 첫 클릭·키·터치 때 첫 화면 음악을 켠다.
-    const unlock = () => { titleMusic(); window.removeEventListener('pointerdown', unlock, true); window.removeEventListener('keydown', unlock, true); window.removeEventListener('touchstart', unlock, true); };
-    window.addEventListener('pointerdown', unlock, true);
-    window.addEventListener('keydown', unlock, true);
-    window.addEventListener('touchstart', unlock, true);
+    // 브라우저(크롬·엣지·사파리)는 사용자가 화면을 한 번 누르거나 키를 누르기 전에는 웹페이지 소리를 막는다.
+    // 첫 화면이 뜨자마자 음악을 켜 보고(허용된 브라우저면 바로 나온다), 막혔으면 첫 클릭·키·터치 때 바로 켠다.
+    const UNLOCK_EVENTS = ['pointerdown', 'mousedown', 'click', 'keydown', 'touchstart', 'touchend'];
+    const soundOn = () => {
+      $('soundHint').classList.add('hidden');
+      UNLOCK_EVENTS.forEach(ev => window.removeEventListener(ev, unlock, true));
+    };
+    const unlock = () => { Sound.init(); titleMusic(); if (Sound.running()) soundOn(); };
+    UNLOCK_EVENTS.forEach(ev => window.addEventListener(ev, unlock, true));
+    Sound.init();
+    Sound.onRunning(soundOn);
+    setTimeout(() => {   // 막혀 있으면 첫 화면에 '한 번 누르면 음악이 나와요' 안내
+      if (!Sound.running() && !Sound.isMuted() && !$('title').classList.contains('hidden')) $('soundHint').classList.remove('hidden');
+      else if (Sound.running()) soundOn();
+    }, 600);
     $('btnFullGame').addEventListener('click', toggleFullscreen);
     $('btnHome').addEventListener('click', () => {
       if (UI.modalOpen()) return;
