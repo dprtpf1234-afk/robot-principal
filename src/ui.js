@@ -298,13 +298,14 @@ const UI = (() => {
 
   // ---------- 도감 ----------
   function dex(entries, known, total) {
+    const E = Util.esc;
     const n = entries.filter(e => known.has(e.id)).length;
-    const html = `<div class="dex-head"><h2>학교 도감 ${n}/${total}</h2><div class="dex-bar"><span style="width:${Math.round(n / total * 100)}%"></span></div></div>
-      <p class="muted small" style="margin:0 0 8px">학교에서 만난 사람과 이야기하면 도감에 등록돼요. 말풍선이 떠 있는 친구는 아직 못 만난 친구예요.</p>
+    const DEF = '카드를 누르면 소개가 나와요. 학교에서 만나 이야기하면 도감에 등록돼요.';
+    const html = `<div class="dex-head"><h2>학교 도감 ${n}/${total}</h2><div class="dex-bar"><span style="width:${Math.round(n / total * 100)}%"></span></div><button class="primary dex-close" id="dexClose">닫기</button></div>
+      <div class="dex-detail" id="dexDetail">${DEF}</div>
       <div class="dex-grid">${entries.map((e, i) => known.has(e.id)
-        ? `<div class="dex-card"><canvas data-i="${i}" width="16" height="16"></canvas><div><div class="nm">${Util.esc(e.name)}</div><div class="pl">${Util.esc(e.place)}</div></div><div class="pf">${Util.esc(e.profile || '')}</div></div>`
-        : `<div class="dex-card unknown"><canvas data-i="${i}" data-dark="1" width="16" height="16"></canvas><div><div class="nm">???</div><div class="pl">${Util.esc(e.place)} 어딘가</div></div><div class="pf">아직 만나지 못했어요.</div></div>`).join('')}</div>
-      <div class="row end"><button class="primary" id="dexClose">닫기</button></div>`;
+        ? `<button type="button" class="dex-card" data-i="${i}"><canvas data-i="${i}" width="16" height="16"></canvas><div><div class="nm">${E(e.name)}</div><div class="pl">${E(e.place)}</div></div></button>`
+        : `<button type="button" class="dex-card unknown" data-i="${i}"><canvas data-i="${i}" data-dark="1" width="16" height="16"></canvas><div><div class="nm">???</div><div class="pl">${E(e.place)}</div></div></button>`).join('')}</div>`;
     const body = openPanel(html, 'dexp');
     body.querySelectorAll('canvas').forEach(c => {
       const e = entries[Number(c.dataset.i)];
@@ -315,6 +316,18 @@ const UI = (() => {
       g.drawImage(img, 0, 0);
       if (c.dataset.dark) { g.globalCompositeOperation = 'source-in'; g.fillStyle = '#6b5f4a'; g.fillRect(0, 0, 16, 16); }
     });
+    // 카드를 누르거나(마우스는 올리기만 해도) 위쪽 칸에 이름·장소·소개가 나온다
+    const show = btn => {
+      const e = entries[Number(btn.dataset.i)];
+      body.querySelectorAll('.dex-card.sel').forEach(b => b.classList.remove('sel'));
+      btn.classList.add('sel');
+      $('dexDetail').innerHTML = known.has(e.id)
+        ? `<b>${E(e.name)}</b><span class="pl">📍 ${E(e.place)}</span><br>${E(e.profile || '')}`
+        : `<b>???</b><span class="pl">📍 ${E(e.place)} 어딘가</span><br>아직 만나지 못했어요. 말풍선이 떠 있는 사람을 찾아 이야기해 보세요.`;
+    };
+    const grid = body.querySelector('.dex-grid');
+    grid.addEventListener('click', e => { const b = e.target.closest('.dex-card'); if (b) { show(b); b.blur(); } });   // 누른 뒤에도 스페이스·엔터로 닫히게
+    grid.addEventListener('mouseover', e => { const b = e.target.closest('.dex-card'); if (b && matchMedia('(hover: hover)').matches) show(b); });
     $('dexClose').addEventListener('click', closePanel);
   }
 
@@ -322,21 +335,21 @@ const UI = (() => {
   function notebook(nb) {
     const E = Util.esc;
     const sec = (title, items, empty) =>
-      `<h3>${title}</h3>` + (items.length ? '<ul>' + items.map(i => `<li>${i}</li>`).join('') + '</ul>' : `<p class="muted">${empty}</p>`);
-    const html = `<h2>탐험 수첩</h2>
-      <div class="nb-top"><span class="nb-chip">💡 힌트 토큰 <b>${nb.tokens}</b>개</span><span class="nb-chip">🌼 ${E(nb.collectName)} <b>${nb.stars}</b>/${nb.starTotal}</span>${nb.penalty ? `<span class="nb-chip bad">벌점 +${Math.round(nb.penalty / 60000)}분</span>` : ''}</div>
-      ${sec('모은 부품 (' + nb.parts.length + '/' + nb.total + ')', nb.parts.map(p => E(p)), '아직 모은 부품이 없어요.')}
+      `<div class="nb-sec"><h3>${title}</h3>` + (items.length ? '<ul>' + items.map(i => `<li>${i}</li>`).join('') + '</ul>' : `<p class="muted">${empty}</p>`) + '</div>';
+    const html = `<div class="nb-top"><h2>탐험 수첩</h2><span class="nb-chip">💡 힌트 토큰 <b>${nb.tokens}</b>개</span><span class="nb-chip">🌼 ${E(nb.collectName)} <b>${nb.stars}</b>/${nb.starTotal}</span>${nb.penalty ? `<span class="nb-chip bad">벌점 +${Math.round(nb.penalty / 60000)}분</span>` : ''}<button class="primary nb-close" id="nbClose">닫기</button></div>
+      <div class="nb-grid">
+      <div class="nb-sec"><h3>모은 부품 (${nb.parts.length}/${nb.total})</h3>${nb.parts.length ? '<div class="nb-parts">' + nb.parts.map(p => `<span class="nb-chip">${E(p)}</span>`).join('') + '</div>' : '<p class="muted">아직 모은 부품이 없어요.</p>'}</div>
       ${sec('가방', nb.items.map(it => `<b>${E(it.name)}</b> · ${E(it.desc)}`), '아직 가방이 비어 있어요.')}
       ${sec('찾은 단서·쪽지', nb.clues.map(c => E(c)), '아직 찾은 단서가 없어요.')}
       ${sec('받은 힌트', nb.hints.map(h => `<b>${E(h.title)}</b> · ${E(h.text)}`), '서브 미션을 깨거나 💡 힌트를 쓰면 여기에 적혀요.')}
-      <div class="row end"><button class="primary" id="nbClose">닫기</button></div>`;
+      </div>`;
     openPanel(html, 'notebook');
     $('nbClose').addEventListener('click', closePanel);
   }
 
   // ---------- i 팻말 ----------
   function sign(title, text, img) {
-    openPanel(`<div class="sign-head"><span class="sign-i">i</span><h2>${Util.esc(title)}</h2></div>${img ? `<img class="sign-img" src="${img}" alt="">` : ''}<div class="sign-text">${Util.esc(text)}</div><div class="row end"><button class="primary" id="sgClose">닫기</button></div>`, 'signp');
+    openPanel(`<div class="sign-head"><span class="sign-i">i</span><h2>${Util.esc(title)}</h2><button class="primary sg-close" id="sgClose">닫기</button></div>${img ? `<img class="sign-img" src="${img}" alt="">` : ''}<div class="sign-text">${Util.esc(text)}</div>`, 'signp');
     $('sgClose').addEventListener('click', closePanel);
   }
 
@@ -365,19 +378,16 @@ const UI = (() => {
     const render = async () => {
       const rows = await Store.getRanking(f.g, 30, { mode: f.mode });
       const what = '모든 미션을 깨는 데 걸린 시간 (학생별 최고 기록)';
+      const table = list => '<table class="rank"><thead><tr><th>순위</th><th>이름</th><th>모드</th><th>기록</th></tr></thead><tbody>' +
+          list.map(r => `<tr class="${r.rank <= 3 ? 'top' + r.rank : ''}"><td>${r.rank <= 3 ? ['🥇', '🥈', '🥉'][r.rank - 1] : r.rank}</td><td>${Util.esc(r.label)}</td><td class="mode">${r.mode === 'm10' ? '10분' : '30분'}</td><td>${Util.formatTime(r.bestMs)}</td></tr>`).join('') +
+          '</tbody></table>';
       const body = rows.length
-        ? '<table class="rank"><thead><tr><th>순위</th><th>이름</th><th>모드</th><th>기록</th></tr></thead><tbody>' +
-          rows.map(r => `<tr class="${r.rank <= 3 ? 'top' + r.rank : ''}"><td>${r.rank <= 3 ? ['🥇', '🥈', '🥉'][r.rank - 1] : r.rank}</td><td>${Util.esc(r.label)}</td><td class="mode">${r.mode === 'm10' ? '10분' : '30분'}</td><td>${Util.formatTime(r.bestMs)}</td></tr>`).join('') +
-          '</tbody></table>'
+        ? `<div class="rank-cols c${Math.ceil(rows.length / 10)}">${[0, 10, 20].filter(k => k < rows.length).map(k => table(rows.slice(k, k + 10))).join('')}</div>`
         : '<p class="muted center empty">아직 기록이 없어요. 첫 번째 주인공이 되어 보세요!</p>';
       const seg = (key, items) => `<div class="rk-seg" data-k="${key}">${items.map(([v, l]) => `<button data-v="${v}" class="${String(f[key]) === String(v) ? 'on' : ''}">${l}</button>`).join('')}</div>`;
-      const html = `<h2>명예의 전당</h2>
-        <div class="tabs rk-group">${[['g12', '1~2학년'], ['g34', '3~4학년'], ['g56', '5~6학년']].map(([v, l]) => `<button data-g="${v}" class="${f.g === v ? 'on' : ''}">${l}</button>`).join('')}</div>
-        <div class="rk-row"><span class="rk-lab">모드</span>${seg('mode', [['all', '전체'], ['m30', '30분 미션'], ['m10', '10분 미션']])}</div>
-        <p class="rk-what">${what}</p>
-        <div class="rank-wrap">${body}</div>
-        ${Store.mode === 'local' ? '<p class="muted small">시험 버전: 지금은 이 기기에서 한 기록만 보여요.</p>' : ''}
-        <div class="row end"><button class="primary" id="rkClose">닫기</button></div>`;
+      const html = `<div class="rk-head"><h2>명예의 전당</h2><div class="tabs rk-group">${[['g12', '1~2학년'], ['g34', '3~4학년'], ['g56', '5~6학년']].map(([v, l]) => `<button data-g="${v}" class="${f.g === v ? 'on' : ''}">${l}</button>`).join('')}</div><button class="primary rk-close" id="rkClose">닫기</button></div>
+        <div class="rk-row"><span class="rk-lab">모드</span>${seg('mode', [['all', '전체'], ['m30', '30분 미션'], ['m10', '10분 미션']])}<span class="rk-what">${what}${Store.mode === 'local' ? ' <span class="muted">· 시험 버전: 이 기기 기록만</span>' : ''}</span></div>
+        <div class="rank-wrap">${body}</div>`;
       openPanel(html, 'ranking');
       const body2 = $('modalBody');
       body2.querySelectorAll('.rk-group button').forEach(b => b.addEventListener('click', () => { f.g = b.dataset.g; render(); }));

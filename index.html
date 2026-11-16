@@ -167,17 +167,24 @@ table.rank td.mode { color: var(--muted); font-size: 13px; }
 .hud-btn.dex { background: #2f6ef0; color: #ffd84a; border-color: #1b2f6b; box-shadow: 0 3px 0 #1b2f6b; }
 .hud-btn { height: 34px; }
 /* 도감 */
-.panel.dexp { width: min(860px, 100%); }
-.dex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; max-height: 58vh; overflow: auto; padding: 2px; }
-.dex-card { background: #fff; border: 3px solid var(--line); border-radius: 10px; padding: 8px; display: grid; grid-template-columns: 44px 1fr; gap: 8px; align-items: start; }
+.panel.dexp { width: min(1100px, 100%); }
+.dex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 5px; padding: 2px; }
+.dex-card { background: #fff; border: 2px solid var(--line); border-radius: 8px; padding: 4px 6px; display: grid; grid-template-columns: 28px 1fr; gap: 6px; align-items: center; cursor: pointer; text-align: left; min-width: 0; }
+.dex-card:hover, .dex-card.sel { background: #fff3c4; border-color: #b88a00; }
 .dex-card.unknown { background: #ece4d2; border-color: #c9bb98; color: var(--muted); }
-.dex-card canvas { width: 44px; height: 44px; image-rendering: pixelated; background: #cfe8c4; border-radius: 6px; }
+.dex-card.unknown.sel, .dex-card.unknown:hover { background: #e3d8bf; }
+.dex-card canvas { width: 28px; height: 28px; image-rendering: pixelated; background: #cfe8c4; border-radius: 5px; }
 .dex-card.unknown canvas { background: #d8ccb0; }
-.dex-card .nm { font-weight: 900; font-size: 14px; line-height: 1.25; }
-.dex-card .pl { font-size: 11px; color: var(--accent); font-weight: 800; margin-top: 2px; }
+.dex-card > div { min-width: 0; }
+.dex-card .nm { font-weight: 900; font-size: 12.5px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dex-card .pl { font-size: 10.5px; color: var(--accent); font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dex-card.unknown .pl { color: var(--muted); }
-.dex-card .pf { grid-column: 1 / -1; font-size: 12px; line-height: 1.45; }
-.dex-head { display: flex; align-items: baseline; gap: 10px; }
+.dex-detail { min-height: 44px; margin: 6px 0 8px; background: #fff; border: 2px solid var(--line); border-radius: 8px; padding: 5px 10px; font-size: 13px; line-height: 1.45; font-weight: 600; }
+.dex-detail b { font-weight: 900; }
+.dex-detail .pl { color: var(--accent); font-weight: 800; font-size: 12px; margin-left: 6px; }
+.dex-close, .nb-close { margin-left: auto; flex: none; font-size: 14px; padding: 5px 14px; }
+.dex-head { display: flex; align-items: center; gap: 10px; }
+.dex-head h2 { margin: 0 !important; white-space: nowrap; }
 .dex-bar { flex: 1; height: 12px; border: 3px solid var(--line); border-radius: 6px; background: #fff; overflow: hidden; }
 .dex-bar span { display: block; height: 100%; background: #4caf63; }
 
@@ -219,11 +226,19 @@ table.rank td.mode { color: var(--muted); font-size: 13px; }
 .explain b { color: var(--accent); margin-right: 4px; }
 
 /* 수첩·팻말 */
-.nb-top { display: flex; gap: 6px; flex-wrap: wrap; }
+.nb-top { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.nb-top h2 { margin: 0 8px 0 0 !important; }
+.panel.notebook { width: min(940px, 100%); }
+.nb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 18px; margin-top: 6px; }
+.nb-sec h3 { margin: 6px 0 3px; font-size: 15px; }
+.nb-sec ul { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.45; }
+.nb-sec p { margin: 0; font-size: 13px; }
+@media (max-width: 560px) { .nb-grid { grid-template-columns: 1fr; } }
 .nb-chip { display: inline-block; background: #fff; border: 2px solid var(--line); border-radius: 999px; padding: 2px 10px; font-weight: 800; font-size: 13px; }
 .nb-chip.bad { color: var(--bad); }
 .sign-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .sign-head h2 { margin: 0; }
+.nb-parts { display: flex; flex-wrap: wrap; gap: 4px; }
 .sign-i { width: 30px; height: 30px; border-radius: 6px; background: #3c8de0; color: #fff; display: grid; place-items: center; font-weight: 900; font-family: Georgia, serif; font-size: 20px; border: 3px solid var(--line); }
 .sign-text { white-space: pre-line; background: #fff; border: 3px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 16px; line-height: 1.6; font-weight: 600; }
 .sign-img { display: block; width: 120px; height: auto; margin: 0 auto 10px; }
@@ -391,8 +406,22 @@ table.rank td.mode { color: var(--muted); font-size: 13px; }
 .rk-seg button.on { background: #4caf63; color: #fff; border-color: var(--line); }
 .rk-what { margin: 2px 0 8px; font-size: 13px; color: var(--accent); font-weight: 800; }
 .rank-wrap p.empty { padding: 18px 10px; margin: 0; }
-.panel.ranking { width: min(620px, 100%); }
-.rank-wrap { max-height: 46vh; overflow: auto; border: 3px solid var(--line); border-radius: 10px; background: #fff; }
+.panel.ranking { width: min(960px, 100%); display: flex; flex-direction: column; }
+.panel.ranking .rank-wrap { min-height: 0; flex: 0 1 auto; }
+.rank-cols { display: grid; }
+.rank-cols.c2 { grid-template-columns: 1fr 1fr; } .rank-cols.c3 { grid-template-columns: 1fr 1fr 1fr; }
+.rank-cols table.rank + table.rank { border-left: 3px solid var(--line); }
+.rank-cols.c3 table.rank { font-size: 14px; }
+table.rank th { white-space: nowrap; }
+.rank-cols.c3 table.rank th, .rank-cols.c3 table.rank td { padding: 5px 6px; }
+.rank-cols.c3 table.rank td:first-child, .rank-cols.c3 table.rank th:first-child { width: 38px; }
+.rk-head .rk-group { flex: 1; margin: 0; }
+.rk-row .rk-seg { flex: 0 1 auto; }
+.rk-row .rk-what { flex: 1; text-align: right; margin: 0; }
+.rk-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.rk-head h2 { margin: 0 !important; }
+.rk-close, .sg-close { margin-left: auto; flex: none; font-size: 14px; padding: 5px 14px; }
+.rank-wrap { max-height: 60vh; overflow: auto; border: 3px solid var(--line); border-radius: 10px; background: #fff; }
 table.rank { width: 100%; border-collapse: collapse; font-size: 15px; }
 table.rank th, table.rank td { padding: 6px 10px; border-bottom: 1px solid #e5dccb; text-align: left; }
 table.rank th { position: sticky; top: 0; background: #f3ead6; }
@@ -497,7 +526,6 @@ table.rec th { background: #f3ead6; }
   .howto { font-size: 13px; padding: 6px 10px; }
   .row { margin-top: 10px; }
   .big-time { font-size: 36px; }
-  .rank-wrap { max-height: 40vh; }
   .rk-row { margin-bottom: 4px; }
   .rk-seg button { padding: 4px 6px; font-size: 12px; }
   .rk-what { margin: 0 0 4px; font-size: 12px; }
@@ -530,6 +558,102 @@ table.rec th { background: #f3ead6; }
   background: rgba(30,24,40,0.92); color: #fff; font-weight: 700; font-size: 14px; padding: 7px 14px; border-radius: 999px; border: 2px solid #ffd84a;
   animation: hintPulse 1.6s ease-in-out infinite; white-space: nowrap; }
 @keyframes hintPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.8; } }
+@media (max-height: 800px) and (min-aspect-ratio: 5/4) {
+  /* 미니게임: 왼쪽에 설명·힌트·버튼, 오른쪽에 게임판 → 스크롤 없이 한 화면 */
+  .panel.mini { position: relative; width: min(980px, 100%); display: grid; grid-template-columns: minmax(180px, 30%) 1fr; grid-template-rows: auto auto auto auto 1fr auto; column-gap: 16px; align-items: start; }
+  .panel.mini > .quiz-who { grid-column: 1; grid-row: 1; justify-self: start; }
+  .panel.mini > .mg-title { grid-column: 1; grid-row: 2; }
+  .panel.mini > .mg-intro { grid-column: 1; grid-row: 3; }
+  .panel.mini > .hint-area { grid-column: 1; grid-row: 4; }
+  .panel.mini > .quiz-feedback { grid-column: 1; grid-row: 5; }
+  .panel.mini > .mg-btns { grid-column: 1; grid-row: 6; margin-top: 6px; flex-wrap: wrap; gap: 6px; }
+  .panel.mini > .mg-btns .sp { display: none; }
+  .panel.mini #mgClose { position: absolute; top: 10px; right: 12px; font-size: 13px; padding: 4px 11px; }
+  .panel.mini > .mg-body { grid-column: 2; grid-row: 1 / -1; align-self: center; min-width: 0; padding-top: 30px; }
+  .bk-wrap { flex-wrap: nowrap; }
+  .bk { padding: 4px 10px; font-size: 14px; }
+  .bk-code { gap: 3px; }
+  .bk-inner { gap: 3px; }
+  .rb-wrap { flex-wrap: nowrap; }
+}
+@media (max-height: 460px) {
+  .panel.mini { padding: 10px 12px; column-gap: 12px; }
+  .panel.mini > .mg-title { font-size: 16px; }
+  .panel.mini > .mg-intro { font-size: 12px; line-height: 1.4; }
+  .panel.mini > .hint-area { margin-bottom: 4px; }
+  .panel.mini > .quiz-feedback { font-size: 12.5px; margin-top: 2px; }
+  .panel.mini > .mg-btns button { font-size: 13px; padding: 5px 10px; }
+  .panel.mini #mgClose { top: 8px; right: 10px; font-size: 12px; padding: 3px 9px; }
+  .panel.mini > .mg-body { padding-top: 22px; }
+  .hint-btn { font-size: 12.5px; padding: 3px 9px; }
+  .hint-text { font-size: 12px; padding: 4px 8px; }
+  .lb-legend { margin-bottom: 5px; }
+  .lb-card { padding: 4px 2px; }
+  .cd-slots { gap: 5px; margin-bottom: 6px; }
+  .cd-sig { min-width: 44px; height: 38px; }
+  .cd-sig.txt { font-size: 16px; }
+  .cd-slot { width: 42px; height: 34px; font-size: 19px; }
+  .cd-table { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 4px; }
+  .cd-key { padding: 3px 2px; font-size: 15px; }
+  .cd-key .k.txt { font-size: 14px; }
+  .cd-table-title, .cd-place { font-size: 12.5px; margin-bottom: 3px; }
+  .rb-wrap { gap: 10px; flex-wrap: nowrap; }
+  .rb-grid { width: min(210px, 42vh); flex: none; }
+  .rb-cell { font-size: 17px; }
+  .rb-side { min-width: 150px; gap: 4px; }
+  .rb-label { font-size: 12.5px; }
+  .rb-prog { min-height: 40px; padding: 4px; gap: 4px; }
+  .rb-blk { width: 38px; height: 32px; font-size: 16px; }
+  .rb-add { height: 36px; font-size: 19px; }
+  .st-slots { margin-bottom: 8px; }
+  .st-slot { min-width: 52px; height: 40px; font-size: 17px; }
+  .st-card { min-width: 62px; height: 50px; font-size: 21px; }
+  .bk-wrap { gap: 10px; flex-wrap: nowrap; }
+  .bk-code { gap: 2px; min-width: 170px; }
+  .bk { padding: 2px 8px; font-size: 12.5px; border-width: 2px; border-radius: 6px; }
+  .bk.rep { padding: 2px 4px 4px; }
+  .bk-head { padding: 0 3px 2px; }
+  .bk-inner { gap: 2px; padding-left: 10px; }
+  .bk-right { min-width: 170px; gap: 5px; }
+  /* 안내판·수첩·도감: 넓게 펴서 한 화면에 */
+  .panel.signp { width: min(900px, 100%); }
+  .sign-head { margin-bottom: 5px; }
+  .sign-i { width: 24px; height: 24px; font-size: 16px; }
+  .panel.signp { padding: 8px 12px; }
+  .sign-text { font-size: 13px; line-height: 1.42; padding: 6px 10px; }
+  .sg-close, .rk-close { font-size: 13px; padding: 4px 12px; }
+  .panel.ranking { padding: 8px 12px; }
+  .rk-head { margin-bottom: 4px; }
+  .rk-group { margin-bottom: 4px; }
+  .rk-group button { padding: 3px 6px; font-size: 13px; border-width: 2px; }
+  .rk-head h2 { font-size: 16px; }
+  .rk-row { margin-bottom: 4px; }
+  .rk-row .rk-what { font-size: 11px; }
+  .rank-cols.c3 table.rank { font-size: 12px; }
+  .rank-cols.c3 table.rank th, .rank-cols.c3 table.rank td { padding: 1px 4px; line-height: 1.3; }
+  .rank-cols.c3 table.rank td:first-child, .rank-cols.c3 table.rank th:first-child { width: 26px; }
+  .rank-wrap { max-height: none; flex: 1 1 auto; }
+  table.rank { font-size: 12.5px; }
+  table.rank th, table.rank td { padding: 2px 6px; }
+  table.rank td:first-child, table.rank th:first-child { width: 34px; }
+  .nb-sec h3 { font-size: 13.5px; margin: 4px 0 2px; }
+  .nb-sec ul, .nb-sec p { font-size: 12px; line-height: 1.35; }
+  .nb-chip { font-size: 12px; padding: 1px 8px; }
+  .panel.dexp { padding: 8px 10px; }
+  .dex-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 3px; }
+  .dex-card { padding: 1px 4px; gap: 4px; grid-template-columns: 22px 1fr; border-radius: 6px; }
+  .dex-card canvas { width: 22px; height: 22px; }
+  .dex-card .nm { font-size: 11.5px; }
+  .dex-card .pl { font-size: 9.5px; }
+  .dex-detail { min-height: 0; margin: 4px 0 5px; padding: 3px 8px; font-size: 12px; }
+  .dex-close, .nb-close { font-size: 13px; padding: 4px 12px; }
+  .dex-bar { height: 10px; }
+  /* 입장 폼·퀴즈 조금 더 촘촘하게 */
+  .entry-card { padding: 9px 12px; gap: 3px; }
+  .e-title { font-size: 22px; }
+  .quiz-q { font-size: 15px; margin-bottom: 6px; }
+  .choice { padding: 6px 10px; font-size: 14px; }
+}
 @media (max-height: 460px) { .sound-hint { font-size: 12px; padding: 5px 10px; top: 52px; } }
 </style>
 </head>
@@ -569,10 +693,10 @@ table.rec th { background: #f3ead6; }
         <label class="e-label">반<select id="inClass"><option value="">고르기</option></select></label>
         <label class="e-label">이름<input id="inName" type="text" maxlength="4" placeholder="예: 김하늘"></label>
       </div>
-      </div><div class="e-col">
 
       <div class="e-label">캐릭터</div>
       <div class="avatars" id="avatarGrid"></div>
+      </div><div class="e-col">
 
       <div class="e-label">모드</div>
       <div class="seg three" id="modeSeg">
@@ -585,7 +709,7 @@ table.rec th { background: #f3ead6; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (학년군별)</button>
       </div></div>
-      <div id="adminLink">v3.15</div>
+      <div id="adminLink">v3.16</div>
     </form>
   </div>
 </div>
@@ -9750,13 +9874,14 @@ const UI = (() => {
 
   // ---------- 도감 ----------
   function dex(entries, known, total) {
+    const E = Util.esc;
     const n = entries.filter(e => known.has(e.id)).length;
-    const html = `<div class="dex-head"><h2>학교 도감 ${n}/${total}</h2><div class="dex-bar"><span style="width:${Math.round(n / total * 100)}%"></span></div></div>
-      <p class="muted small" style="margin:0 0 8px">학교에서 만난 사람과 이야기하면 도감에 등록돼요. 말풍선이 떠 있는 친구는 아직 못 만난 친구예요.</p>
+    const DEF = '카드를 누르면 소개가 나와요. 학교에서 만나 이야기하면 도감에 등록돼요.';
+    const html = `<div class="dex-head"><h2>학교 도감 ${n}/${total}</h2><div class="dex-bar"><span style="width:${Math.round(n / total * 100)}%"></span></div><button class="primary dex-close" id="dexClose">닫기</button></div>
+      <div class="dex-detail" id="dexDetail">${DEF}</div>
       <div class="dex-grid">${entries.map((e, i) => known.has(e.id)
-        ? `<div class="dex-card"><canvas data-i="${i}" width="16" height="16"></canvas><div><div class="nm">${Util.esc(e.name)}</div><div class="pl">${Util.esc(e.place)}</div></div><div class="pf">${Util.esc(e.profile || '')}</div></div>`
-        : `<div class="dex-card unknown"><canvas data-i="${i}" data-dark="1" width="16" height="16"></canvas><div><div class="nm">???</div><div class="pl">${Util.esc(e.place)} 어딘가</div></div><div class="pf">아직 만나지 못했어요.</div></div>`).join('')}</div>
-      <div class="row end"><button class="primary" id="dexClose">닫기</button></div>`;
+        ? `<button type="button" class="dex-card" data-i="${i}"><canvas data-i="${i}" width="16" height="16"></canvas><div><div class="nm">${E(e.name)}</div><div class="pl">${E(e.place)}</div></div></button>`
+        : `<button type="button" class="dex-card unknown" data-i="${i}"><canvas data-i="${i}" data-dark="1" width="16" height="16"></canvas><div><div class="nm">???</div><div class="pl">${E(e.place)}</div></div></button>`).join('')}</div>`;
     const body = openPanel(html, 'dexp');
     body.querySelectorAll('canvas').forEach(c => {
       const e = entries[Number(c.dataset.i)];
@@ -9767,6 +9892,18 @@ const UI = (() => {
       g.drawImage(img, 0, 0);
       if (c.dataset.dark) { g.globalCompositeOperation = 'source-in'; g.fillStyle = '#6b5f4a'; g.fillRect(0, 0, 16, 16); }
     });
+    // 카드를 누르거나(마우스는 올리기만 해도) 위쪽 칸에 이름·장소·소개가 나온다
+    const show = btn => {
+      const e = entries[Number(btn.dataset.i)];
+      body.querySelectorAll('.dex-card.sel').forEach(b => b.classList.remove('sel'));
+      btn.classList.add('sel');
+      $('dexDetail').innerHTML = known.has(e.id)
+        ? `<b>${E(e.name)}</b><span class="pl">📍 ${E(e.place)}</span><br>${E(e.profile || '')}`
+        : `<b>???</b><span class="pl">📍 ${E(e.place)} 어딘가</span><br>아직 만나지 못했어요. 말풍선이 떠 있는 사람을 찾아 이야기해 보세요.`;
+    };
+    const grid = body.querySelector('.dex-grid');
+    grid.addEventListener('click', e => { const b = e.target.closest('.dex-card'); if (b) { show(b); b.blur(); } });   // 누른 뒤에도 스페이스·엔터로 닫히게
+    grid.addEventListener('mouseover', e => { const b = e.target.closest('.dex-card'); if (b && matchMedia('(hover: hover)').matches) show(b); });
     $('dexClose').addEventListener('click', closePanel);
   }
 
@@ -9774,21 +9911,21 @@ const UI = (() => {
   function notebook(nb) {
     const E = Util.esc;
     const sec = (title, items, empty) =>
-      `<h3>${title}</h3>` + (items.length ? '<ul>' + items.map(i => `<li>${i}</li>`).join('') + '</ul>' : `<p class="muted">${empty}</p>`);
-    const html = `<h2>탐험 수첩</h2>
-      <div class="nb-top"><span class="nb-chip">💡 힌트 토큰 <b>${nb.tokens}</b>개</span><span class="nb-chip">🌼 ${E(nb.collectName)} <b>${nb.stars}</b>/${nb.starTotal}</span>${nb.penalty ? `<span class="nb-chip bad">벌점 +${Math.round(nb.penalty / 60000)}분</span>` : ''}</div>
-      ${sec('모은 부품 (' + nb.parts.length + '/' + nb.total + ')', nb.parts.map(p => E(p)), '아직 모은 부품이 없어요.')}
+      `<div class="nb-sec"><h3>${title}</h3>` + (items.length ? '<ul>' + items.map(i => `<li>${i}</li>`).join('') + '</ul>' : `<p class="muted">${empty}</p>`) + '</div>';
+    const html = `<div class="nb-top"><h2>탐험 수첩</h2><span class="nb-chip">💡 힌트 토큰 <b>${nb.tokens}</b>개</span><span class="nb-chip">🌼 ${E(nb.collectName)} <b>${nb.stars}</b>/${nb.starTotal}</span>${nb.penalty ? `<span class="nb-chip bad">벌점 +${Math.round(nb.penalty / 60000)}분</span>` : ''}<button class="primary nb-close" id="nbClose">닫기</button></div>
+      <div class="nb-grid">
+      <div class="nb-sec"><h3>모은 부품 (${nb.parts.length}/${nb.total})</h3>${nb.parts.length ? '<div class="nb-parts">' + nb.parts.map(p => `<span class="nb-chip">${E(p)}</span>`).join('') + '</div>' : '<p class="muted">아직 모은 부품이 없어요.</p>'}</div>
       ${sec('가방', nb.items.map(it => `<b>${E(it.name)}</b> · ${E(it.desc)}`), '아직 가방이 비어 있어요.')}
       ${sec('찾은 단서·쪽지', nb.clues.map(c => E(c)), '아직 찾은 단서가 없어요.')}
       ${sec('받은 힌트', nb.hints.map(h => `<b>${E(h.title)}</b> · ${E(h.text)}`), '서브 미션을 깨거나 💡 힌트를 쓰면 여기에 적혀요.')}
-      <div class="row end"><button class="primary" id="nbClose">닫기</button></div>`;
+      </div>`;
     openPanel(html, 'notebook');
     $('nbClose').addEventListener('click', closePanel);
   }
 
   // ---------- i 팻말 ----------
   function sign(title, text, img) {
-    openPanel(`<div class="sign-head"><span class="sign-i">i</span><h2>${Util.esc(title)}</h2></div>${img ? `<img class="sign-img" src="${img}" alt="">` : ''}<div class="sign-text">${Util.esc(text)}</div><div class="row end"><button class="primary" id="sgClose">닫기</button></div>`, 'signp');
+    openPanel(`<div class="sign-head"><span class="sign-i">i</span><h2>${Util.esc(title)}</h2><button class="primary sg-close" id="sgClose">닫기</button></div>${img ? `<img class="sign-img" src="${img}" alt="">` : ''}<div class="sign-text">${Util.esc(text)}</div>`, 'signp');
     $('sgClose').addEventListener('click', closePanel);
   }
 
@@ -9817,19 +9954,16 @@ const UI = (() => {
     const render = async () => {
       const rows = await Store.getRanking(f.g, 30, { mode: f.mode });
       const what = '모든 미션을 깨는 데 걸린 시간 (학생별 최고 기록)';
+      const table = list => '<table class="rank"><thead><tr><th>순위</th><th>이름</th><th>모드</th><th>기록</th></tr></thead><tbody>' +
+          list.map(r => `<tr class="${r.rank <= 3 ? 'top' + r.rank : ''}"><td>${r.rank <= 3 ? ['🥇', '🥈', '🥉'][r.rank - 1] : r.rank}</td><td>${Util.esc(r.label)}</td><td class="mode">${r.mode === 'm10' ? '10분' : '30분'}</td><td>${Util.formatTime(r.bestMs)}</td></tr>`).join('') +
+          '</tbody></table>';
       const body = rows.length
-        ? '<table class="rank"><thead><tr><th>순위</th><th>이름</th><th>모드</th><th>기록</th></tr></thead><tbody>' +
-          rows.map(r => `<tr class="${r.rank <= 3 ? 'top' + r.rank : ''}"><td>${r.rank <= 3 ? ['🥇', '🥈', '🥉'][r.rank - 1] : r.rank}</td><td>${Util.esc(r.label)}</td><td class="mode">${r.mode === 'm10' ? '10분' : '30분'}</td><td>${Util.formatTime(r.bestMs)}</td></tr>`).join('') +
-          '</tbody></table>'
+        ? `<div class="rank-cols c${Math.ceil(rows.length / 10)}">${[0, 10, 20].filter(k => k < rows.length).map(k => table(rows.slice(k, k + 10))).join('')}</div>`
         : '<p class="muted center empty">아직 기록이 없어요. 첫 번째 주인공이 되어 보세요!</p>';
       const seg = (key, items) => `<div class="rk-seg" data-k="${key}">${items.map(([v, l]) => `<button data-v="${v}" class="${String(f[key]) === String(v) ? 'on' : ''}">${l}</button>`).join('')}</div>`;
-      const html = `<h2>명예의 전당</h2>
-        <div class="tabs rk-group">${[['g12', '1~2학년'], ['g34', '3~4학년'], ['g56', '5~6학년']].map(([v, l]) => `<button data-g="${v}" class="${f.g === v ? 'on' : ''}">${l}</button>`).join('')}</div>
-        <div class="rk-row"><span class="rk-lab">모드</span>${seg('mode', [['all', '전체'], ['m30', '30분 미션'], ['m10', '10분 미션']])}</div>
-        <p class="rk-what">${what}</p>
-        <div class="rank-wrap">${body}</div>
-        ${Store.mode === 'local' ? '<p class="muted small">시험 버전: 지금은 이 기기에서 한 기록만 보여요.</p>' : ''}
-        <div class="row end"><button class="primary" id="rkClose">닫기</button></div>`;
+      const html = `<div class="rk-head"><h2>명예의 전당</h2><div class="tabs rk-group">${[['g12', '1~2학년'], ['g34', '3~4학년'], ['g56', '5~6학년']].map(([v, l]) => `<button data-g="${v}" class="${f.g === v ? 'on' : ''}">${l}</button>`).join('')}</div><button class="primary rk-close" id="rkClose">닫기</button></div>
+        <div class="rk-row"><span class="rk-lab">모드</span>${seg('mode', [['all', '전체'], ['m30', '30분 미션'], ['m10', '10분 미션']])}<span class="rk-what">${what}${Store.mode === 'local' ? ' <span class="muted">· 시험 버전: 이 기기 기록만</span>' : ''}</span></div>
+        <div class="rank-wrap">${body}</div>`;
       openPanel(html, 'ranking');
       const body2 = $('modalBody');
       body2.querySelectorAll('.rk-group button').forEach(b => b.addEventListener('click', () => { f.g = b.dataset.g; render(); }));
