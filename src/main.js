@@ -970,6 +970,26 @@ const App = (() => {
     $('btnSoundTitle').addEventListener('click', () => { Sound.setMuted(!Sound.isMuted()); titleMusic(); UI.setSoundButton(Sound.isMuted()); });
     // 브라우저(크롬·엣지·사파리)는 사용자가 화면을 한 번 누르거나 키를 누르기 전에는 웹페이지 소리를 막는다.
     // 첫 화면이 뜨자마자 음악을 켜 보고(허용된 브라우저면 바로 나온다), 막혔으면 첫 클릭·키·터치 때 바로 켠다.
+    // 태블릿·휴대폰 화상 키보드: 키보드가 가리는 높이만큼 창을 위로 올려 입력 칸이 보이게 한다
+    (() => {
+      const vv = window.visualViewport;
+      let baseH = window.innerHeight, baseW = window.innerWidth;
+      const typing = () => { const a = document.activeElement; return !!a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT') && a.type !== 'button'; };
+      const fit = () => {
+        if (window.innerWidth !== baseW) { baseW = window.innerWidth; baseH = window.innerHeight; }   // 화면을 돌렸을 때
+        if (!typing()) baseH = Math.max(window.innerHeight, vv ? vv.height : 0);
+        const covered = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;   // 화면을 줄이지 않고 덮는 키보드
+        const shrunk = baseH - window.innerHeight;                                                          // 화면 자체를 줄이는 키보드
+        const open = typing() && (covered > 80 || shrunk > 120);
+        document.body.classList.toggle('kb-open', open);
+        document.documentElement.style.setProperty('--kb', (open ? covered : 0) + 'px');
+        if (open) setTimeout(() => { const a = document.activeElement; if (typing() && a.scrollIntoView) a.scrollIntoView({ block: 'nearest' }); }, 60);
+      };
+      if (vv) { vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit); }
+      window.addEventListener('resize', fit);
+      document.addEventListener('focusin', () => setTimeout(fit, 250));
+      document.addEventListener('focusout', () => setTimeout(fit, 250));
+    })();
     const UNLOCK_EVENTS = ['pointerdown', 'mousedown', 'click', 'keydown', 'touchstart', 'touchend'];
     const soundOn = () => {
       $('soundHint').classList.add('hidden');

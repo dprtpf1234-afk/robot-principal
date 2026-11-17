@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#2a2533">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -655,6 +655,20 @@ table.rec th { background: #f3ead6; }
   .choice { padding: 6px 10px; font-size: 14px; }
 }
 @media (max-height: 460px) { .sound-hint { font-size: 12px; padding: 5px 10px; top: 52px; } }
+/* 태블릿·휴대폰 화상 키보드가 열리면: 창을 키보드 위 남은 공간에 맞춰 올리고, 입장 폼은 2단으로 촘촘하게 */
+body.kb-open #entry { bottom: var(--kb, 0px); align-items: flex-start; padding: 6px 10px; }
+body.kb-open #modal { bottom: var(--kb, 0px); align-items: flex-start; padding: 6px 10px; }
+body.kb-open #modal #modalBody { max-height: 100%; overflow: auto; }
+body.kb-open .entry-card { padding: 8px 12px; gap: 3px; width: min(820px, 100%); }
+body.kb-open .e-cols { grid-template-columns: 1fr 1fr; gap: 14px; }
+body.kb-open .e-title { font-size: 20px; margin-right: 80px; }
+body.kb-open .e-sub, body.kb-open .e-school, body.kb-open .mode-desc, body.kb-open #gradeNote { display: none; }
+body.kb-open .avatars { grid-template-columns: repeat(4, 1fr); }
+body.kb-open .avatars button span { display: none; }
+body.kb-open .seg button { padding: 5px 2px; }
+body.kb-open .e-enter { font-size: 20px; padding: 2px; }
+body.kb-open .e-rank { padding: 4px; font-size: 12.5px; }
+body.kb-open .sound-hint { display: none; }
 </style>
 </head>
 <body>
@@ -709,7 +723,7 @@ table.rec th { background: #f3ead6; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (학년군별)</button>
       </div></div>
-      <div id="adminLink">v3.16</div>
+      <div id="adminLink">v3.17</div>
     </form>
   </div>
 </div>
@@ -12289,6 +12303,26 @@ const App = (() => {
     $('btnSoundTitle').addEventListener('click', () => { Sound.setMuted(!Sound.isMuted()); titleMusic(); UI.setSoundButton(Sound.isMuted()); });
     // 브라우저(크롬·엣지·사파리)는 사용자가 화면을 한 번 누르거나 키를 누르기 전에는 웹페이지 소리를 막는다.
     // 첫 화면이 뜨자마자 음악을 켜 보고(허용된 브라우저면 바로 나온다), 막혔으면 첫 클릭·키·터치 때 바로 켠다.
+    // 태블릿·휴대폰 화상 키보드: 키보드가 가리는 높이만큼 창을 위로 올려 입력 칸이 보이게 한다
+    (() => {
+      const vv = window.visualViewport;
+      let baseH = window.innerHeight, baseW = window.innerWidth;
+      const typing = () => { const a = document.activeElement; return !!a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT') && a.type !== 'button'; };
+      const fit = () => {
+        if (window.innerWidth !== baseW) { baseW = window.innerWidth; baseH = window.innerHeight; }   // 화면을 돌렸을 때
+        if (!typing()) baseH = Math.max(window.innerHeight, vv ? vv.height : 0);
+        const covered = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;   // 화면을 줄이지 않고 덮는 키보드
+        const shrunk = baseH - window.innerHeight;                                                          // 화면 자체를 줄이는 키보드
+        const open = typing() && (covered > 80 || shrunk > 120);
+        document.body.classList.toggle('kb-open', open);
+        document.documentElement.style.setProperty('--kb', (open ? covered : 0) + 'px');
+        if (open) setTimeout(() => { const a = document.activeElement; if (typing() && a.scrollIntoView) a.scrollIntoView({ block: 'nearest' }); }, 60);
+      };
+      if (vv) { vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit); }
+      window.addEventListener('resize', fit);
+      document.addEventListener('focusin', () => setTimeout(fit, 250));
+      document.addEventListener('focusout', () => setTimeout(fit, 250));
+    })();
     const UNLOCK_EVENTS = ['pointerdown', 'mousedown', 'click', 'keydown', 'touchstart', 'touchend'];
     const soundOn = () => {
       $('soundHint').classList.add('hidden');
