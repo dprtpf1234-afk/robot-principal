@@ -122,9 +122,49 @@ const App = (() => {
     Sound.playMusic('title');
   }
 
+  // ---------------- 화질 (자동·최대·중간·최소) ----------------
+  const Q_ORDER = ['auto', 'high', 'mid', 'low'];
+  const Q_NAME = { auto: '자동', high: '최대', mid: '중간', low: '최소' };
+  const Q_KEY = 'rp_quality', Q_AUTO_KEY = 'rp_quality_auto';
+  const qDefault = () => {   // 기기 사양으로 처음 정하기
+    const mem = navigator.deviceMemory, cores = navigator.hardwareConcurrency;
+    return (mem && mem <= 3) || (cores && cores <= 4) ? 'mid' : 'high';
+  };
+  let qChoice = Q_ORDER.includes(Util.storage.get(Q_KEY, 'auto')) ? Util.storage.get(Q_KEY, 'auto') : 'auto';
+  let qAuto = ['high', 'mid', 'low'].includes(Util.storage.get(Q_AUTO_KEY, '')) ? Util.storage.get(Q_AUTO_KEY, '') : qDefault();
+  let qSlow = 0;
+  const qLevel = () => (qChoice === 'auto' ? qAuto : qChoice);
+  function applyQuality() {
+    Game.setQuality(qLevel()); Title.setQuality(qLevel());
+    const now = Q_NAME[qLevel()];
+    $('btnQualityTitle').innerHTML = `<span class="q-ico">HD</span><span class="q-long">화질: ${qChoice === 'auto' ? `자동(${now})` : now}</span><span class="q-short">${qChoice === 'auto' ? '자동' : now}</span>`;
+    $('btnQuality').innerHTML = `${qChoice === 'auto' ? '자동' : now}<small>화질</small>`;
+  }
+  function cycleQuality() {
+    qChoice = Q_ORDER[(Q_ORDER.indexOf(qChoice) + 1) % Q_ORDER.length];
+    if (qChoice === 'auto') { qAuto = qDefault(); Util.storage.set(Q_AUTO_KEY, ''); }
+    qSlow = 0;
+    Util.storage.set(Q_KEY, qChoice);
+    applyQuality();
+    const tip = { auto: '느려지면 알아서 화질을 낮춰요', high: '가장 선명해요', mid: '조금 덜 선명하지만 더 부드러워요', low: '가장 가볍고 부드러워요 (성능이 낮은 기기용)' }[qChoice];
+    UI.toast(`화질: ${qChoice === 'auto' ? `자동(지금 ${Q_NAME[qLevel()]})` : Q_NAME[qChoice]} · ${tip}`);
+  }
+  // 게임이 4초마다 알려 주는 초당 장면 수: '자동'이면 두 번 연속 느릴 때 한 단계 낮춘다
+  function onFps(fps) {
+    if (qChoice !== 'auto') return;
+    if (fps >= 45) { qSlow = 0; return; }
+    if (++qSlow < 2 || qAuto === 'low') return;
+    qSlow = 0;
+    qAuto = qAuto === 'high' ? 'mid' : 'low';
+    Util.storage.set(Q_AUTO_KEY, qAuto);
+    applyQuality();
+    UI.toast(`화면이 조금 느려서 화질을 '${Q_NAME[qAuto]}'(으)로 낮췄어요`);
+  }
+
   function showStart() {
     updateVisits();
     Game.stop();
+    Game.release();
     $('title').classList.remove('hidden');
     titleMusic();
     $('entry').classList.add('hidden');
@@ -920,6 +960,7 @@ const App = (() => {
         if (saveTimer > 4) { saveTimer = 0; save(); }
       },
       mapChanged: () => { updateHud(); save(); if (Game.map && Game.map.id === 'dev') enteredSecret(); },
+      fps: onFps,
       jumped: onJumped,
       targetChanged: t => UI.setTalkButton(t ? (t.type === 'npc' ? '대화' : '살펴보기') : null),
       minimapTargets,
@@ -950,6 +991,14 @@ const App = (() => {
     // 순서도 접기 (작은 화면은 처음에 접어 둔다)
     setFlow(Util.storage.get('rp_flow_folded', window.innerHeight < 500));
     $('flowToggle').addEventListener('click', () => { const f = !$('flowPanel').classList.contains('folded'); setFlow(f); Util.storage.set('rp_flow_folded', f); });
+    // 모은 부품·가진 것 접기 (작은 화면은 처음에 접어 둔다)
+    $('invPanel').classList.toggle('folded', !!Util.storage.get('rp_inv_folded', window.innerHeight < 500));
+    $('invPanel').addEventListener('click', e => {
+      if (!e.target.closest('#invToggle')) return;
+      const f = !$('invPanel').classList.contains('folded');
+      $('invPanel').classList.toggle('folded', f);
+      Util.storage.set('rp_inv_folded', f);
+    });
 
     const touch = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
     Game.setTouch(touch);
@@ -966,6 +1015,8 @@ const App = (() => {
       });
     });
     UI.setSoundButton(Sound.isMuted());
+    $('btnQuality').addEventListener('click', cycleQuality);
+    $('btnQualityTitle').addEventListener('click', e => { e.stopPropagation(); cycleQuality(); });
     $('btnSound').addEventListener('click', () => { Sound.init(); Sound.setMuted(!Sound.isMuted()); UI.setSoundButton(Sound.isMuted()); });
     $('btnSoundTitle').addEventListener('click', () => { Sound.setMuted(!Sound.isMuted()); titleMusic(); UI.setSoundButton(Sound.isMuted()); });
     // 브라우저(크롬·엣지·사파리)는 사용자가 화면을 한 번 누르거나 키를 누르기 전에는 웹페이지 소리를 막는다.
@@ -1017,6 +1068,7 @@ const App = (() => {
     document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
 
     Title.init($('titleCanvas'));
+    applyQuality();
     bindStart();
     // 캐릭터가 순서도·부품 패널 뒤로 가면 패널을 잠깐 숨기고, 벗어나면 다시 보인다
     setInterval(() => {
@@ -1039,7 +1091,7 @@ const App = (() => {
     $('adminLink').addEventListener('dblclick', () => { location.hash = '#admin'; });
   }
 
-  return { boot, toStart: () => { save(); st = null; Sound.stopMusic(); showStart(); }, get state() { return st; }, get session() { return session; }, get content() { return content; }, get miniCfg() { return miniCfg; }, _finish: () => finish() };
+  return { boot, toStart: () => { save(); st = null; Sound.stopMusic(); showStart(); }, get state() { return st; }, get session() { return session; }, get content() { return content; }, get miniCfg() { return miniCfg; }, _finish: () => finish(), _fps: f => onFps(f) };
 })();
 
 window.addEventListener('DOMContentLoaded', App.boot);

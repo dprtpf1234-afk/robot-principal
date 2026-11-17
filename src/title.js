@@ -32,16 +32,41 @@ const Title = (() => {
     chars = [upChar(Sprites.makeChar(pals[5])), upChar(Sprites.makeChar(pals[0])), upChar(Sprites.makeChar(pals[2]))];
     robot = up(up(Sprites.makeRobot(false)));
     resize();
-    window.addEventListener('resize', resize);
+    window.addEventListener('resize', () => { if (running) resize(); });
   }
 
   function newConfetti(r, anywhere) {
     return { x: r() * 600, y: anywhere ? r() * H : -5 - r() * 40, vy: 6 + r() * 10, ph: r() * 6, c: COLORS[Math.floor(r() * COLORS.length)] };
   }
 
+  let dprCap = 3;   // 화질 설정: 최대 3 · 중간 1.5 · 최소 1
+  function setQuality(q) { dprCap = q === 'low' ? 1 : q === 'mid' ? 1.5 : 3; frontKey = null; if (running) resize(); }
+
+  // 게임 중에는 첫 화면 그림판을 비워 메모리를 돌려준다 (성능 낮은 태블릿에서 그림이 사라지는 문제 예방)
+  function release() {
+    if (canvas) { canvas.width = 1; canvas.height = 1; }
+    if (buf) { buf.width = 1; buf.height = 1; }
+    front = null; frontKey = null;
+  }
+  // 브라우저가 메모리가 모자라 그림판을 버렸으면 새로 만든다
+  function revive() {
+    const lost = c => c && typeof c.isContextLost === 'function' && c.isContextLost();
+    let changed = false;
+    if (lost(g)) {
+      const nc = canvas.cloneNode(false);
+      canvas.replaceWith(nc); canvas = nc; g = canvas.getContext('2d');
+      changed = true;
+    }
+    if (lost(bg)) { buf = document.createElement('canvas'); bg = buf.getContext('2d'); changed = true; }
+    if (front && lost(front.getContext('2d'))) changed = true;
+    if (changed) { frontKey = null; resize(); }
+    return !lost(g);
+  }
+
   function resize() {
+    if (!canvas) return;
     const vw = window.innerWidth, vh = window.innerHeight;
-    dpr = Math.min(window.devicePixelRatio || 1, 3);
+    dpr = Math.min(window.devicePixelRatio || 1, dprCap);
     canvas.width = Math.round(vw * dpr); canvas.height = Math.round(vh * dpr);
     canvas.style.width = vw + 'px'; canvas.style.height = vh + 'px';
     // 기기 화소 그대로 그린다 (인게임처럼 매끈하게): 장면 1칸 = 기기 픽셀 R개, 확대 없음
@@ -55,8 +80,16 @@ const Title = (() => {
     layout = { BW, x0, x1: x0 + BW, top: 76, base: 138, ex: Math.round(x0 + BW * 0.55) };
   }
 
-  function start() { if (running) return; running = true; last = performance.now(); requestAnimationFrame(loop); }
-  function stop() { running = false; }
+  function start() {
+    if (running) return;
+    running = true;
+    // 돌아올 때마다 그림판을 새로 만들고 풍경도 다시 그린다
+    buf = document.createElement('canvas'); bg = buf.getContext('2d');
+    frontKey = null; front = null;
+    revive(); resize();
+    last = performance.now(); requestAnimationFrame(loop);
+  }
+  function stop() { running = false; release(); }
 
   function loop(ts) {
     if (!running) return;
@@ -65,7 +98,7 @@ const Title = (() => {
     const dt = Math.max(0, Math.min(0.05, (ts - last) / 1000));
     last = ts; t += dt;
     update(dt);
-    draw();
+    if (revive()) draw();
     requestAnimationFrame(loop);
   }
 
@@ -582,5 +615,5 @@ const Title = (() => {
     return `rgb(${ch(16)},${ch(8)},${ch(0)})`;
   }
 
-  return { init, start, stop };
+  return { init, start, stop, setQuality };
 })();

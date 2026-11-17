@@ -128,15 +128,35 @@ const Game = (() => {
   function consume(k) { const v = pressed[k]; pressed[k] = false; return v; }
   function clearPressed() { for (const k in pressed) pressed[k] = false; }
 
+  // ---------------- 화질 ----------------
+  // high: 기기 화소 그대로 · mid: 최대 1.5배 · low: 1배 + 버퍼 1배 + 새로 그리는 지도는 2배 그림 생략(메모리 절약)
+  let quality = 'high';
+  function setQuality(q) {
+    if (!['high', 'mid', 'low'].includes(q) || q === quality) return;
+    const wasLow = quality === 'low';
+    quality = q;
+    Q = q === 'low' ? 1 : 2;
+    if (wasLow) for (const id in mapCache) if (!map || id !== map.id) delete mapCache[id];   // 다시 선명하게 그리도록
+    if (running) resize();
+    perfT = 0; perfN = 0;
+  }
+  // 게임을 떠나 첫 화면에 있을 때는 게임 그림판을 비워 메모리를 돌려준다
+  function release() { if (screen) { screen.width = 1; screen.height = 1; } if (buffer) { buffer.width = 1; buffer.height = 1; } }
+  // 초당 장면 수 측정 (자동 화질용): 4초마다 hooks.fps(값)
+  let perfT = 0, perfN = 0;
+
   // ---------------- 화면 크기 ----------------
   function resize() {
     const w = window.innerWidth, h = window.innerHeight;
-    dpr = Math.min(window.devicePixelRatio || 1, 3);
+    dpr = Math.min(window.devicePixelRatio || 1, quality === 'high' ? 3 : quality === 'mid' ? 1.5 : 1);
     // 화면 기기 픽셀 기준으로 정수 배율만 써서 픽셀이 고르게 선명하도록 한다.
     // 한 화면에 세로 약 18~22칸이 보이도록 (작은 화면은 조금 더 크게)
     const devW = Math.round(w * dpr), devH = Math.round(h * dpr);
     const targetH = h < 500 ? 280 : 460;   // PC는 한 칸이 약 32px: 더 촘촘하고 선명하게
-    baseScale = Math.max(1, Math.round(devH / targetH));
+    // 화질을 낮춰도 보이는 범위는 '최대'일 때와 비슷하게 (정수 배율 중 가장 가까운 것)
+    const refDev = Math.round(h * Math.min(window.devicePixelRatio || 1, 3));
+    const refVH = refDev / Math.max(1, Math.round(refDev / targetH));
+    baseScale = Math.max(1, Math.round(devH / refVH));
     zoomStep = Math.max(1 - baseScale, Math.min(ZOOM_MAX, zoomStep));
     scale = baseScale + zoomStep;
     VW = Math.ceil(devW / scale); VH = Math.ceil(devH / scale);
@@ -258,7 +278,7 @@ const Game = (() => {
 
   // ---------------- 맵 ----------------
   // ---------------- 고화질: 내부 2배 해상도 + 픽셀 계단을 다듬는 Scale2x(EPX) ----------------
-  const Q = 2;
+  let Q = 2;   // 버퍼 배율 (화질 '최소'에서는 1)
   const hiCache = new WeakMap();
   function smooth2x(src) {
     const w = src.width, h = src.height;
@@ -348,7 +368,7 @@ const Game = (() => {
     let crop = c;
     if (m.mmBox) { crop = document.createElement('canvas'); crop.width = bw * T; crop.height = bh * T; crop.getContext('2d').drawImage(c, -bx * T, -by * T); }
     yield;
-    c.hi = smooth2x(crop);
+    c.hi = quality === 'low' ? null : smooth2x(crop);
     c.hiBox = [bx, by, bw, bh];
     yield;
     if (c.hi) {
@@ -512,13 +532,14 @@ const Game = (() => {
     bg = buffer.getContext('2d');
     hooks = h;
     resize();
-    window.addEventListener('resize', resize);
+    window.addEventListener('resize', () => { if (running) resize(); });
     bindInput();
     robotImgs = { broken: Sprites.makeRobot(true), fixed: Sprites.makeRobot(false) };
     requestAnimationFrame(loop);
   }
 
   function newGame(session) {
+    resize();   // 첫 화면에 있는 동안 비워 둔 그림판을 다시 만든다
     maps = World.build();
     allNpcs = {};
     for (const id in maps) allNpcs[id] = spawnNpcs(maps[id], session.content);
@@ -539,6 +560,7 @@ const Game = (() => {
     walk = null;
     npcs = allNpcs[id];
     renderMap(map);
+    perfT = 0; perfN = 0;   // 지도 그리는 순간의 멈춤은 측정에서 뺀다
     Sound.playMusic(map.music);
     hooks.mapChanged && hooks.mapChanged(map);
     snapCamera();
@@ -554,8 +576,13 @@ const Game = (() => {
 
   // ---------------- 갱신 ----------------
   function loop(ts) {
-    const dt = Math.max(0, Math.min(0.05, (ts - last) / 1000 || 0));
+    const raw = (ts - last) / 1000 || 0;
+    const dt = Math.max(0, Math.min(0.05, raw));
     last = ts;
+    if (running && !document.hidden && raw > 0 && raw < 0.5 && fade <= 0) {
+      perfT += raw; perfN++;
+      if (perfT >= 4) { const fps = perfN / perfT; perfT = 0; perfN = 0; hooks.fps && hooks.fps(fps); }
+    } else if (raw >= 0.5) { perfT = 0; perfN = 0; }
     time += dt;
     if (running) update(dt);
     render();
@@ -919,7 +946,8 @@ const Game = (() => {
     const s = scale;
     const ui = dpr;   // 글자 최소 크기용 (CSS 픽셀 → 기기 픽셀)
     sg.imageSmoothingEnabled = false;
-    sg.imageSmoothingEnabled = s / Q > 1.01; sg.imageSmoothingQuality = 'high';
+    const kk = s / Q;   // 정수 배로 키울 때는 또렷한 픽셀 그대로, 아닐 때만 부드럽게
+    sg.imageSmoothingEnabled = kk > 1.01 && Math.abs(kk - Math.round(kk)) > 0.01; sg.imageSmoothingQuality = 'high';
     sg.drawImage(buffer, 0, 0, VW * Q, VH * Q, 0, 0, VW * s, VH * s);
     sg.imageSmoothingEnabled = false;
     // 교훈석 글씨
@@ -1406,6 +1434,7 @@ const Game = (() => {
   }
 
   return {
+    setQuality, release, get quality() { return quality; },
     prewarm, playerRect, scatterStars,
     init, newGame, stop, facePlayer, zoom, zoomInfo, celebrate, inDark, smooth2x,
     setSpeed(k) { speedK = k || 1; },

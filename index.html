@@ -141,6 +141,15 @@ table.rank td.mode { color: var(--muted); font-size: 13px; }
 .inv-panel { background: #fff8e6; border: 3px solid var(--line); border-radius: 10px; box-shadow: 0 3px 0 var(--line); padding: 8px 9px 9px; width: 220px; box-sizing: border-box; }
 .inv-panel h4 { margin: 0 0 6px; font-size: 13px; font-weight: 900; color: #2b2233; }
 .inv-panel h4 + .inv-grid { margin-bottom: 8px; }
+.inv-toggle { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 0 0 6px; font-weight: 900; font-size: 13px; color: #2b2233; cursor: pointer; }
+.inv-toggle b { float: right; font-weight: 900; }
+.inv-toggle .shut { display: none; }
+.inv-grid { margin-bottom: 8px; }
+.inv-panel.folded { width: auto; padding: 4px 9px; }
+.inv-panel.folded .inv-toggle { padding: 2px 0; }
+.inv-panel.folded .inv-toggle .open, .inv-panel.folded .inv-body { display: none; }
+.inv-panel.folded .inv-toggle .shut { display: inline; }
+.inv-panel.folded .inv-toggle b { float: none; margin-left: 4px; }
 .inv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
 .inv-slot { font-size: 11.5px; font-weight: 800; border-radius: 7px; padding: 4px 5px; text-align: center; border: 2px dashed #cdbf9f; color: #a89c84; background: #fffdf6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .inv-slot.on { border: 2px solid #3f9a4a; background: #e3f6dc; color: #22522a; }
@@ -162,6 +171,17 @@ table.rank td.mode { color: var(--muted); font-size: 13px; }
 .hud-btn.muted { background: #ddd; color: var(--ink); }
 .hud-btn.ico { width: 38px; height: 34px; padding: 0; display: grid; place-items: center; background: #2f6ef0; color: #fff; border-color: #1b2f6b; box-shadow: 0 3px 0 #1b2f6b; }
 .hud-btn.ico svg { width: 18px; height: 18px; display: block; }
+.hud-btn.q-btn { width: auto; min-width: 38px; padding: 0 6px; font-size: 12px; line-height: 1; display: flex; flex-direction: column; justify-content: center; gap: 1px; }
+.hud-btn.q-btn small { font-size: 9px; opacity: .85; font-weight: 700; }
+.fs-btn .q-short { display: none; }
+@media (max-height: 460px), (max-width: 900px) {
+  .title-tools { gap: 5px; top: max(8px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); }
+  .title-tools .fs-btn { font-size: 12px; padding: 4px 8px; gap: 4px; }
+  .title-tools .fs-btn svg { width: 15px; height: 15px; }
+  .fs-btn .q-long { display: none; }
+  .fs-btn .q-short { display: inline; }
+}
+.fs-btn .q-ico { font-size: 11px; font-weight: 900; border: 2px solid currentColor; border-radius: 4px; padding: 0 3px; line-height: 1.2; }
 .hud-btn.ico.muted { background: #8a94a6; }
 .side-btns { display: grid; grid-template-columns: 1fr auto; gap: 6px; width: 220px; }
 .hud-btn.dex { background: #2f6ef0; color: #ffd84a; border-color: #1b2f6b; box-shadow: 0 3px 0 #1b2f6b; }
@@ -677,6 +697,7 @@ body.kb-open .sound-hint { display: none; }
 <div id="title">
   <canvas id="titleCanvas"></canvas>
   <div class="title-tools">
+    <button class="fs-btn" id="btnQualityTitle" type="button" title="화질 바꾸기"></button>
     <button class="fs-btn" id="btnSoundTitle" type="button" title="소리"></button>
     <button class="fs-btn" id="btnFull" type="button"><span class="fs-ico"></span>전체 화면</button>
   </div>
@@ -723,7 +744,7 @@ body.kb-open .sound-hint { display: none; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (학년군별)</button>
       </div></div>
-      <div id="adminLink">v3.17</div>
+      <div id="adminLink">v3.18</div>
     </form>
   </div>
 </div>
@@ -737,6 +758,7 @@ body.kb-open .sound-hint { display: none; }
   <div class="hud-side">
     <div class="hud-right">
       <div id="hudParts" class="hud-box"></div>
+      <button class="hud-btn ico q-btn" id="btnQuality" title="화질 바꾸기"></button>
       <button class="hud-btn ico" id="btnSound" title="소리"></button>
       <button class="hud-btn ico" id="btnFullGame" title="전체 화면"><svg viewBox="0 0 20 20"><path d="M2 7V2h5M13 2h5v5M18 13v5h-5M7 18H2v-5" fill="none" stroke="currentColor" stroke-width="2.6"/></svg></button>
       <button class="hud-btn ico home" id="btnHome" title="처음 화면"><svg viewBox="0 0 20 20"><path d="M2 10L10 3l8 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/><path d="M5 9v8h4v-5h2v5h4V9" fill="currentColor"/></svg></button>
@@ -8288,15 +8310,35 @@ const Game = (() => {
   function consume(k) { const v = pressed[k]; pressed[k] = false; return v; }
   function clearPressed() { for (const k in pressed) pressed[k] = false; }
 
+  // ---------------- 화질 ----------------
+  // high: 기기 화소 그대로 · mid: 최대 1.5배 · low: 1배 + 버퍼 1배 + 새로 그리는 지도는 2배 그림 생략(메모리 절약)
+  let quality = 'high';
+  function setQuality(q) {
+    if (!['high', 'mid', 'low'].includes(q) || q === quality) return;
+    const wasLow = quality === 'low';
+    quality = q;
+    Q = q === 'low' ? 1 : 2;
+    if (wasLow) for (const id in mapCache) if (!map || id !== map.id) delete mapCache[id];   // 다시 선명하게 그리도록
+    if (running) resize();
+    perfT = 0; perfN = 0;
+  }
+  // 게임을 떠나 첫 화면에 있을 때는 게임 그림판을 비워 메모리를 돌려준다
+  function release() { if (screen) { screen.width = 1; screen.height = 1; } if (buffer) { buffer.width = 1; buffer.height = 1; } }
+  // 초당 장면 수 측정 (자동 화질용): 4초마다 hooks.fps(값)
+  let perfT = 0, perfN = 0;
+
   // ---------------- 화면 크기 ----------------
   function resize() {
     const w = window.innerWidth, h = window.innerHeight;
-    dpr = Math.min(window.devicePixelRatio || 1, 3);
+    dpr = Math.min(window.devicePixelRatio || 1, quality === 'high' ? 3 : quality === 'mid' ? 1.5 : 1);
     // 화면 기기 픽셀 기준으로 정수 배율만 써서 픽셀이 고르게 선명하도록 한다.
     // 한 화면에 세로 약 18~22칸이 보이도록 (작은 화면은 조금 더 크게)
     const devW = Math.round(w * dpr), devH = Math.round(h * dpr);
     const targetH = h < 500 ? 280 : 460;   // PC는 한 칸이 약 32px: 더 촘촘하고 선명하게
-    baseScale = Math.max(1, Math.round(devH / targetH));
+    // 화질을 낮춰도 보이는 범위는 '최대'일 때와 비슷하게 (정수 배율 중 가장 가까운 것)
+    const refDev = Math.round(h * Math.min(window.devicePixelRatio || 1, 3));
+    const refVH = refDev / Math.max(1, Math.round(refDev / targetH));
+    baseScale = Math.max(1, Math.round(devH / refVH));
     zoomStep = Math.max(1 - baseScale, Math.min(ZOOM_MAX, zoomStep));
     scale = baseScale + zoomStep;
     VW = Math.ceil(devW / scale); VH = Math.ceil(devH / scale);
@@ -8418,7 +8460,7 @@ const Game = (() => {
 
   // ---------------- 맵 ----------------
   // ---------------- 고화질: 내부 2배 해상도 + 픽셀 계단을 다듬는 Scale2x(EPX) ----------------
-  const Q = 2;
+  let Q = 2;   // 버퍼 배율 (화질 '최소'에서는 1)
   const hiCache = new WeakMap();
   function smooth2x(src) {
     const w = src.width, h = src.height;
@@ -8508,7 +8550,7 @@ const Game = (() => {
     let crop = c;
     if (m.mmBox) { crop = document.createElement('canvas'); crop.width = bw * T; crop.height = bh * T; crop.getContext('2d').drawImage(c, -bx * T, -by * T); }
     yield;
-    c.hi = smooth2x(crop);
+    c.hi = quality === 'low' ? null : smooth2x(crop);
     c.hiBox = [bx, by, bw, bh];
     yield;
     if (c.hi) {
@@ -8672,13 +8714,14 @@ const Game = (() => {
     bg = buffer.getContext('2d');
     hooks = h;
     resize();
-    window.addEventListener('resize', resize);
+    window.addEventListener('resize', () => { if (running) resize(); });
     bindInput();
     robotImgs = { broken: Sprites.makeRobot(true), fixed: Sprites.makeRobot(false) };
     requestAnimationFrame(loop);
   }
 
   function newGame(session) {
+    resize();   // 첫 화면에 있는 동안 비워 둔 그림판을 다시 만든다
     maps = World.build();
     allNpcs = {};
     for (const id in maps) allNpcs[id] = spawnNpcs(maps[id], session.content);
@@ -8699,6 +8742,7 @@ const Game = (() => {
     walk = null;
     npcs = allNpcs[id];
     renderMap(map);
+    perfT = 0; perfN = 0;   // 지도 그리는 순간의 멈춤은 측정에서 뺀다
     Sound.playMusic(map.music);
     hooks.mapChanged && hooks.mapChanged(map);
     snapCamera();
@@ -8714,8 +8758,13 @@ const Game = (() => {
 
   // ---------------- 갱신 ----------------
   function loop(ts) {
-    const dt = Math.max(0, Math.min(0.05, (ts - last) / 1000 || 0));
+    const raw = (ts - last) / 1000 || 0;
+    const dt = Math.max(0, Math.min(0.05, raw));
     last = ts;
+    if (running && !document.hidden && raw > 0 && raw < 0.5 && fade <= 0) {
+      perfT += raw; perfN++;
+      if (perfT >= 4) { const fps = perfN / perfT; perfT = 0; perfN = 0; hooks.fps && hooks.fps(fps); }
+    } else if (raw >= 0.5) { perfT = 0; perfN = 0; }
     time += dt;
     if (running) update(dt);
     render();
@@ -9079,7 +9128,8 @@ const Game = (() => {
     const s = scale;
     const ui = dpr;   // 글자 최소 크기용 (CSS 픽셀 → 기기 픽셀)
     sg.imageSmoothingEnabled = false;
-    sg.imageSmoothingEnabled = s / Q > 1.01; sg.imageSmoothingQuality = 'high';
+    const kk = s / Q;   // 정수 배로 키울 때는 또렷한 픽셀 그대로, 아닐 때만 부드럽게
+    sg.imageSmoothingEnabled = kk > 1.01 && Math.abs(kk - Math.round(kk)) > 0.01; sg.imageSmoothingQuality = 'high';
     sg.drawImage(buffer, 0, 0, VW * Q, VH * Q, 0, 0, VW * s, VH * s);
     sg.imageSmoothingEnabled = false;
     // 교훈석 글씨
@@ -9566,6 +9616,7 @@ const Game = (() => {
   }
 
   return {
+    setQuality, release, get quality() { return quality; },
     prewarm, playerRect, scatterStars,
     init, newGame, stop, facePlayer, zoom, zoomInfo, celebrate, inDark, smooth2x,
     setSpeed(k) { speedK = k || 1; },
@@ -9864,10 +9915,13 @@ const UI = (() => {
     const key = JSON.stringify(s);
     if (el.dataset.key === key) return;
     el.dataset.key = key;
-    el.innerHTML = `<h4>모은 부품 ${s.parts.filter(x => x.on).length}/${s.parts.length}</h4><div class="inv-grid">` +
+    const got = s.parts.filter(x => x.on).length;
+    // 제목 줄을 누르면 접고 펼친다 (접으면 한 줄 요약만)
+    el.innerHTML = `<button type="button" class="inv-toggle" id="invToggle"><span class="open">모은 부품 ${got}/${s.parts.length} <b>▾</b></span>` +
+      `<span class="shut">부품 ${got}/${s.parts.length} · 토큰 ${s.tokens} · 개나리 ${s.stars}/${s.starTotal} <b>▸</b></span></button><div class="inv-body"><div class="inv-grid">` +
       s.parts.map(x => `<span class="inv-slot ${x.on ? 'on' : ''}" title="${Util.esc(x.name)}">${x.on ? Util.esc(x.name) : '?'}</span>`).join('') + '</div>' +
       `<h4>가진 것</h4><div class="inv-chips">` + s.items.map(x => `<span class="inv-chip ${x.on ? 'on' : ''}">${Util.esc(x.name)}</span>`).join('') +
-      `<span class="inv-chip tok">힌트 토큰 ${s.tokens}</span><span class="inv-chip star">개나리 ${s.stars}/${s.starTotal}</span></div>`;
+      `<span class="inv-chip tok">힌트 토큰 ${s.tokens}</span><span class="inv-chip star">개나리 ${s.stars}/${s.starTotal}</span></div></div>`;
   }
   function setTalkButton(label) {
     const b = $('btnTalk');
@@ -10777,16 +10831,41 @@ const Title = (() => {
     chars = [upChar(Sprites.makeChar(pals[5])), upChar(Sprites.makeChar(pals[0])), upChar(Sprites.makeChar(pals[2]))];
     robot = up(up(Sprites.makeRobot(false)));
     resize();
-    window.addEventListener('resize', resize);
+    window.addEventListener('resize', () => { if (running) resize(); });
   }
 
   function newConfetti(r, anywhere) {
     return { x: r() * 600, y: anywhere ? r() * H : -5 - r() * 40, vy: 6 + r() * 10, ph: r() * 6, c: COLORS[Math.floor(r() * COLORS.length)] };
   }
 
+  let dprCap = 3;   // 화질 설정: 최대 3 · 중간 1.5 · 최소 1
+  function setQuality(q) { dprCap = q === 'low' ? 1 : q === 'mid' ? 1.5 : 3; frontKey = null; if (running) resize(); }
+
+  // 게임 중에는 첫 화면 그림판을 비워 메모리를 돌려준다 (성능 낮은 태블릿에서 그림이 사라지는 문제 예방)
+  function release() {
+    if (canvas) { canvas.width = 1; canvas.height = 1; }
+    if (buf) { buf.width = 1; buf.height = 1; }
+    front = null; frontKey = null;
+  }
+  // 브라우저가 메모리가 모자라 그림판을 버렸으면 새로 만든다
+  function revive() {
+    const lost = c => c && typeof c.isContextLost === 'function' && c.isContextLost();
+    let changed = false;
+    if (lost(g)) {
+      const nc = canvas.cloneNode(false);
+      canvas.replaceWith(nc); canvas = nc; g = canvas.getContext('2d');
+      changed = true;
+    }
+    if (lost(bg)) { buf = document.createElement('canvas'); bg = buf.getContext('2d'); changed = true; }
+    if (front && lost(front.getContext('2d'))) changed = true;
+    if (changed) { frontKey = null; resize(); }
+    return !lost(g);
+  }
+
   function resize() {
+    if (!canvas) return;
     const vw = window.innerWidth, vh = window.innerHeight;
-    dpr = Math.min(window.devicePixelRatio || 1, 3);
+    dpr = Math.min(window.devicePixelRatio || 1, dprCap);
     canvas.width = Math.round(vw * dpr); canvas.height = Math.round(vh * dpr);
     canvas.style.width = vw + 'px'; canvas.style.height = vh + 'px';
     // 기기 화소 그대로 그린다 (인게임처럼 매끈하게): 장면 1칸 = 기기 픽셀 R개, 확대 없음
@@ -10800,8 +10879,16 @@ const Title = (() => {
     layout = { BW, x0, x1: x0 + BW, top: 76, base: 138, ex: Math.round(x0 + BW * 0.55) };
   }
 
-  function start() { if (running) return; running = true; last = performance.now(); requestAnimationFrame(loop); }
-  function stop() { running = false; }
+  function start() {
+    if (running) return;
+    running = true;
+    // 돌아올 때마다 그림판을 새로 만들고 풍경도 다시 그린다
+    buf = document.createElement('canvas'); bg = buf.getContext('2d');
+    frontKey = null; front = null;
+    revive(); resize();
+    last = performance.now(); requestAnimationFrame(loop);
+  }
+  function stop() { running = false; release(); }
 
   function loop(ts) {
     if (!running) return;
@@ -10810,7 +10897,7 @@ const Title = (() => {
     const dt = Math.max(0, Math.min(0.05, (ts - last) / 1000));
     last = ts; t += dt;
     update(dt);
-    draw();
+    if (revive()) draw();
     requestAnimationFrame(loop);
   }
 
@@ -11327,7 +11414,7 @@ const Title = (() => {
     return `rgb(${ch(16)},${ch(8)},${ch(0)})`;
   }
 
-  return { init, start, stop };
+  return { init, start, stop, setQuality };
 })();
 
 // ===== main.js =====
@@ -11455,9 +11542,49 @@ const App = (() => {
     Sound.playMusic('title');
   }
 
+  // ---------------- 화질 (자동·최대·중간·최소) ----------------
+  const Q_ORDER = ['auto', 'high', 'mid', 'low'];
+  const Q_NAME = { auto: '자동', high: '최대', mid: '중간', low: '최소' };
+  const Q_KEY = 'rp_quality', Q_AUTO_KEY = 'rp_quality_auto';
+  const qDefault = () => {   // 기기 사양으로 처음 정하기
+    const mem = navigator.deviceMemory, cores = navigator.hardwareConcurrency;
+    return (mem && mem <= 3) || (cores && cores <= 4) ? 'mid' : 'high';
+  };
+  let qChoice = Q_ORDER.includes(Util.storage.get(Q_KEY, 'auto')) ? Util.storage.get(Q_KEY, 'auto') : 'auto';
+  let qAuto = ['high', 'mid', 'low'].includes(Util.storage.get(Q_AUTO_KEY, '')) ? Util.storage.get(Q_AUTO_KEY, '') : qDefault();
+  let qSlow = 0;
+  const qLevel = () => (qChoice === 'auto' ? qAuto : qChoice);
+  function applyQuality() {
+    Game.setQuality(qLevel()); Title.setQuality(qLevel());
+    const now = Q_NAME[qLevel()];
+    $('btnQualityTitle').innerHTML = `<span class="q-ico">HD</span><span class="q-long">화질: ${qChoice === 'auto' ? `자동(${now})` : now}</span><span class="q-short">${qChoice === 'auto' ? '자동' : now}</span>`;
+    $('btnQuality').innerHTML = `${qChoice === 'auto' ? '자동' : now}<small>화질</small>`;
+  }
+  function cycleQuality() {
+    qChoice = Q_ORDER[(Q_ORDER.indexOf(qChoice) + 1) % Q_ORDER.length];
+    if (qChoice === 'auto') { qAuto = qDefault(); Util.storage.set(Q_AUTO_KEY, ''); }
+    qSlow = 0;
+    Util.storage.set(Q_KEY, qChoice);
+    applyQuality();
+    const tip = { auto: '느려지면 알아서 화질을 낮춰요', high: '가장 선명해요', mid: '조금 덜 선명하지만 더 부드러워요', low: '가장 가볍고 부드러워요 (성능이 낮은 기기용)' }[qChoice];
+    UI.toast(`화질: ${qChoice === 'auto' ? `자동(지금 ${Q_NAME[qLevel()]})` : Q_NAME[qChoice]} · ${tip}`);
+  }
+  // 게임이 4초마다 알려 주는 초당 장면 수: '자동'이면 두 번 연속 느릴 때 한 단계 낮춘다
+  function onFps(fps) {
+    if (qChoice !== 'auto') return;
+    if (fps >= 45) { qSlow = 0; return; }
+    if (++qSlow < 2 || qAuto === 'low') return;
+    qSlow = 0;
+    qAuto = qAuto === 'high' ? 'mid' : 'low';
+    Util.storage.set(Q_AUTO_KEY, qAuto);
+    applyQuality();
+    UI.toast(`화면이 조금 느려서 화질을 '${Q_NAME[qAuto]}'(으)로 낮췄어요`);
+  }
+
   function showStart() {
     updateVisits();
     Game.stop();
+    Game.release();
     $('title').classList.remove('hidden');
     titleMusic();
     $('entry').classList.add('hidden');
@@ -12253,6 +12380,7 @@ const App = (() => {
         if (saveTimer > 4) { saveTimer = 0; save(); }
       },
       mapChanged: () => { updateHud(); save(); if (Game.map && Game.map.id === 'dev') enteredSecret(); },
+      fps: onFps,
       jumped: onJumped,
       targetChanged: t => UI.setTalkButton(t ? (t.type === 'npc' ? '대화' : '살펴보기') : null),
       minimapTargets,
@@ -12283,6 +12411,14 @@ const App = (() => {
     // 순서도 접기 (작은 화면은 처음에 접어 둔다)
     setFlow(Util.storage.get('rp_flow_folded', window.innerHeight < 500));
     $('flowToggle').addEventListener('click', () => { const f = !$('flowPanel').classList.contains('folded'); setFlow(f); Util.storage.set('rp_flow_folded', f); });
+    // 모은 부품·가진 것 접기 (작은 화면은 처음에 접어 둔다)
+    $('invPanel').classList.toggle('folded', !!Util.storage.get('rp_inv_folded', window.innerHeight < 500));
+    $('invPanel').addEventListener('click', e => {
+      if (!e.target.closest('#invToggle')) return;
+      const f = !$('invPanel').classList.contains('folded');
+      $('invPanel').classList.toggle('folded', f);
+      Util.storage.set('rp_inv_folded', f);
+    });
 
     const touch = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
     Game.setTouch(touch);
@@ -12299,6 +12435,8 @@ const App = (() => {
       });
     });
     UI.setSoundButton(Sound.isMuted());
+    $('btnQuality').addEventListener('click', cycleQuality);
+    $('btnQualityTitle').addEventListener('click', e => { e.stopPropagation(); cycleQuality(); });
     $('btnSound').addEventListener('click', () => { Sound.init(); Sound.setMuted(!Sound.isMuted()); UI.setSoundButton(Sound.isMuted()); });
     $('btnSoundTitle').addEventListener('click', () => { Sound.setMuted(!Sound.isMuted()); titleMusic(); UI.setSoundButton(Sound.isMuted()); });
     // 브라우저(크롬·엣지·사파리)는 사용자가 화면을 한 번 누르거나 키를 누르기 전에는 웹페이지 소리를 막는다.
@@ -12350,6 +12488,7 @@ const App = (() => {
     document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
 
     Title.init($('titleCanvas'));
+    applyQuality();
     bindStart();
     // 캐릭터가 순서도·부품 패널 뒤로 가면 패널을 잠깐 숨기고, 벗어나면 다시 보인다
     setInterval(() => {
@@ -12372,7 +12511,7 @@ const App = (() => {
     $('adminLink').addEventListener('dblclick', () => { location.hash = '#admin'; });
   }
 
-  return { boot, toStart: () => { save(); st = null; Sound.stopMusic(); showStart(); }, get state() { return st; }, get session() { return session; }, get content() { return content; }, get miniCfg() { return miniCfg; }, _finish: () => finish() };
+  return { boot, toStart: () => { save(); st = null; Sound.stopMusic(); showStart(); }, get state() { return st; }, get session() { return session; }, get content() { return content; }, get miniCfg() { return miniCfg; }, _finish: () => finish(), _fps: f => onFps(f) };
 })();
 
 window.addEventListener('DOMContentLoaded', App.boot);

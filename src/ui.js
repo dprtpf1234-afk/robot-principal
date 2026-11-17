@@ -274,10 +274,13 @@ const UI = (() => {
     const key = JSON.stringify(s);
     if (el.dataset.key === key) return;
     el.dataset.key = key;
-    el.innerHTML = `<h4>모은 부품 ${s.parts.filter(x => x.on).length}/${s.parts.length}</h4><div class="inv-grid">` +
+    const got = s.parts.filter(x => x.on).length;
+    // 제목 줄을 누르면 접고 펼친다 (접으면 한 줄 요약만)
+    el.innerHTML = `<button type="button" class="inv-toggle" id="invToggle"><span class="open">모은 부품 ${got}/${s.parts.length} <b>▾</b></span>` +
+      `<span class="shut">부품 ${got}/${s.parts.length} · 토큰 ${s.tokens} · 개나리 ${s.stars}/${s.starTotal} <b>▸</b></span></button><div class="inv-body"><div class="inv-grid">` +
       s.parts.map(x => `<span class="inv-slot ${x.on ? 'on' : ''}" title="${Util.esc(x.name)}">${x.on ? Util.esc(x.name) : '?'}</span>`).join('') + '</div>' +
       `<h4>가진 것</h4><div class="inv-chips">` + s.items.map(x => `<span class="inv-chip ${x.on ? 'on' : ''}">${Util.esc(x.name)}</span>`).join('') +
-      `<span class="inv-chip tok">힌트 토큰 ${s.tokens}</span><span class="inv-chip star">개나리 ${s.stars}/${s.starTotal}</span></div>`;
+      `<span class="inv-chip tok">힌트 토큰 ${s.tokens}</span><span class="inv-chip star">개나리 ${s.stars}/${s.starTotal}</span></div></div>`;
   }
   function setTalkButton(label) {
     const b = $('btnTalk');
