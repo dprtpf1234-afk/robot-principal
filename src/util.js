@@ -160,5 +160,9 @@ const Util = (() => {
     return false;
   }
 
-  return { GROUPS, GROUP_NAMES, checkName, checkNick, looksLikeName, rng, josa, maskName, normalize, shuffle, formatTime, gradeGroup, groupLabel, sha256, esc, clone, storage, course };
+  // 우리 학교 학년별 반 수와 최대 번호
+  const CLASS_COUNT = { 1: 4, 2: 5, 3: 6, 4: 8, 5: 8, 6: 9 };
+  const MAX_NUM = 25;
+
+  return { GROUPS, GROUP_NAMES, CLASS_COUNT, MAX_NUM, checkName, checkNick, looksLikeName, rng, josa, maskName, normalize, shuffle, formatTime, gradeGroup, groupLabel, sha256, esc, clone, storage, course };
 })();

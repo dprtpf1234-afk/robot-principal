@@ -701,6 +701,7 @@ body.kb-open .sound-hint { display: none; }
 .e-nick-note { font-size: 11.5px; margin-top: -2px; }
 @media (max-height: 460px) { .e-nick-note { display: none; } }
 body.kb-open .e-nick-note { display: none; }
+.e-three select:disabled { opacity: .55; cursor: not-allowed; }
 </style>
 </head>
 <body>
@@ -758,7 +759,7 @@ body.kb-open .e-nick-note { display: none; }
       <button type="submit" class="e-enter">입장하기</button>
       <button type="button" class="e-rank" id="btnRankStart">최고 기록 보기 (학년군별)</button>
       </div></div>
-      <div id="adminLink">v3.21</div>
+      <div id="adminLink">v3.22</div>
     </form>
   </div>
 </div>
@@ -971,7 +972,11 @@ const Util = (() => {
     return false;
   }
 
-  return { GROUPS, GROUP_NAMES, checkName, checkNick, looksLikeName, rng, josa, maskName, normalize, shuffle, formatTime, gradeGroup, groupLabel, sha256, esc, clone, storage, course };
+  // 우리 학교 학년별 반 수와 최대 번호
+  const CLASS_COUNT = { 1: 4, 2: 5, 3: 6, 4: 8, 5: 8, 6: 9 };
+  const MAX_NUM = 25;
+
+  return { GROUPS, GROUP_NAMES, CLASS_COUNT, MAX_NUM, checkName, checkNick, looksLikeName, rng, josa, maskName, normalize, shuffle, formatTime, gradeGroup, groupLabel, sha256, esc, clone, storage, course };
 })();
 
 // ===== daynight.js =====
@@ -10576,7 +10581,7 @@ const Admin = (() => {
     body.innerHTML = `<div class="filters">
         <select id="fG"><option value="">전체</option><option value="g12">1~2학년군</option><option value="g34">3~4학년군</option><option value="g56">5~6학년군</option></select>
         <select id="fGrade"><option value="">모든 학년</option>${[1, 2, 3, 4, 5, 6].map(i => `<option value="${i}">${i}학년</option>`).join('')}</select>
-        <select id="fCls"><option value="">모든 반</option>${Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}">${i + 1}반</option>`).join('')}</select>
+        <select id="fCls"><option value="">모든 반</option>${Array.from({ length: 9 }, (_, i) => `<option value="${i + 1}">${i + 1}반</option>`).join('')}</select>
         <span id="recCount" class="muted"></span>
         <button class="primary" id="csvBtn">CSV 다운로드</button>
         <button class="ghost" id="csvCopy">표 복사 (엑셀에 붙여넣기)</button>
@@ -11728,8 +11733,15 @@ const App = (() => {
   function bindStart() {
     $('gradeSeg').innerHTML = [1, 2, 3, 4, 5, 6].map(i => `<button type="button" data-g="${i}">${i}<span class="gr">학년</span></button>`).join('');
     const clsSel = $('inClass');
-    for (let i = 1; i <= 10; i++) clsSel.insertAdjacentHTML('beforeend', `<option value="${i}">${i}반</option>`);
-    for (let i = 1; i <= 35; i++) $('inNum').insertAdjacentHTML('beforeend', `<option value="${i}">${i}번</option>`);
+    // 반은 학년마다 개수가 달라서, 학년을 고르면 그 학년의 반만 보여 준다. 번호는 25번까지.
+    const fillClasses = gr => {
+      const keep = Number(clsSel.value), n = Util.CLASS_COUNT[gr] || 0;
+      clsSel.innerHTML = `<option value="">${gr ? '고르기' : '학년 먼저'}</option>` + Array.from({ length: n }, (_, i) => `<option value="${i + 1}">${i + 1}반</option>`).join('');
+      clsSel.disabled = !gr;
+      if (keep && keep <= n) clsSel.value = keep;
+    };
+    fillClasses(0);
+    for (let i = 1; i <= Util.MAX_NUM; i++) $('inNum').insertAdjacentHTML('beforeend', `<option value="${i}">${i}번</option>`);
     $('avatarGrid').innerHTML = AVATAR_NAMES.map((n, i) => `<button type="button" data-c="${i}"><canvas width="32" height="32"></canvas><span>${n}</span></button>`).join('');
     $('avatarGrid').querySelectorAll('button').forEach((b, i) => {
       const c = b.querySelector('canvas').getContext('2d');
@@ -11738,6 +11750,7 @@ const App = (() => {
 
     const setGrade = gr => {
       form.grade = gr;
+      fillClasses(gr);
       $('gradeSeg').querySelectorAll('button').forEach(b => b.classList.toggle('on', Number(b.dataset.g) === gr));
       $('gradeNote').textContent = gr ? `${Util.groupLabel(Util.gradeGroup(gr))} 문제가 나와요` : '학년에 맞는 문제가 나와요';
     };
@@ -11751,7 +11764,11 @@ const App = (() => {
     setGrade(saved ? Number(saved.grade) : 0);
     setChar(saved && saved.charIdx != null ? saved.charIdx : 0);
     setMode(saved && MODES[saved.mode] ? saved.mode : 'm30');
-    if (saved) { clsSel.value = saved.cls; if (saved.num && saved.nick != null) $('inNum').value = saved.num; $('inNick').value = saved.nick || ''; }
+    if (saved) {
+      if (saved.cls <= (Util.CLASS_COUNT[saved.grade] || 0)) clsSel.value = saved.cls;
+      if (saved.num && saved.nick != null && saved.num <= Util.MAX_NUM) $('inNum').value = saved.num;
+      $('inNick').value = saved.nick || '';
+    }
 
     $('btnStart').addEventListener('click', openEntry);
     $('entryClose').addEventListener('click', () => $('entry').classList.add('hidden'));

@@ -185,8 +185,15 @@ const App = (() => {
   function bindStart() {
     $('gradeSeg').innerHTML = [1, 2, 3, 4, 5, 6].map(i => `<button type="button" data-g="${i}">${i}<span class="gr">학년</span></button>`).join('');
     const clsSel = $('inClass');
-    for (let i = 1; i <= 10; i++) clsSel.insertAdjacentHTML('beforeend', `<option value="${i}">${i}반</option>`);
-    for (let i = 1; i <= 35; i++) $('inNum').insertAdjacentHTML('beforeend', `<option value="${i}">${i}번</option>`);
+    // 반은 학년마다 개수가 달라서, 학년을 고르면 그 학년의 반만 보여 준다. 번호는 25번까지.
+    const fillClasses = gr => {
+      const keep = Number(clsSel.value), n = Util.CLASS_COUNT[gr] || 0;
+      clsSel.innerHTML = `<option value="">${gr ? '고르기' : '학년 먼저'}</option>` + Array.from({ length: n }, (_, i) => `<option value="${i + 1}">${i + 1}반</option>`).join('');
+      clsSel.disabled = !gr;
+      if (keep && keep <= n) clsSel.value = keep;
+    };
+    fillClasses(0);
+    for (let i = 1; i <= Util.MAX_NUM; i++) $('inNum').insertAdjacentHTML('beforeend', `<option value="${i}">${i}번</option>`);
     $('avatarGrid').innerHTML = AVATAR_NAMES.map((n, i) => `<button type="button" data-c="${i}"><canvas width="32" height="32"></canvas><span>${n}</span></button>`).join('');
     $('avatarGrid').querySelectorAll('button').forEach((b, i) => {
       const c = b.querySelector('canvas').getContext('2d');
@@ -195,6 +202,7 @@ const App = (() => {
 
     const setGrade = gr => {
       form.grade = gr;
+      fillClasses(gr);
       $('gradeSeg').querySelectorAll('button').forEach(b => b.classList.toggle('on', Number(b.dataset.g) === gr));
       $('gradeNote').textContent = gr ? `${Util.groupLabel(Util.gradeGroup(gr))} 문제가 나와요` : '학년에 맞는 문제가 나와요';
     };
@@ -208,7 +216,11 @@ const App = (() => {
     setGrade(saved ? Number(saved.grade) : 0);
     setChar(saved && saved.charIdx != null ? saved.charIdx : 0);
     setMode(saved && MODES[saved.mode] ? saved.mode : 'm30');
-    if (saved) { clsSel.value = saved.cls; if (saved.num && saved.nick != null) $('inNum').value = saved.num; $('inNick').value = saved.nick || ''; }
+    if (saved) {
+      if (saved.cls <= (Util.CLASS_COUNT[saved.grade] || 0)) clsSel.value = saved.cls;
+      if (saved.num && saved.nick != null && saved.num <= Util.MAX_NUM) $('inNum').value = saved.num;
+      $('inNick').value = saved.nick || '';
+    }
 
     $('btnStart').addEventListener('click', openEntry);
     $('entryClose').addEventListener('click', () => $('entry').classList.add('hidden'));

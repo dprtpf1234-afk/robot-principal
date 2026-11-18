@@ -95,7 +95,7 @@ const Admin = (() => {
     body.innerHTML = `<div class="filters">
         <select id="fG"><option value="">전체</option><option value="g12">1~2학년군</option><option value="g34">3~4학년군</option><option value="g56">5~6학년군</option></select>
         <select id="fGrade"><option value="">모든 학년</option>${[1, 2, 3, 4, 5, 6].map(i => `<option value="${i}">${i}학년</option>`).join('')}</select>
-        <select id="fCls"><option value="">모든 반</option>${Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}">${i + 1}반</option>`).join('')}</select>
+        <select id="fCls"><option value="">모든 반</option>${Array.from({ length: 9 }, (_, i) => `<option value="${i + 1}">${i + 1}반</option>`).join('')}</select>
         <span id="recCount" class="muted"></span>
         <button class="primary" id="csvBtn">CSV 다운로드</button>
         <button class="ghost" id="csvCopy">표 복사 (엑셀에 붙여넣기)</button>
