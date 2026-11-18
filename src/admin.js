@@ -52,7 +52,7 @@ const Admin = (() => {
   async function main() {
     show(`<div class="admin">
       <header><h2>관리자 · 로봇 교장선생님 구하기!</h2><button class="ghost" id="admOut">나가기</button></header>
-      <nav class="tabs"><button data-t="records">기록 조회</button><button data-t="content">퀴즈·대사 수정</button><button data-t="reset">랭킹 초기화</button></nav>
+      <nav class="tabs"><button data-t="records">기록 조회</button><button data-t="ranking">랭킹 보기</button><button data-t="content">퀴즈·대사 수정</button><button data-t="reset">랭킹 초기화</button></nav>
       <section id="admBody"></section>
     </div>`);
     $('admOut').addEventListener('click', () => { authed = false; close(); });
@@ -63,6 +63,7 @@ const Admin = (() => {
   function renderTab() {
     root().querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
     if (tab === 'records') records();
+    else if (tab === 'ranking') rankingTab();
     else if (tab === 'content') contentEditor();
     else resetTab();
   }
@@ -127,6 +128,29 @@ const Admin = (() => {
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     });
     draw();
+  }
+
+  // ---------- 랭킹 보기 (관리자는 이름 전체가 보인다) ----------
+  let rkGroup = 'g34', rkMode = 'all';
+  async function rankingTab() {
+    const body = $('admBody');
+    const bar = `<div class="content-bar"><div class="tabs small">${Util.GROUPS.map(k => `<button data-g="${k}" class="${rkGroup === k ? 'on' : ''}">${Util.groupLabel(k)}</button>`).join('')}</div>
+      <div class="tabs small">${[['all', '전체'], ['m30', '30분 미션'], ['m10', '10분 미션']].map(([v, l]) => `<button data-m="${v}" class="${rkMode === v ? 'on' : ''}">${l}</button>`).join('')}</div></div>
+      <p class="muted small">학생 화면의 명예의 전당에는 이름 가운데가 ○로 가려져 보여요 (예: 김○지). 여기서는 전체 이름이 보여요.</p>`;
+    body.innerHTML = bar + '<p class="muted">불러오는 중…</p>';
+    let rows = [];
+    try { rows = await Store.adminRanking(rkGroup, { mode: rkMode }) || []; } catch (e) { body.innerHTML = bar + '<p class="muted">랭킹을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.</p>'; bind(); return; }
+    const medal = r => (r <= 3 ? ['🥇', '🥈', '🥉'][r - 1] : r);
+    body.innerHTML = bar + (rows.length
+      ? `<div class="table-wrap"><table class="rec"><thead><tr><th>순위</th><th>학년-반 이름</th><th>모드</th><th>최고 기록</th></tr></thead><tbody>` +
+        rows.map(r => `<tr><td>${medal(r.rank)}</td><td>${Util.esc(r.label)}</td><td>${r.mode === 'm10' ? '10분' : '30분'}</td><td>${Util.formatTime(r.bestMs)}</td></tr>`).join('') +
+        '</tbody></table></div>'
+      : '<p class="muted">이 학년군에는 아직 클리어 기록이 없어요.</p>');
+    bind();
+    function bind() {
+      body.querySelectorAll('[data-g]').forEach(b => b.addEventListener('click', () => { rkGroup = b.dataset.g; rankingTab(); }));
+      body.querySelectorAll('[data-m]').forEach(b => b.addEventListener('click', () => { rkMode = b.dataset.m; rankingTab(); }));
+    }
   }
 
   // ---------- 초기화 ----------

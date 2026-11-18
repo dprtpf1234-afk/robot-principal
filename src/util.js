@@ -21,9 +21,12 @@ const Util = (() => {
   }
 
   // 랭킹용 이름 가리기: 김민수 -> 김○○
+  // 랭킹용: 이름 가운데를 ○로 가린다 (김민지 → 김○지, 남궁민수 → 남○○수, 이준 → 이○)
   function maskName(name) {
-    if (!name) return '';
-    return name[0] + '○'.repeat(Math.max(1, name.length - 1));
+    const a = Array.from(String(name || ''));
+    if (a.length <= 1) return a.join('');
+    if (a.length === 2) return a[0] + '○';
+    return a[0] + '○'.repeat(a.length - 2) + a[a.length - 1];
   }
 
   // 주관식 비교용: 띄어쓰기 제거, 소문자

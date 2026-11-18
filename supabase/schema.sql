@@ -151,10 +151,19 @@ begin
     'bestMs', r.best_ms, 'rank', r.rank, 'total', tot, 'group', grp);
 end $$;
 
--- 학생 화면용 랭킹 (학년-반 이름 전체를 보여 준다)
+-- 이름 가운데를 ○로 가린다 (김민지 → 김○지, 남궁민수 → 남○○수)
+create or replace function rp_mask_name(p_name text) returns text language sql immutable as $$
+  select case
+    when char_length(coalesce(p_name, '')) <= 1 then coalesce(p_name, '')
+    when char_length(p_name) = 2 then left(p_name, 1) || '○'
+    else left(p_name, 1) || repeat('○', char_length(p_name) - 2) || right(p_name, 1)
+  end
+$$;
+
+-- 학생 화면용 랭킹 (학년-반 + 가린 이름)
 create or replace function rp_ranking(p_group text, p_mode text default 'all', p_limit int default 30)
 returns json language sql stable security definer set search_path = public as $$
-  select coalesce(json_agg(json_build_object('rank', rank, 'label', grade || '-' || cls || ' ' || name, 'bestMs', best_ms, 'mode', mode) order by rank), '[]'::json)
+  select coalesce(json_agg(json_build_object('rank', rank, 'label', grade || '-' || cls || ' ' || rp_mask_name(name), 'bestMs', best_ms, 'mode', mode) order by rank), '[]'::json)
   from (select * from rp_ranking_rows(p_group, p_mode) order by rank limit least(greatest(p_limit, 1), 100)) t
 $$;
 
@@ -202,6 +211,15 @@ begin
     from rp_players p) t);
 end $$;
 
+-- 관리자용 랭킹: 전체 이름
+create or replace function rp_admin_ranking(p_pw text, p_group text, p_mode text default 'all', p_limit int default 100)
+returns json language plpgsql stable security definer set search_path = public as $$
+begin
+  if not rp_admin_ok(p_pw) then raise exception 'not admin'; end if;
+  return (select coalesce(json_agg(json_build_object('rank', rank, 'label', grade || '-' || cls || ' ' || name, 'bestMs', best_ms, 'mode', mode) order by rank), '[]'::json)
+    from (select * from rp_ranking_rows(p_group, p_mode) order by rank limit least(greatest(p_limit, 1), 300)) t);
+end $$;
+
 create or replace function rp_admin_delete_player(p_pw text, p_id bigint) returns boolean language plpgsql security definer set search_path = public as $$
 begin
   if not rp_admin_ok(p_pw) then raise exception 'not admin'; end if;
@@ -241,6 +259,6 @@ end $$;
 grant execute on function
   rp_start_attempt(int, int, int, text, text), rp_complete_step(bigint, int), rp_get_attempt(bigint), rp_abandon_attempt(bigint),
   rp_finish_attempt(bigint, boolean, bigint), rp_ranking(text, text, int), rp_visit_stats(), rp_get_content(),
-  rp_admin_has_password(), rp_admin_set_password(text), rp_admin_check(text), rp_admin_records(text),
+  rp_admin_has_password(), rp_admin_set_password(text), rp_admin_check(text), rp_admin_records(text), rp_admin_ranking(text, text, text, int),
   rp_admin_delete_player(text, bigint), rp_admin_reset(text), rp_admin_save_content(text, jsonb), rp_admin_reset_content(text)
 to anon, authenticated;

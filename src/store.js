@@ -112,9 +112,15 @@ const LocalStore = (() => {
     return { today: today.size, total: total.size };
   }
 
-  // 학생 화면용: 이름을 가린 랭킹
+  // 학생 화면용: 이름 가운데를 가린 랭킹 (김○지)
   async function getRanking(group, limit = 30, opts = {}) {
     return buildRanking(load(), group, limit, opts).map(r => ({
+      rank: r.rank, label: r.grade + '-' + r.cls + ' ' + Util.maskName(r.name), bestMs: r.bestMs, mode: r.mode
+    }));
+  }
+  // 관리자용: 전체 이름
+  async function adminRanking(group, opts = {}) {
+    return buildRanking(load(), group, 300, opts).map(r => ({
       rank: r.rank, label: r.grade + '-' + r.cls + ' ' + r.name, bestMs: r.bestMs, mode: r.mode
     }));
   }
@@ -170,7 +176,7 @@ const LocalStore = (() => {
   return {
     mode: 'local',
     startAttempt, completeStep, getAttempt, abandonAttempt, finishAttempt, getRanking, getVisitStats,
-    adminHasPassword, adminSetPassword, adminCheck, adminListRecords, adminDeletePlayer, adminResetAll,
+    adminHasPassword, adminSetPassword, adminCheck, adminListRecords, adminRanking, adminDeletePlayer, adminResetAll,
     getContent, adminSaveContent, adminResetContent, normalizeContent
   };
 })();
@@ -204,6 +210,7 @@ const ServerStore = (() => {
     async adminSetPassword(pw) { const ok = await rpc('rp_admin_set_password', { p_pw: pw }); if (ok) adminPw = pw; return ok; },
     async adminCheck(pw) { const ok = await rpc('rp_admin_check', { p_pw: pw }); if (ok) adminPw = pw; return ok; },
     adminListRecords: () => rpc('rp_admin_records', { p_pw: adminPw }),
+    adminRanking: (group, opts = {}) => rpc('rp_admin_ranking', { p_pw: adminPw, p_group: group, p_mode: opts.mode || 'all', p_limit: 300 }),
     adminDeletePlayer: id => rpc('rp_admin_delete_player', { p_pw: adminPw, p_id: id }),
     adminResetAll: () => rpc('rp_admin_reset', { p_pw: adminPw }),
     async getContent() {
