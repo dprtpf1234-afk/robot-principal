@@ -187,12 +187,21 @@ $$;
 create or replace function rp_admin_has_password() returns boolean language sql stable security definer set search_path = public as $$
   select exists (select 1 from rp_settings where key = 'admin_hash')
 $$;
--- 처음 한 번만 정할 수 있다. 바꾸려면 SQL Editor 에서: delete from rp_settings where key = 'admin_hash';
+-- 처음 한 번만 정할 수 있다. 바꾸기는 관리자 화면의 '비밀번호 변경' 탭(rp_admin_change_password).
+-- 잊어버렸을 때만 SQL Editor 에서: delete from rp_settings where key = 'admin_hash';
 create or replace function rp_admin_set_password(p_pw text) returns boolean language plpgsql security definer set search_path = public, extensions as $$
 begin
   if exists (select 1 from rp_settings where key = 'admin_hash') then return false; end if;
   if char_length(p_pw) < 4 then return false; end if;
   insert into rp_settings(key, value) values ('admin_hash', to_jsonb(extensions.crypt(p_pw, extensions.gen_salt('bf'))));
+  return true;
+end $$;
+create or replace function rp_admin_change_password(p_old text, p_new text) returns boolean
+language plpgsql security definer set search_path = public, extensions as $$
+begin
+  if not rp_admin_ok(p_old) then raise exception 'not admin'; end if;
+  if char_length(coalesce(p_new, '')) < 4 then raise exception 'too short'; end if;
+  update rp_settings set value = to_jsonb(extensions.crypt(p_new, extensions.gen_salt('bf'))) where key = 'admin_hash';
   return true;
 end $$;
 create or replace function rp_admin_check(p_pw text) returns boolean language sql stable security definer set search_path = public as $$
@@ -259,6 +268,6 @@ end $$;
 grant execute on function
   rp_start_attempt(int, int, int, text, text), rp_complete_step(bigint, int), rp_get_attempt(bigint), rp_abandon_attempt(bigint),
   rp_finish_attempt(bigint, boolean, bigint), rp_ranking(text, text, int), rp_visit_stats(), rp_get_content(),
-  rp_admin_has_password(), rp_admin_set_password(text), rp_admin_check(text), rp_admin_records(text), rp_admin_ranking(text, text, text, int),
+  rp_admin_has_password(), rp_admin_set_password(text), rp_admin_check(text), rp_admin_change_password(text, text), rp_admin_records(text), rp_admin_ranking(text, text, text, int),
   rp_admin_delete_player(text, bigint), rp_admin_reset(text), rp_admin_save_content(text, jsonb), rp_admin_reset_content(text)
 to anon, authenticated;

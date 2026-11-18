@@ -129,6 +129,11 @@ const LocalStore = (() => {
   async function adminHasPassword() { return !!Util.storage.get(ADMIN_KEY, null); }
   async function adminSetPassword(pw) { Util.storage.set(ADMIN_KEY, await Util.sha256('rp:' + pw)); return true; }
   async function adminCheck(pw) { return Util.storage.get(ADMIN_KEY, null) === await Util.sha256('rp:' + pw); }
+  async function adminChangePassword(oldPw, newPw) {
+    if (!(await adminCheck(oldPw))) throw new Error('not admin');
+    Util.storage.set(ADMIN_KEY, await Util.sha256('rp:' + newPw));
+    return true;
+  }
 
   async function adminListRecords() {
     const db = load();
@@ -176,7 +181,7 @@ const LocalStore = (() => {
   return {
     mode: 'local',
     startAttempt, completeStep, getAttempt, abandonAttempt, finishAttempt, getRanking, getVisitStats,
-    adminHasPassword, adminSetPassword, adminCheck, adminListRecords, adminRanking, adminDeletePlayer, adminResetAll,
+    adminHasPassword, adminSetPassword, adminCheck, adminChangePassword, adminListRecords, adminRanking, adminDeletePlayer, adminResetAll,
     getContent, adminSaveContent, adminResetContent, normalizeContent
   };
 })();
@@ -209,6 +214,7 @@ const ServerStore = (() => {
     adminHasPassword: () => rpc('rp_admin_has_password'),
     async adminSetPassword(pw) { const ok = await rpc('rp_admin_set_password', { p_pw: pw }); if (ok) adminPw = pw; return ok; },
     async adminCheck(pw) { const ok = await rpc('rp_admin_check', { p_pw: pw }); if (ok) adminPw = pw; return ok; },
+    async adminChangePassword(oldPw, newPw) { const ok = await rpc('rp_admin_change_password', { p_old: oldPw, p_new: newPw }); if (ok) adminPw = newPw; return ok; },
     adminListRecords: () => rpc('rp_admin_records', { p_pw: adminPw }),
     adminRanking: (group, opts = {}) => rpc('rp_admin_ranking', { p_pw: adminPw, p_group: group, p_mode: opts.mode || 'all', p_limit: 300 }),
     adminDeletePlayer: id => rpc('rp_admin_delete_player', { p_pw: adminPw, p_id: id }),

@@ -52,7 +52,7 @@ const Admin = (() => {
   async function main() {
     show(`<div class="admin">
       <header><h2>관리자 · 로봇 교장선생님 구하기!</h2><button class="ghost" id="admOut">나가기</button></header>
-      <nav class="tabs"><button data-t="records">기록 조회</button><button data-t="ranking">랭킹 보기</button><button data-t="content">퀴즈·대사 수정</button><button data-t="reset">랭킹 초기화</button></nav>
+      <nav class="tabs"><button data-t="records">기록 조회</button><button data-t="ranking">랭킹 보기</button><button data-t="content">퀴즈·대사 수정</button><button data-t="reset">랭킹 초기화</button><button data-t="password">비밀번호 변경</button></nav>
       <section id="admBody"></section>
     </div>`);
     $('admOut').addEventListener('click', () => { authed = false; close(); });
@@ -65,6 +65,7 @@ const Admin = (() => {
     if (tab === 'records') records();
     else if (tab === 'ranking') rankingTab();
     else if (tab === 'content') contentEditor();
+    else if (tab === 'password') passwordTab();
     else resetTab();
   }
 
@@ -151,6 +152,37 @@ const Admin = (() => {
       body.querySelectorAll('[data-g]').forEach(b => b.addEventListener('click', () => { rkGroup = b.dataset.g; rankingTab(); }));
       body.querySelectorAll('[data-m]').forEach(b => b.addEventListener('click', () => { rkMode = b.dataset.m; rankingTab(); }));
     }
+  }
+
+  // ---------- 비밀번호 변경 ----------
+  function passwordTab() {
+    $('admBody').innerHTML = `<div class="reset-box pw-box">
+      <p>관리자 접속 비밀번호를 바꿔요. 바꾼 뒤에는 새 비밀번호로 들어와야 해요.</p>
+      <form id="pwForm" autocomplete="off">
+        <label>지금 비밀번호<input type="password" id="pwOld" autocomplete="current-password"></label>
+        <label>새 비밀번호 (4자 이상)<input type="password" id="pwNew" autocomplete="new-password"></label>
+        <label>새 비밀번호 다시 입력<input type="password" id="pwNew2" autocomplete="new-password"></label>
+        <button class="primary" type="submit" id="pwBtn">비밀번호 바꾸기</button>
+      </form>
+      <p id="pwMsg"></p></div>`;
+    const msg = (t, ok) => { $('pwMsg').textContent = t; $('pwMsg').className = ok ? 'good' : 'bad'; };
+    $('pwForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const oldPw = $('pwOld').value, a = $('pwNew').value, b = $('pwNew2').value;
+      if (!oldPw) return msg('지금 비밀번호를 입력해 주세요.');
+      if (a.length < 4) return msg('새 비밀번호는 4자 이상으로 정해 주세요.');
+      if (a !== b) return msg('새 비밀번호 두 칸이 서로 달라요.');
+      if (a === oldPw) return msg('지금 비밀번호와 다른 비밀번호로 정해 주세요.');
+      $('pwBtn').disabled = true;
+      try {
+        await Store.adminChangePassword(oldPw, a);
+        ['pwOld', 'pwNew', 'pwNew2'].forEach(id => { $(id).value = ''; });
+        msg('비밀번호를 바꿨어요. 다음부터는 새 비밀번호로 들어오세요.', true);
+      } catch (err) {
+        msg(/not admin/.test(String(err && err.message || err)) ? '지금 비밀번호가 맞지 않아요.' : '바꾸지 못했어요. 잠시 뒤 다시 시도해 주세요.');
+      }
+      $('pwBtn').disabled = false;
+    });
   }
 
   // ---------- 초기화 ----------
