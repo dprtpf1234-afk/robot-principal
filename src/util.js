@@ -125,5 +125,40 @@ const Util = (() => {
     return '';
   }
 
-  return { GROUPS, GROUP_NAMES, checkName, rng, josa, maskName, normalize, shuffle, formatTime, gradeGroup, groupLabel, sha256, esc, clone, storage, course };
+  // ---------- 별명 검사 (선택 입력) ----------
+  // 한글 완성 글자·영어·숫자만, 2~8글자. 욕설·성적인 말·유행어·사람을 놀리는 말은 막는다.
+  const NICK_BAD = BAD_WORDS.concat([
+    // 욕설·비하 더하기
+    '시벌', '씨벌', '시펄', '씨펄', '십팔', '씹팔', '십쌔', '쓰레기', '개노', '개웃', '개쩔', '개빡', '개못', '빡치', '빡쳐', '열받', '꺼지', '닥처', '디져', '디진', '뒤져', '뒤진', '죽여', '패드립', '못생', '돼지', '뚱땡', '뚱보', '멸치', '난쟁', '장애', '애자', '정신병', '틀니', '꼰대', '거지', '노예', '찐찌', '빠가', '병쉰', '븅', '좆밥', '존못', '똥꼬', '엉덩이', '궁디', '방댕', '응가',
+    // 유행어
+    '존잘', '존예', '존맛', '존잼', '쩔어', '대박', '레게노', '중꺾마', '알잘딱', '느좋', '럭키비키', '원영적', '스불재', '머선', '사바사', '케바케', '인싸', '아싸', '별다줄', '갑분싸', '쿠쿠루', '삥뽕', '빠염', '하이루', '슬릭백', '억까', '억텐', '현타', '멘붕', '킹정', '킹받', '쌉가능', '쌉', '오졌', '지렸', '렬루', '실화냐', '에바', '레알', '띵작', '반박시', '너무좋아', '가보자고', '어쩔티비', '우짤래미', '저쩔티비', '꽁꽁', '두쫀쿠', '흑백', '나니', '사사게',
+    // 영어
+    'fuck', 'fuk', 'fck', 'shit', 'sh1t', 'bitch', 'btch', 'sex', 'porn', 'dick', 'cock', 'pussy', 'damn', 'nigg', 'fag', 'stupid', 'idiot', 'loser', 'sibal', 'ssibal', 'tlqkf', 'qudtls', 'byungsin', 'jonna', 'sakki', 'gaesaeki', 'admin', 'test',
+    // 숫자 은어
+    '18', '1818', '69', '10새', '444'
+  ]);
+  function checkNick(nick) {
+    const n = String(nick || '').replace(/\s+/g, '');
+    if (!n) return '';                                   // 안 써도 된다
+    const len = Array.from(n).length;
+    if (len < 2 || len > 8) return '별명은 2~8글자로 써 주세요. (쓰지 않아도 돼요)';
+    if (!/^[가-힣a-zA-Z0-9]+$/.test(n)) return '별명은 한글·영어·숫자로만 써 주세요. (ㅋㅋ, ㅅㅂ 같은 자음·모음이나 기호는 안 돼요)';
+    if (/^[0-9]+$/.test(n)) return '숫자만으로는 별명을 만들 수 없어요.';
+    if (/(.)\1\1/.test(n)) return '같은 글자를 세 번 이상 이어 쓸 수 없어요.';
+    const low = n.toLowerCase();
+    const forms = [low, low.replace(/[0-9]/g, ''), low.replace(/[a-z0-9]/g, '')];
+    for (const w of NICK_BAD) if (forms.some(f => f.includes(w))) return '사용할 수 없는 별명이에요. 바르고 고운 별명으로 바꿔 주세요.';
+    return '';
+  }
+
+  // 실제 이름처럼 보이는지 (한글 3글자 + 흔한 성, 또는 두 글자 성 + 2글자): 경고만 하고 막지는 않는다
+  const COMMON_SURNAMES = '김 이 박 최 정 강 조 윤 장 임 한 오 서 신 권 황 안 송 전 홍 유 고 문 양 손 배 백 허 남 심 노 하 곽 성 차 주 우 구 민 류 나 진 지 엄 채 원 천 방 공 현 함 변 염 여 추 도 소 석 선 설 마 길 연 위 표 명 기 반 라 왕 금 옥 육 인 맹 제 모'.split(' ');
+  function looksLikeName(nick) {
+    const n = String(nick || '').replace(/\s+/g, '');
+    if (/^[가-힣]{3}$/.test(n)) return COMMON_SURNAMES.includes(n[0]);
+    if (/^[가-힣]{4}$/.test(n)) return SURNAMES2.includes(n.slice(0, 2));
+    return false;
+  }
+
+  return { GROUPS, GROUP_NAMES, checkName, checkNick, looksLikeName, rng, josa, maskName, normalize, shuffle, formatTime, gradeGroup, groupLabel, sha256, esc, clone, storage, course };
 })();

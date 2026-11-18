@@ -13,15 +13,15 @@ const LocalStore = (() => {
   }
   function save(db) { Util.storage.set(KEY, db); }
 
-  function playerKey(p) { return [p.grade, p.cls, p.num, p.name].join('|'); }
+  function playerKey(p) { return [p.grade, p.cls, p.num].join('|'); }   // 학년·반·번호로 구분
 
   async function startAttempt(player) {
     const db = load();
     let row = db.players.find(r => r.key === playerKey(player));
     if (!row) {
-      row = { id: db.seq++, key: playerKey(player), grade: player.grade, cls: player.cls, num: player.num, name: player.name, createdAt: Date.now() };
+      row = { id: db.seq++, key: playerKey(player), grade: player.grade, cls: player.cls, num: player.num, name: '', nick: player.nick || '', createdAt: Date.now() };
       db.players.push(row);
-    }
+    } else row.nick = player.nick || '';
     const attempt = { id: db.seq++, playerId: row.id, mode: player.mode || 'm30', startedAt: Date.now(), finishedAt: null, durationMs: null, steps: [], status: 'playing' };
     db.attempts.push(attempt);
     save(db);
@@ -96,7 +96,7 @@ const LocalStore = (() => {
     for (const [playerId, r] of best) {
       const p = db.players.find(x => x.id === playerId);
       if (!p || Util.gradeGroup(p.grade) !== group) continue;
-      rows.push({ playerId, grade: p.grade, cls: p.cls, name: p.name, bestMs: r.ms, at: r.at, mode: r.mode });
+      rows.push({ playerId, grade: p.grade, cls: p.cls, num: p.num, name: p.name, nick: p.nick || '', bestMs: r.ms, at: r.at, mode: r.mode });
     }
     rows.sort((x, y) => x.bestMs - y.bestMs || x.at - y.at);
     rows.forEach((r, i) => { r.rank = i + 1; });
@@ -115,13 +115,13 @@ const LocalStore = (() => {
   // 학생 화면용: 이름 가운데를 가린 랭킹 (김○지)
   async function getRanking(group, limit = 30, opts = {}) {
     return buildRanking(load(), group, limit, opts).map(r => ({
-      rank: r.rank, label: r.grade + '-' + r.cls + ' ' + Util.maskName(r.name), bestMs: r.bestMs, mode: r.mode
+      rank: r.rank, label: r.grade + '학년 ' + r.cls + '반', bestMs: r.bestMs, mode: r.mode
     }));
   }
   // 관리자용: 전체 이름
   async function adminRanking(group, opts = {}) {
     return buildRanking(load(), group, 300, opts).map(r => ({
-      rank: r.rank, label: r.grade + '-' + r.cls + ' ' + r.name, bestMs: r.bestMs, mode: r.mode
+      rank: r.rank, label: `${r.grade}-${r.cls} ${r.num || ''}번 ${r.nick || r.name || ''}`.trim(), bestMs: r.bestMs, mode: r.mode
     }));
   }
 
@@ -142,7 +142,7 @@ const LocalStore = (() => {
       const cleared = mine.filter(a => a.status === 'cleared');
       const best = cleared.reduce((m, a) => (m == null || a.durationMs < m ? a.durationMs : m), null);
       const last = mine.reduce((m, a) => Math.max(m, a.startedAt), 0);
-      return { id: p.id, grade: p.grade, cls: p.cls, num: p.num, name: p.name, bestMs: best, tries: mine.length, clears: cleared.length, lastAt: last };
+      return { id: p.id, grade: p.grade, cls: p.cls, num: p.num, name: p.name || '', nick: p.nick || '', bestMs: best, tries: mine.length, clears: cleared.length, lastAt: last };
     });
   }
 
@@ -204,7 +204,7 @@ const ServerStore = (() => {
   }
   return {
     mode: 'server',
-    startAttempt: p => rpc('rp_start_attempt', { p_grade: p.grade, p_cls: p.cls, p_num: p.num, p_name: p.name, p_mode: p.mode || 'm30' }),
+    startAttempt: p => rpc('rp_start_attempt', { p_grade: p.grade, p_cls: p.cls, p_num: p.num, p_name: p.nick || '', p_mode: p.mode || 'm30' }),
     completeStep: (id, order) => rpc('rp_complete_step', { p_attempt: id, p_order: order }),
     getAttempt: id => rpc('rp_get_attempt', { p_attempt: id }),
     abandonAttempt: id => rpc('rp_abandon_attempt', { p_attempt: id }),

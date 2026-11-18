@@ -42,7 +42,9 @@ const App = (() => {
   // ---------------- 학생별 기록 (기기에 저장: 도감·배지) ----------------
   let dex = new Set();
   let badges = {};
-  function pkey(p) { return [p.grade, p.cls, p.num, p.name].join('|'); }
+  function pkey(p) { return [p.grade, p.cls, p.num].join('|'); }   // 학년·반·번호로 구분 (별명은 바꿔도 이어서 할 수 있다)
+  // 게임 속에서 부르는 이름: 별명이 있으면 별명, 없으면 '2반 5번'
+  function displayName(p) { return p.nick ? p.nick : `${p.cls}반 ${p.num}번`; }
   function dexKey(p) { return 'rp_dex_' + pkey(p); }
   function badgeKey(p) { return 'rp_badge_' + pkey(p); }
   function dexId(n) {
@@ -184,6 +186,7 @@ const App = (() => {
     $('gradeSeg').innerHTML = [1, 2, 3, 4, 5, 6].map(i => `<button type="button" data-g="${i}">${i}<span class="gr">학년</span></button>`).join('');
     const clsSel = $('inClass');
     for (let i = 1; i <= 10; i++) clsSel.insertAdjacentHTML('beforeend', `<option value="${i}">${i}반</option>`);
+    for (let i = 1; i <= 35; i++) $('inNum').insertAdjacentHTML('beforeend', `<option value="${i}">${i}번</option>`);
     $('avatarGrid').innerHTML = AVATAR_NAMES.map((n, i) => `<button type="button" data-c="${i}"><canvas width="32" height="32"></canvas><span>${n}</span></button>`).join('');
     $('avatarGrid').querySelectorAll('button').forEach((b, i) => {
       const c = b.querySelector('canvas').getContext('2d');
@@ -205,7 +208,7 @@ const App = (() => {
     setGrade(saved ? Number(saved.grade) : 0);
     setChar(saved && saved.charIdx != null ? saved.charIdx : 0);
     setMode(saved && MODES[saved.mode] ? saved.mode : 'm30');
-    if (saved) { clsSel.value = saved.cls; $('inName').value = saved.name; }
+    if (saved) { clsSel.value = saved.cls; if (saved.num && saved.nick != null) $('inNum').value = saved.num; $('inNick').value = saved.nick || ''; }
 
     $('btnStart').addEventListener('click', openEntry);
     $('entryClose').addEventListener('click', () => $('entry').classList.add('hidden'));
@@ -221,19 +224,25 @@ const App = (() => {
     if (standalone()) { $('btnFull').classList.add('hidden'); $('btnFullGame').classList.add('hidden'); }
     $('btnFull').addEventListener('click', toggleFullscreen);
 
+    let nameWarned = '';
     $('startForm').addEventListener('submit', e => {
       e.preventDefault();
-      // 번호는 받지 않는다 (기록 서버 형식에 맞춰 1로 둔다)
-      const grade = form.grade, cls = Number(clsSel.value), num = 1;
-      const name = $('inName').value.replace(/\s+/g, '');
+      // 학년·반·번호로 학생을 구분하고, 이름 대신 별명(선택)을 받는다
+      const grade = form.grade, cls = Number(clsSel.value), num = Number($('inNum').value);
+      const nick = $('inNick').value.replace(/\s+/g, '');
       const err = $('startErr');
       if (!grade) return (err.textContent = '학년을 골라 주세요.');
       if (!cls) return (err.textContent = '반을 골라 주세요.');
-      const bad = Util.checkName(name);
-      if (bad) { $('inName').focus(); return (err.textContent = bad); }
+      if (!num) { $('inNum').focus(); return (err.textContent = '번호를 골라 주세요.'); }
+      const bad = Util.checkNick(nick);
+      if (bad) { $('inNick').focus(); return (err.textContent = bad); }
+      if (nick && Util.looksLikeName(nick) && nameWarned !== nick) {
+        nameWarned = nick; $('inNick').focus();
+        return (err.textContent = `'${nick}'은(는) 실제 이름처럼 보여요. 실제 이름은 쓰지 말아 주세요. 이름이 아니라면 입장하기를 한 번 더 누르세요.`);
+      }
       err.textContent = '';
-      const player = { grade, cls, num, name, group: Util.gradeGroup(grade), charIdx: form.charIdx, mode: form.mode };
-      Util.storage.set('rp_last_player', { grade, cls, num, name, charIdx: form.charIdx, mode: form.mode });
+      const player = { grade, cls, num, nick, name: displayName({ cls, num, nick }), group: Util.gradeGroup(grade), charIdx: form.charIdx, mode: form.mode };
+      Util.storage.set('rp_last_player', { grade, cls, num, nick, charIdx: form.charIdx, mode: form.mode });
       enter(player);
     });
     $('btnRankStart').addEventListener('click', () => UI.ranking(form.grade ? Util.gradeGroup(form.grade) : 'g12'));
@@ -299,7 +308,7 @@ const App = (() => {
     }
     updateHud();
     const img = Sprites.makeChar(Sprites.PLAYER_PALETTES[player.charIdx]).down[0];
-    UI.character(img, player.name, MODES[player.mode].label, () => {
+    UI.character(img, `${player.grade}학년 ${player.cls}반 ${player.num}번${player.nick ? ' · ' + player.nick : ''}`, MODES[player.mode].label, () => {
       UI.dialog(content.opening, async () => {
         const r = await safe(Store.startAttempt(player), null);
         session.attemptId = r ? r.attemptId : null;

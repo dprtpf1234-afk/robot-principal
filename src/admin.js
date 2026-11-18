@@ -70,6 +70,8 @@ const Admin = (() => {
   }
 
   // ---------- 기록 ----------
+  // 별명 칸: 새 기록은 별명, 예전(이름 입력 시절) 기록은 '(이름) 김민지'
+  const nickOf = r => r.nick || (r.name ? '(이름) ' + r.name : '');
   async function records() {
     const all = await Store.adminListRecords();
     const body = $('admBody');
@@ -77,13 +79,13 @@ const Admin = (() => {
     const draw = () => {
       const rows = all.filter(r => (!f.g || Util.gradeGroup(r.grade) === f.g) && (!f.grade || r.grade == f.grade) && (!f.cls || r.cls == f.cls))
         .sort((a, b) => a.grade - b.grade || a.cls - b.cls || a.num - b.num);
-      $('recTable').innerHTML = rows.length ? `<table class="rec"><thead><tr><th>학년</th><th>반</th><th>이름</th><th>최고 기록</th><th>도전</th><th>클리어</th><th>마지막 도전</th><th></th></tr></thead><tbody>` +
-        rows.map(r => `<tr><td>${r.grade}</td><td>${r.cls}</td><td>${Util.esc(r.name)}</td><td>${r.bestMs != null ? Util.formatTime(r.bestMs) : '-'}</td><td>${r.tries}</td><td>${r.clears}</td><td>${r.lastAt ? new Date(r.lastAt).toLocaleString('ko-KR') : '-'}</td><td><button class="danger small" data-del="${r.id}">삭제</button></td></tr>`).join('') +
+      $('recTable').innerHTML = rows.length ? `<table class="rec"><thead><tr><th>학년</th><th>반</th><th>번호</th><th>별명</th><th>최고 기록</th><th>도전</th><th>클리어</th><th>마지막 도전</th><th></th></tr></thead><tbody>` +
+        rows.map(r => `<tr><td>${r.grade}</td><td>${r.cls}</td><td>${r.num}</td><td>${Util.esc(nickOf(r)) || '<span class="muted">-</span>'}</td><td>${r.bestMs != null ? Util.formatTime(r.bestMs) : '-'}</td><td>${r.tries}</td><td>${r.clears}</td><td>${r.lastAt ? new Date(r.lastAt).toLocaleString('ko-KR') : '-'}</td><td><button class="danger small" data-del="${r.id}">삭제</button></td></tr>`).join('') +
         '</tbody></table>' : '<p class="muted">기록이 없어요.</p>';
       $('recCount').textContent = `${rows.length}명`;
       $('recTable').querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
         const r = all.find(x => x.id === Number(b.dataset.del));
-        ask(`${r.grade}학년 ${r.cls}반 ${r.name} 학생의 기록을 모두 지울까요?`, async () => {
+        ask(`${r.grade}학년 ${r.cls}반 ${r.num}번${nickOf(r) ? ' (' + nickOf(r) + ')' : ''} 학생의 기록을 모두 지울까요?`, async () => {
           await Store.adminDeletePlayer(r.id);
           records();
         });
@@ -104,8 +106,8 @@ const Admin = (() => {
     $('fGrade').addEventListener('change', e => { f.grade = e.target.value; draw(); });
     $('fCls').addEventListener('change', e => { f.cls = e.target.value; draw(); });
     const table = () => {
-      const head = ['학년', '반', '이름', '최고 기록', '최고 기록(초)', '도전 횟수', '클리어 횟수', '마지막 도전'];
-      return [head].concat(body._rows.map(r => [r.grade, r.cls, r.name, r.bestMs != null ? Util.formatTime(r.bestMs) : '', r.bestMs != null ? (r.bestMs / 1000).toFixed(1) : '', r.tries, r.clears, r.lastAt ? new Date(r.lastAt).toLocaleString('ko-KR') : '']));
+      const head = ['학년', '반', '번호', '별명', '최고 기록', '최고 기록(초)', '도전 횟수', '클리어 횟수', '마지막 도전'];
+      return [head].concat(body._rows.map(r => [r.grade, r.cls, r.num, nickOf(r), r.bestMs != null ? Util.formatTime(r.bestMs) : '', r.bestMs != null ? (r.bestMs / 1000).toFixed(1) : '', r.tries, r.clears, r.lastAt ? new Date(r.lastAt).toLocaleString('ko-KR') : '']));
     };
     $('csvCopy').addEventListener('click', async () => {
       const tsv = table().map(l => l.join('\t')).join('\n');
@@ -137,13 +139,13 @@ const Admin = (() => {
     const body = $('admBody');
     const bar = `<div class="content-bar"><div class="tabs small">${Util.GROUPS.map(k => `<button data-g="${k}" class="${rkGroup === k ? 'on' : ''}">${Util.groupLabel(k)}</button>`).join('')}</div>
       <div class="tabs small">${[['all', '전체'], ['m30', '30분 미션'], ['m10', '10분 미션']].map(([v, l]) => `<button data-m="${v}" class="${rkMode === v ? 'on' : ''}">${l}</button>`).join('')}</div></div>
-      <p class="muted small">학생 화면의 명예의 전당에는 이름 가운데가 ○로 가려져 보여요 (예: 김○지). 여기서는 전체 이름이 보여요.</p>`;
+      <p class="muted small">학생 화면의 명예의 전당에는 학년·반만 보여요 (예: 3학년 2반). 여기서는 번호와 별명까지 보여요.</p>`;
     body.innerHTML = bar + '<p class="muted">불러오는 중…</p>';
     let rows = [];
     try { rows = await Store.adminRanking(rkGroup, { mode: rkMode }) || []; } catch (e) { body.innerHTML = bar + '<p class="muted">랭킹을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.</p>'; bind(); return; }
     const medal = r => (r <= 3 ? ['🥇', '🥈', '🥉'][r - 1] : r);
     body.innerHTML = bar + (rows.length
-      ? `<div class="table-wrap"><table class="rec"><thead><tr><th>순위</th><th>학년-반 이름</th><th>모드</th><th>최고 기록</th></tr></thead><tbody>` +
+      ? `<div class="table-wrap"><table class="rec"><thead><tr><th>순위</th><th>학년-반 번호 별명</th><th>모드</th><th>최고 기록</th></tr></thead><tbody>` +
         rows.map(r => `<tr><td>${medal(r.rank)}</td><td>${Util.esc(r.label)}</td><td>${r.mode === 'm10' ? '10분' : '30분'}</td><td>${Util.formatTime(r.bestMs)}</td></tr>`).join('') +
         '</tbody></table></div>'
       : '<p class="muted">이 학년군에는 아직 클리어 기록이 없어요.</p>');
